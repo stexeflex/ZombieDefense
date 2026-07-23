@@ -25,7 +25,7 @@ Accounts und keine Datenbank.
 
 ## Voraussetzungen
 
-- Node.js 20.19 oder neuer
+- Node.js 24.15 oder neuer
 - npm
 
 ## Lokal starten
