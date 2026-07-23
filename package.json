@@ -1,0 +1,45 @@
+{
+  "name": "zombie-defense",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "dev": "concurrently -n WEB,SERVER -c green,cyan \"ng serve\" \"npm --prefix server start\"",
+    "dev:lan": "concurrently -n WEB,SERVER -c green,cyan \"ng serve --host 0.0.0.0\" \"npm --prefix server start\"",
+    "build": "ng build",
+    "build:all": "npm run build && npm --prefix server run build",
+    "preview": "node scripts/serve-static.mjs",
+    "server:start": "npm --prefix server start",
+    "server:build": "npm --prefix server run build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
+  },
+  "private": true,
+  "workspaces": [
+    "server"
+  ],
+  "packageManager": "npm@11.16.0",
+  "dependencies": {
+    "@angular/common": "^22.0.0",
+    "@angular/compiler": "^22.0.0",
+    "@angular/core": "^22.0.0",
+    "@angular/forms": "^22.0.0",
+    "@angular/platform-browser": "^22.0.0",
+    "@angular/router": "^22.0.0",
+    "@colyseus/sdk": "^0.17.26",
+    "phaser": "^3.90.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.0.8",
+    "@angular/cli": "^22.0.8",
+    "@angular/compiler-cli": "^22.0.0",
+    "concurrently": "^9.2.1",
+    "jsdom": "^28.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "~6.0.2",
+    "vitest": "^4.0.8"
+  }
+}

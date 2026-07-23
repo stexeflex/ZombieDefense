@@ -1,0 +1,301 @@
+<main class="mission-shell">
+  <header class="mission-topbar">
+    <button class="brand-button" type="button" (click)="leave()" aria-label="Zur Startseite">
+      <span>ZD</span>
+      <b>ZOMBIE DEFENSE</b>
+    </button>
+
+    <button class="lobby-code" type="button" (click)="copyLink()">
+      <small>Lobby</small>
+      <strong>{{ lobbyCode() }}</strong>
+      <span>{{ copied() ? 'Kopiert!' : 'Link kopieren' }}</span>
+    </button>
+
+    <div class="server-state" [class.error]="game.connection() === 'error'">
+      <span></span>
+      {{
+        game.connection() === 'connected'
+          ? 'Verbunden'
+          : game.connection() === 'connecting'
+            ? 'Verbindung …'
+            : game.connection() === 'error'
+              ? 'Getrennt'
+              : 'Bereit'
+      }}
+    </div>
+  </header>
+
+  @if (game.connection() === 'connecting') {
+    <section class="state-screen">
+      <div class="scanner" aria-hidden="true"></div>
+      <p class="eyebrow">Sichere Verbindung</p>
+      <h1>Lobby wird geöffnet</h1>
+      <p>Der Einsatzraum wird vorbereitet …</p>
+    </section>
+  } @else if (game.connection() === 'error') {
+    <section class="state-screen error-state">
+      <span class="state-icon">!</span>
+      <p class="eyebrow">Verbindung fehlgeschlagen</p>
+      <h1>Server nicht erreichbar</h1>
+      <p>{{ game.errorMessage() }}</p>
+      <div class="state-actions">
+        <button class="primary-button" type="button" (click)="join()">Erneut versuchen</button>
+        <button class="ghost-button" type="button" (click)="leave()">Zurück</button>
+      </div>
+    </section>
+  } @else if (game.snapshot(); as snapshot) {
+    @if (snapshot.phase === 'lobby') {
+      <section class="lobby-stage">
+        <div class="lobby-intro">
+          <p class="eyebrow"><span></span> Einsatzbesprechung</p>
+          <h1>Stellt euer<br />Team zusammen.</h1>
+          <p>
+            Teile den Lobby-Link mit bis zu drei Freunden. Sobald alle da sind,
+            startet der Host den ersten Run.
+          </p>
+        </div>
+
+        <section class="squad-panel">
+          <header>
+            <div>
+              <small>Trupp</small>
+              <h2>{{ players().length }} / 4 Spieler</h2>
+            </div>
+            <span class="private-badge">Private Lobby</span>
+          </header>
+
+          <div class="player-list">
+            @for (player of players(); track player.id; let index = $index) {
+              <article class="player-slot occupied">
+                <span class="avatar" [style.--player-color]="player.color">{{ index + 1 }}</span>
+                <div>
+                  <strong>{{ player.name }}</strong>
+                  <small>
+                    {{ player.id === snapshot.hostSessionId ? 'Host' : 'Bereit für den Einsatz' }}
+                  </small>
+                </div>
+                <span class="online-dot"></span>
+              </article>
+            }
+            @for (slot of [0, 1, 2, 3].slice(players().length); track slot) {
+              <article class="player-slot empty">
+                <span class="avatar">+</span>
+                <div>
+                  <strong>Freier Platz</strong>
+                  <small>Link senden, um Freund einzuladen</small>
+                </div>
+              </article>
+            }
+          </div>
+
+          <div class="share-box">
+            <span>{{ origin }}/lobby/{{ lobbyCode() }}</span>
+            <button type="button" (click)="copyLink()">{{ copied() ? 'Kopiert' : 'Kopieren' }}</button>
+          </div>
+
+          @if (game.isHost()) {
+            <button class="start-button" type="button" (click)="start()">
+              Run starten
+              <span>Welle 1 / 10</span>
+            </button>
+          } @else {
+            <div class="waiting-host"><span></span> Warte, bis der Host den Run startet …</div>
+          }
+        </section>
+      </section>
+    } @else {
+      <section class="game-layout">
+        <div class="game-stage">
+          <app-game-canvas />
+
+          <div class="wave-banner">
+            <span>{{ snapshot.phase === 'build' ? 'Bauphase' : snapshot.phase === 'gameover' ? 'Run beendet' : 'Welle' }}</span>
+            <strong>{{ snapshot.wave }}</strong>
+            @if (snapshot.phase === 'combat') {
+              <small>{{ snapshot.enemiesRemaining }} Gegner</small>
+            } @else if (snapshot.phase === 'build') {
+              <small>{{ seconds(snapshot.nextWaveIn) }}</small>
+            }
+          </div>
+
+          <div class="player-hud">
+            <div class="health-block">
+              <div class="hud-label">
+                <span>Gesundheit</span>
+                <b>{{ game.player()?.health | number: '1.0-0' }} / {{ game.player()?.maxHealth }}</b>
+              </div>
+              <div class="health-track">
+                <span
+                  [style.width.%]="
+                    game.player() ? (game.player()!.health / game.player()!.maxHealth) * 100 : 0
+                  "
+                ></span>
+              </div>
+            </div>
+            <div class="ammo-block">
+              <small>{{ weaponName(game.player()?.weapon) }}</small>
+              <strong>{{ game.player()?.ammo }}<span>/ {{ game.player()?.reserveAmmo }}</span></strong>
+              @if (game.player()?.reloading) {
+                <em>Nachladen …</em>
+              }
+            </div>
+            <div class="grenade-block">
+              <small>Granate [G]</small>
+              <strong>● × {{ game.player()?.grenades }}</strong>
+              @if (game.player()?.grenadeCooldown) {
+                <span>{{ game.player()!.grenadeCooldown | number: '1.0-0' }} s</span>
+              }
+            </div>
+          </div>
+
+          <div class="controls-hint">
+            <span><kbd>WASD</kbd> Bewegen</span>
+            <span><kbd>Maus</kbd> Zielen & schießen</span>
+            <span><kbd>R</kbd> Nachladen</span>
+            <span><kbd>E</kbd> Wiederbeleben</span>
+          </div>
+
+          @if (!game.player()?.alive && snapshot.phase === 'combat') {
+            <div class="downed-overlay">
+              <span>✚</span>
+              <h2>Du bist am Boden</h2>
+              <p>Ein Mitspieler muss in deiner Nähe E halten.</p>
+            </div>
+          }
+
+          @if (snapshot.phase === 'gameover') {
+            <div class="gameover-overlay">
+              <section>
+                <p class="eyebrow">{{ game.lastReward()?.victory ? 'Sektor gesichert' : 'Trupp gefallen' }}</p>
+                <h2>{{ game.lastReward()?.victory ? 'Ihr habt überlebt.' : 'Die Linie ist gebrochen.' }}</h2>
+                <div class="run-stats">
+                  <span><b>{{ snapshot.wave }}</b> Welle erreicht</span>
+                  <span><b>{{ game.player()?.kills }}</b> Abschüsse</span>
+                  <span><b>+{{ game.lastReward()?.gold ?? 0 }}</b> permanentes Gold</span>
+                </div>
+                <div class="gameover-actions">
+                  @if (game.isHost()) {
+                    <button class="primary-button" type="button" (click)="game.restartRun()">Neuer Run</button>
+                  } @else {
+                    <p>Der Host kann einen neuen Run starten.</p>
+                  }
+                  <button class="ghost-button" type="button" (click)="leave()">Zur Startseite</button>
+                </div>
+              </section>
+            </div>
+          }
+        </div>
+
+        <aside class="side-panel">
+          <section class="squad-mini">
+            <header>
+              <span>Truppstatus</span>
+              <b>{{ players().length }} online</b>
+            </header>
+            @for (player of players(); track player.id) {
+              <article [class.downed]="!player.alive">
+                <span class="mini-avatar" [style.--player-color]="player.color"></span>
+                <div>
+                  <strong>{{ player.name }}</strong>
+                  <div class="mini-health">
+                    <span [style.width.%]="playerHealth(player.id)"></span>
+                  </div>
+                </div>
+                <small>{{ player.kills }} K</small>
+              </article>
+            }
+          </section>
+
+          @if (snapshot.phase === 'build') {
+            <section class="shop-panel">
+              <header>
+                <div>
+                  <small>Versorgung</small>
+                  <h2>Shop & Bau</h2>
+                </div>
+                <strong>$ {{ game.player()?.money }}</strong>
+              </header>
+
+              <h3>Waffen</h3>
+              @for (weapon of weapons; track weapon.type) {
+                <button
+                  class="shop-item"
+                  type="button"
+                  [disabled]="(game.player()?.money ?? 0) < weapon.cost || game.player()?.weapon === weapon.type"
+                  (click)="game.buyWeapon(weapon.type)"
+                >
+                  <span class="item-icon">{{ weapon.type === 'rifle' ? 'AR' : 'SG' }}</span>
+                  <span><b>{{ weapon.label }}</b><small>{{ weapon.magazine }} Schuss</small></span>
+                  <strong>{{ game.player()?.weapon === weapon.type ? 'Aktiv' : '$ ' + weapon.cost }}</strong>
+                </button>
+              }
+              <button class="shop-item" type="button" [disabled]="(game.player()?.money ?? 0) < 90" (click)="game.buyAmmo()">
+                <span class="item-icon">AM</span>
+                <span><b>Munition</b><small>Voller Vorrat</small></span>
+                <strong>$ 90</strong>
+              </button>
+
+              <h3>Verteidigung</h3>
+              @for (defense of defenses; track defense.type) {
+                <button
+                  class="shop-item build-item"
+                  type="button"
+                  [class.selected]="game.selectedBuild() === defense.type"
+                  [disabled]="(game.player()?.money ?? 0) < defense.cost"
+                  (click)="selectBuild(defense.type)"
+                >
+                  <span class="item-icon">{{ defense.type === 'barricade' ? '▰' : '⌖' }}</span>
+                  <span><b>{{ defense.label }}</b><small>Auf Karte platzieren</small></span>
+                  <strong>$ {{ defense.cost }}</strong>
+                </button>
+              }
+
+              <div class="defense-actions">
+                <button type="button" (click)="game.repairNearest()">Reparieren</button>
+                <button type="button" (click)="game.sellNearest()">Verkaufen</button>
+              </div>
+
+              <button
+                class="ready-button"
+                type="button"
+                [class.ready]="game.player()?.ready"
+                (click)="toggleReady()"
+              >
+                {{ game.player()?.ready ? 'Bereit ✓' : 'Bereit für nächste Welle' }}
+              </button>
+            </section>
+          } @else {
+            <section class="mission-info">
+              <small>Aktueller Auftrag</small>
+              <h2>Haltet den Ring</h2>
+              <p>Bleibt zusammen. Gefallene Freunde können innerhalb der Welle wiederbelebt werden.</p>
+              <div>
+                <span>Wellenfortschritt</span>
+                <b>{{ snapshot.wave }} / 10</b>
+              </div>
+            </section>
+          }
+        </aside>
+      </section>
+    }
+  }
+</main>
+
+@if (needsName()) {
+  <div class="name-backdrop">
+    <form class="name-card" (ngSubmit)="join()">
+      <p class="eyebrow">Lobby {{ lobbyCode() }}</p>
+      <h1>Wie sollen wir dich nennen?</h1>
+      <p>Kein Account nötig. Der Name gilt nur für diese Lobby.</p>
+      <input
+        [(ngModel)]="name"
+        name="playerName"
+        maxlength="18"
+        autocomplete="nickname"
+        placeholder="Spielername"
+        autofocus
+      />
+      <button class="primary-button" type="submit">Lobby beitreten →</button>
+    </form>
+  </div>
+}

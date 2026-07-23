@@ -1,0 +1,137 @@
+<main class="home-shell">
+  <div class="grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Zombie Defense Startseite">
+      <span class="brand-mark" aria-hidden="true">ZD</span>
+      <span>ZOMBIE DEFENSE</span>
+    </a>
+    <button class="gold-pill" type="button" (click)="upgradesOpen.set(true)">
+      <span aria-hidden="true">◆</span>
+      {{ progress.gold() }} Gold
+      <span class="gold-pill__hint">Upgrades</span>
+    </button>
+  </header>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow"><span></span> Koop · 1–4 Spieler · Browser</p>
+      <h1>Haltet die Linie.<br /><em>Zusammen.</em></h1>
+      <p class="lede">
+        Baut eure Verteidigung zwischen den Wellen aus, stimmt eure Waffen ab
+        und hebt gefallene Freunde wieder auf. Keine Accounts. Kein Download.
+      </p>
+
+      <div class="feature-row" aria-label="Spielmerkmale">
+        <span><b>10</b> feste Wellen</span>
+        <span><b>3</b> Zombiearten</span>
+        <span><b>∞</b> neue Runs</span>
+      </div>
+    </div>
+
+    <section class="entry-card" aria-labelledby="entry-title">
+      <div class="card-status">
+        <span class="pulse"></span>
+        Lokaler Spielserver
+      </div>
+      <h2 id="entry-title">Bereit für die Nacht?</h2>
+      <p>Dein Name wird nur für diese Lobby verwendet.</p>
+
+      <label class="field">
+        <span>Spielername</span>
+        <input
+          [(ngModel)]="name"
+          maxlength="18"
+          autocomplete="nickname"
+          placeholder="Dein Name"
+          (keyup.enter)="createLobby()"
+        />
+      </label>
+
+      @if (formError) {
+        <p class="form-error" role="alert">{{ formError }}</p>
+      }
+
+      <button class="primary-action" type="button" (click)="createLobby()">
+        Neue Lobby erstellen
+        <span aria-hidden="true">→</span>
+      </button>
+
+      <div class="or"><span>oder mit Code beitreten</span></div>
+
+      <div class="join-row">
+        <input
+          [(ngModel)]="lobbyCode"
+          maxlength="5"
+          aria-label="Lobby-Code"
+          placeholder="X7KD3"
+          (input)="lobbyCode = lobbyCode.toUpperCase()"
+          (keyup.enter)="joinLobby()"
+        />
+        <button type="button" (click)="joinLobby()" aria-label="Lobby beitreten">Los</button>
+      </div>
+
+      <p class="privacy-note">
+        <span aria-hidden="true">◇</span>
+        Fortschritt bleibt nur in diesem Browser gespeichert.
+      </p>
+    </section>
+  </section>
+
+  <footer>
+    <span>WASD zum Bewegen · Maus zum Zielen · G für Granate</span>
+    <span>Version 0.1 · Prototyp</span>
+  </footer>
+</main>
+
+@if (upgradesOpen()) {
+  <div class="modal-backdrop" (click)="upgradesOpen.set(false)">
+    <section
+      class="upgrade-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="upgrade-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">Permanenter Fortschritt</p>
+          <h2 id="upgrade-title">Vorbereitung ist alles.</h2>
+        </div>
+        <button class="close-button" type="button" (click)="upgradesOpen.set(false)">×</button>
+      </header>
+
+      <div class="wallet"><span>◆</span> {{ progress.gold() }} Gold verfügbar</div>
+
+      <div class="upgrade-grid">
+        @for (upgrade of definitions; track upgrade.key) {
+          <article class="upgrade-item">
+            <span class="upgrade-icon">{{ upgrade.icon }}</span>
+            <div class="upgrade-copy">
+              <h3>{{ upgrade.label }}</h3>
+              <p>{{ upgrade.description }} pro Stufe</p>
+              <div class="level-track" aria-label="Stufe {{ level(upgrade.key) }} von 20">
+                @for (dot of [0, 1, 2, 3, 4]; track dot) {
+                  <span [class.filled]="level(upgrade.key) > dot * 4"></span>
+                }
+              </div>
+            </div>
+            <div class="upgrade-buy">
+              <b>Stufe {{ level(upgrade.key) }}</b>
+              <button
+                type="button"
+                [disabled]="progress.gold() < progress.cost(upgrade.key) || level(upgrade.key) >= 20"
+                (click)="buyUpgrade(upgrade.key)"
+              >
+                @if (level(upgrade.key) >= 20) {
+                  MAX
+                } @else {
+                  ◆ {{ progress.cost(upgrade.key) }}
+                }
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  </div>
+}
