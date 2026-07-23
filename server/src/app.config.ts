@@ -1,11 +1,16 @@
 import { defineRoom, defineServer } from 'colyseus';
 import express from 'express';
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ZombieRoom } from './rooms/zombie-room.js';
 
-const webRoot = resolve(process.cwd(), 'dist', 'zombie-defense', 'browser');
-const indexFile = resolve(webRoot, 'index.html');
+const currentDirectory = dirname(fileURLToPath(import.meta.url));
+const webRoot = [
+  resolve(process.cwd(), 'dist', 'zombie-defense', 'browser'),
+  resolve(currentDirectory, '..', '..', 'dist', 'zombie-defense', 'browser'),
+  resolve(currentDirectory, '..', '..', '..', '..', 'dist', 'zombie-defense', 'browser'),
+].find((candidate) => existsSync(resolve(candidate, 'index.html')));
 
 export const server = defineServer({
   rooms: {
@@ -18,7 +23,8 @@ export const server = defineServer({
         response.json({ ok: true }),
     );
 
-    if (existsSync(indexFile)) {
+    if (webRoot) {
+      const indexFile = resolve(webRoot, 'index.html');
       app.use(express.static(webRoot));
       app.get('*path', (_request, response) => response.sendFile(indexFile));
       return;
