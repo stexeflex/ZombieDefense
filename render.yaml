@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: zombie-defense-stexeflex
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build:all
+    startCommand: npm --prefix server run serve
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production

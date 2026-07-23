@@ -152,6 +152,13 @@ export class GameService {
   private serverEndpoint() {
     const configured = localStorage.getItem('zombie-defense-server-url');
     if (configured) return configured;
+
+    const isLocalDevelopment =
+      location.hostname === 'localhost' ||
+      location.hostname === '127.0.0.1' ||
+      location.hostname === '::1';
+    if (!isLocalDevelopment) return location.origin;
+
     const protocol = location.protocol === 'https:' ? 'https:' : 'http:';
     return `${protocol}//${location.hostname}:2567`;
   }

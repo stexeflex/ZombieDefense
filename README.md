@@ -4,7 +4,7 @@ Kooperatives 2D-Top-down-Spiel für 1–4 Freunde. Ein Spieler erstellt eine
 Lobby, teilt den Link und startet einen Run aus zehn fest definierten
 Zombie-Wellen.
 
-Der aktuelle Stand ist ein spielbarer lokaler Prototyp. Er braucht keine
+Der aktuelle Stand ist ein spielbarer Online-Prototyp. Er braucht keine
 Accounts und keine Datenbank.
 
 ## Enthalten
@@ -101,11 +101,16 @@ npm run build:all
 Der fertige Browser-Build liegt danach unter
 `dist/zombie-defense/browser`. Der Server-Build liegt unter `server/build`.
 
+## Online-Deployment
+
+Die Datei `render.yaml` beschreibt einen kostenlosen Render-Webdienst. Der
+Node.js-Prozess liefert sowohl den Angular-Build als auch den
+Colyseus-WebSocket-Server über dieselbe öffentliche Adresse aus.
+
 ## Später sinnvoll
 
 - Explodierer und Boss-Zombie
 - weitere Waffen, Barrikaden und Türme
 - bessere Wegfindung um große Verteidigungsanlagen
 - Karten-Assets, Animationen, Audio und Partikeleffekte
-- Online-Hosting mit konfigurierbarer Server-Adresse
 - optionale Accounts und Datenbank für manipulationssicheren Fortschritt
