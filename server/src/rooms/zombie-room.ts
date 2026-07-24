@@ -4,6 +4,10 @@ import {
   ARENA,
   DEFENSES,
   EMPTY_UPGRADES,
+  PLAYER_BASE_SPEED,
+  PLAYER_RADIUS,
+  REVIVE_RADIUS,
+  REVIVE_SECONDS,
   WAVES,
   WEAPONS,
   type DefenseType,
@@ -41,7 +45,6 @@ const EMPTY_INPUT: PlayerInput = {
   right: false,
   shoot: false,
   reload: false,
-  interact: false,
   aimX: ARENA.width / 2,
   aimY: ARENA.height / 2,
 };
@@ -62,6 +65,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   private spawnDelay = 0;
   private entityCounter = 0;
   private runId = '';
+  private snapshotElapsed = 0;
 
   onCreate(options: JoinOptions) {
     const state = new GameState();
@@ -95,7 +99,10 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.onMessage('buy_ammo', (client) => this.buyAmmo(client.sessionId));
     this.onMessage(
       'place',
-      (client, payload: { type?: DefenseType; x?: number; y?: number }) =>
+      (
+        client,
+        payload: { type?: DefenseType; x?: number; y?: number; rotation?: number },
+      ) =>
         this.placeDefense(client.sessionId, payload),
     );
     this.onMessage('sell', (client) => this.sellNearest(client.sessionId));
@@ -141,7 +148,13 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const delta = Math.min(deltaMs, 100) / 1000;
     if (this.state.phase === 'combat') this.updateCombat(delta);
     if (this.state.phase === 'build') this.updateBuild(delta);
-    this.broadcastSnapshot();
+
+    this.snapshotElapsed += deltaMs;
+    const snapshotInterval = this.state.phase === 'combat' ? 75 : 150;
+    if (this.snapshotElapsed >= snapshotInterval) {
+      this.snapshotElapsed %= snapshotInterval;
+      this.broadcastSnapshot();
+    }
   }
 
   private updateCombat(delta: number) {
@@ -159,6 +172,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   }
 
   private updateBuild(delta: number) {
+    this.updatePlayers(delta);
     this.state.nextWaveIn = Math.max(0, this.state.nextWaveIn - delta);
     if (this.state.nextWaveIn <= 0) this.startNextWave();
   }
@@ -193,15 +207,28 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       const length = Math.hypot(dx, dy) || 1;
       dx /= length;
       dy /= length;
-      const speed = 205 * (1 + runtime.upgrades.moveSpeed * 0.02);
+      const speed = PLAYER_BASE_SPEED * (1 + runtime.upgrades.moveSpeed * 0.02);
       player.x = this.clamp(player.x + dx * speed * delta, ARENA.padding, ARENA.width - ARENA.padding);
       player.y = this.clamp(player.y + dy * speed * delta, ARENA.padding, ARENA.height - ARENA.padding);
       this.resolvePlayerDefenseCollision(player);
 
       player.rotation = Math.atan2(input.aimY - player.y, input.aimX - player.x);
-      if (input.reload && player.reloading === 0) this.beginReload(player, runtime.upgrades);
-      if (input.shoot && player.reloading === 0) this.shoot(player, runtime.upgrades);
-      if (player.ammo <= 0 && player.reserveAmmo > 0 && player.reloading === 0) {
+      if (
+        this.state.phase === 'combat' &&
+        input.reload &&
+        player.reloading === 0
+      ) {
+        this.beginReload(player, runtime.upgrades);
+      }
+      if (this.state.phase === 'combat' && input.shoot && player.reloading === 0) {
+        this.shoot(player, runtime.upgrades);
+      }
+      if (
+        this.state.phase === 'combat' &&
+        player.ammo <= 0 &&
+        player.reserveAmmo > 0 &&
+        player.reloading === 0
+      ) {
         this.beginReload(player, runtime.upgrades);
       }
     });
@@ -309,17 +336,15 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   private updateRevives(delta: number) {
     this.state.players.forEach((downed) => {
       if (downed.alive) return;
-      const rescuer = [...this.state.players.entries()].find(([id, player]) => {
-        const input = this.runtimePlayers.get(id)?.input;
-        return (
+      const rescuer = [...this.state.players.values()].find(
+        (player) =>
+          player.id !== downed.id &&
           player.alive &&
-          input?.interact &&
-          Math.hypot(player.x - downed.x, player.y - downed.y) <= 82
-        );
-      });
+          Math.hypot(player.x - downed.x, player.y - downed.y) <= REVIVE_RADIUS,
+      );
       downed.reviveProgress = rescuer
-        ? Math.min(1, downed.reviveProgress + delta / 3)
-        : Math.max(0, downed.reviveProgress - delta / 2);
+        ? Math.min(1, downed.reviveProgress + delta / REVIVE_SECONDS)
+        : Math.max(0, downed.reviveProgress - delta * 1.25);
       if (downed.reviveProgress >= 1) {
         downed.alive = true;
         downed.health = Math.ceil(downed.maxHealth * 0.35);
@@ -468,6 +493,11 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.state.projectiles.clear();
     this.state.players.forEach((player) => {
       player.money += reward;
+      if (!player.alive) {
+        player.alive = true;
+        player.health = Math.ceil(player.maxHealth * 0.35);
+        player.reviveProgress = 0;
+      }
       player.grenades = 3;
       player.grenadeCooldown = 0;
       player.ready = false;
@@ -516,7 +546,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
 
   private placeDefense(
     sessionId: string,
-    payload: { type?: DefenseType; x?: number; y?: number },
+    payload: { type?: DefenseType; x?: number; y?: number; rotation?: number },
   ) {
     const player = this.state.players.get(sessionId);
     const runtime = this.runtimePlayers.get(sessionId);
@@ -535,6 +565,11 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     defense.type = type;
     defense.x = x;
     defense.y = y;
+    defense.rotation =
+      type === 'barricade'
+        ? (Math.round((Number(payload.rotation) || 0) / (Math.PI / 2)) * (Math.PI / 2)) %
+          Math.PI
+        : 0;
     const bonus = type === 'barricade' ? 1 + runtime.upgrades.barricadeHealth * 0.02 : 1;
     defense.maxHealth = Math.round(config.health * bonus);
     defense.health = defense.maxHealth;
@@ -613,24 +648,78 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   }
 
   private blockingDefense(zombie: ZombieState, dx: number, dy: number) {
-    return [...this.state.defenses.values()].find((defense) => {
-      const radius = defense.type === 'barricade' ? 31 : 25;
-      return Math.hypot(zombie.x + dx - defense.x, zombie.y + dy - defense.y) < zombie.radius + radius;
-    });
+    return [...this.state.defenses.values()].find((defense) =>
+      this.circleOverlapsDefense(zombie.x + dx, zombie.y + dy, zombie.radius, defense),
+    );
   }
 
   private resolvePlayerDefenseCollision(player: PlayerState) {
     this.state.defenses.forEach((defense) => {
-      const radius = defense.type === 'barricade' ? 31 : 25;
+      if (defense.type === 'turret') {
+        const dx = player.x - defense.x;
+        const dy = player.y - defense.y;
+        const distance = Math.hypot(dx, dy);
+        const minimum = 25 + PLAYER_RADIUS;
+        if (distance > 0 && distance < minimum) {
+          player.x = defense.x + (dx / distance) * minimum;
+          player.y = defense.y + (dy / distance) * minimum;
+        }
+        return;
+      }
+
+      const cos = Math.cos(-defense.rotation);
+      const sin = Math.sin(-defense.rotation);
       const dx = player.x - defense.x;
       const dy = player.y - defense.y;
-      const distance = Math.hypot(dx, dy);
-      const minimum = radius + 18;
-      if (distance > 0 && distance < minimum) {
-        player.x = defense.x + (dx / distance) * minimum;
-        player.y = defense.y + (dy / distance) * minimum;
+      let localX = dx * cos - dy * sin;
+      let localY = dx * sin + dy * cos;
+      const halfWidth = 29;
+      const halfHeight = 16;
+      const closestX = this.clamp(localX, -halfWidth, halfWidth);
+      const closestY = this.clamp(localY, -halfHeight, halfHeight);
+      const offsetX = localX - closestX;
+      const offsetY = localY - closestY;
+      const distance = Math.hypot(offsetX, offsetY);
+
+      if (distance > 0 && distance < PLAYER_RADIUS) {
+        const push = PLAYER_RADIUS - distance;
+        localX += (offsetX / distance) * push;
+        localY += (offsetY / distance) * push;
+      } else if (distance === 0) {
+        const pushX = halfWidth + PLAYER_RADIUS - Math.abs(localX);
+        const pushY = halfHeight + PLAYER_RADIUS - Math.abs(localY);
+        if (pushX < pushY) localX += (localX < 0 ? -1 : 1) * pushX;
+        else localY += (localY < 0 ? -1 : 1) * pushY;
+      } else {
+        return;
       }
+
+      const worldCos = Math.cos(defense.rotation);
+      const worldSin = Math.sin(defense.rotation);
+      player.x = defense.x + localX * worldCos - localY * worldSin;
+      player.y = defense.y + localX * worldSin + localY * worldCos;
     });
+  }
+
+  private circleOverlapsDefense(
+    x: number,
+    y: number,
+    radius: number,
+    defense: DefenseState,
+  ) {
+    if (defense.type === 'turret') {
+      return Math.hypot(x - defense.x, y - defense.y) < radius + 25;
+    }
+
+    const cos = Math.cos(-defense.rotation);
+    const sin = Math.sin(-defense.rotation);
+    const dx = x - defense.x;
+    const dy = y - defense.y;
+    const localX = dx * cos - dy * sin;
+    const localY = dx * sin + dy * cos;
+    const closestX = this.clamp(localX, -29, 29);
+    const closestY = this.clamp(localY, -16, 16);
+    return Math.hypot(localX - closestX, localY - closestY) < radius;
   }
 
   private nearestLivingPlayer(x: number, y: number) {
@@ -670,7 +759,6 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       right: Boolean(input.right),
       shoot: Boolean(input.shoot),
       reload: Boolean(input.reload),
-      interact: Boolean(input.interact),
       aimX: this.clamp(Number(input.aimX) || 0, 0, ARENA.width),
       aimY: this.clamp(Number(input.aimY) || 0, 0, ARENA.height),
     };

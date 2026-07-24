@@ -151,15 +151,20 @@
           <div class="controls-hint">
             <span><kbd>WASD</kbd> Bewegen</span>
             <span><kbd>Maus</kbd> Zielen & schießen</span>
-            <span><kbd>R</kbd> Nachladen</span>
-            <span><kbd>E</kbd> Wiederbeleben</span>
+            @if (snapshot.phase === 'build') {
+              <span><kbd>R</kbd> Barrikade drehen</span>
+              <span><kbd>Rechtsklick</kbd> Auswahl abbrechen</span>
+            } @else {
+              <span><kbd>R</kbd> Nachladen</span>
+              <span><kbd>Nähe</kbd> Automatisch wiederbeleben</span>
+            }
           </div>
 
           @if (!game.player()?.alive && snapshot.phase === 'combat') {
             <div class="downed-overlay">
               <span>✚</span>
               <h2>Du bist am Boden</h2>
-              <p>Ein Mitspieler muss in deiner Nähe E halten.</p>
+              <p>Ein Mitspieler muss kurz in deiner Nähe stehen.</p>
             </div>
           }
 
@@ -248,6 +253,15 @@
                   <span><b>{{ defense.label }}</b><small>Auf Karte platzieren</small></span>
                   <strong>$ {{ defense.cost }}</strong>
                 </button>
+              }
+
+              @if (game.selectedBuild()) {
+                <div class="placement-help">
+                  @if (game.selectedBuild() === 'barricade') {
+                    <span><kbd>R</kbd> Drehen</span>
+                  }
+                  <span><kbd>Rechtsklick</kbd> Abbrechen</span>
+                </div>
               }
 
               <div class="defense-actions">

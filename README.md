@@ -7,12 +7,18 @@ Zombie-Wellen.
 Der aktuelle Stand ist ein spielbarer Online-Prototyp. Er braucht keine
 Accounts und keine Datenbank.
 
+**Direkt spielen:** [zombie-defense-stexeflex.onrender.com](https://zombie-defense-stexeflex.onrender.com/)
+
+Der kostenlose Server kann nach längerer Inaktivität schlafen. Beim ersten
+Aufruf kann das Laden deshalb kurz dauern.
+
 ## Enthalten
 
 - Link-Lobbys mit fünfstelligem Code
 - 1–4 Spieler über Colyseus/WebSockets
 - autoritative Bewegung, Zombie-KI, Treffer und Wellen auf dem Server
-- Wiederbelebung gefallener Spieler: in der Nähe `E` halten
+- automatische Wiederbelebung gefallener Spieler durch kurzes Danebenstehen
+- große Karte mit Kamera, die dem eigenen Spieler folgt
 - zehn feste Wellen mit normalen, schnellen und großen Zombies
 - Pistole, Sturmgewehr und Schrotflinte
 - drei wiederaufladbare Granaten
@@ -70,12 +76,14 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | `WASD` oder Pfeiltasten | Bewegen |
 | Maus | Zielen |
 | Linke Maustaste | Schießen |
-| `R` | Nachladen |
+| `R` | Nachladen; beim Platzieren Barrikade drehen |
 | `G` | Granate zum Mauszeiger werfen |
-| `E` halten | Spieler in der Nähe wiederbeleben |
+| Rechtsklick | ausgewählte Verteidigung abwählen |
 
 In der Bauphase wird eine Barrikade oder ein Turm im Seitenmenü ausgewählt und
-danach auf dem Spielfeld platziert.
+danach auf dem Spielfeld platziert. Spieler können sich dabei weiterhin
+bewegen. Zum Wiederbeleben genügt es, kurz neben einem gefallenen Mitspieler
+stehen zu bleiben.
 
 ## Projektstruktur
 

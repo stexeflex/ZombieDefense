@@ -77,7 +77,6 @@ export interface PlayerInput {
   right: boolean;
   shoot: boolean;
   reload: boolean;
-  interact: boolean;
   aimX: number;
   aimY: number;
 }
@@ -109,10 +108,20 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
 };
 
 export const ARENA = {
+  width: 2400,
+  height: 1600,
+  padding: 52,
+} as const;
+
+export const VIEWPORT = {
   width: 1280,
   height: 720,
-  padding: 42,
 } as const;
+
+export const PLAYER_BASE_SPEED = 205;
+export const PLAYER_RADIUS = 18;
+export const REVIVE_RADIUS = 74;
+export const REVIVE_SECONDS = 1.6;
 
 export const WEAPONS = {
   pistol: {

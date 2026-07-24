@@ -1,10 +1,13 @@
 :host {
   display: block;
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .mission-shell {
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
   display: grid;
   grid-template-rows: 70px 1fr;
   background:
@@ -664,6 +667,22 @@ kbd {
   font-size: 0.62rem;
 }
 
+.placement-help {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  padding: 9px 10px;
+  border: 1px solid rgba(105, 240, 174, 0.2);
+  background: rgba(105, 240, 174, 0.045);
+  color: var(--muted);
+  font-size: 0.58rem;
+}
+
+.placement-help kbd {
+  color: var(--acid);
+  font-weight: 900;
+}
+
 .defense-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -867,6 +886,17 @@ kbd {
 }
 
 @media (max-width: 1000px) {
+  :host {
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+
+  .mission-shell {
+    height: auto;
+    min-height: 100dvh;
+  }
+
   .lobby-stage {
     grid-template-columns: 1fr;
     gap: 48px;
@@ -882,8 +912,8 @@ kbd {
 
   .game-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(480px, 1fr) auto;
-    overflow: auto;
+    grid-template-rows: minmax(440px, min(62dvh, 720px)) auto;
+    overflow: visible;
   }
 
   .side-panel {
@@ -923,7 +953,7 @@ kbd {
   }
 
   .game-layout {
-    grid-template-rows: 520px auto;
+    grid-template-rows: clamp(360px, 58dvh, 520px) auto;
   }
 
   .side-panel {
@@ -946,5 +976,36 @@ kbd {
   .grenade-block {
     min-width: 0;
     flex: 1;
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1400px) {
+  .controls-hint {
+    top: 18px;
+    right: 18px;
+    bottom: auto;
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+
+@media (min-width: 1001px) and (max-height: 720px) {
+  .mission-shell {
+    grid-template-rows: 58px 1fr;
+  }
+
+  .mission-topbar {
+    padding-inline: 18px;
+  }
+
+  .player-hud {
+    left: 10px;
+    bottom: 10px;
+  }
+
+  .health-block,
+  .ammo-block,
+  .grenade-block {
+    padding-block: 8px;
   }
 }

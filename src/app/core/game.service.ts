@@ -7,6 +7,7 @@ import type {
   PlayerInput,
   WeaponType,
 } from '../../../shared/game-types';
+import { PLAYER_BASE_SPEED } from '../../../shared/game-types';
 import { ProgressService } from './progress.service';
 
 type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error';
@@ -23,6 +24,7 @@ export class GameService {
   readonly sessionId = signal('');
   readonly lastReward = signal<{ gold: number; victory: boolean } | null>(null);
   readonly selectedBuild = signal<DefenseType | null>(null);
+  readonly placementRotation = signal(0);
   readonly explosion$ = new Subject<{ x: number; y: number; radius: number }>();
   readonly snapshot$ = new Subject<GameSnapshot>();
 
@@ -74,6 +76,8 @@ export class GameService {
     }
     this.snapshot.set(null);
     this.sessionId.set('');
+    this.selectedBuild.set(null);
+    this.placementRotation.set(0);
     this.connection.set('idle');
   }
 
@@ -103,11 +107,26 @@ export class GameService {
   }
 
   selectBuild(type: DefenseType | null) {
+    if (type !== this.selectedBuild()) this.placementRotation.set(0);
     this.selectedBuild.set(type);
   }
 
+  rotateBuild() {
+    if (this.selectedBuild() !== 'barricade') return;
+    this.placementRotation.update((rotation) => (rotation + Math.PI / 2) % Math.PI);
+  }
+
   placeDefense(type: DefenseType, x: number, y: number) {
-    this.room?.send('place', { type, x, y });
+    this.room?.send('place', {
+      type,
+      x,
+      y,
+      rotation: type === 'barricade' ? this.placementRotation() : 0,
+    });
+  }
+
+  localMoveSpeed() {
+    return PLAYER_BASE_SPEED * (1 + this.progress.upgrades().moveSpeed * 0.02);
   }
 
   sellNearest() {
