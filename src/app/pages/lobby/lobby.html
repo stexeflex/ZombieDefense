@@ -272,7 +272,11 @@
                   <span><b>+{{ game.lastReward()?.gold ?? 0 }}</b> permanentes Gold</span>
                 </div>
                 @if (game.lastReward()?.victory) {
-                  <p class="unlock-note">Die nächste Karte ist jetzt freigeschaltet.</p>
+                  @if (nextMapName()) {
+                    <p class="unlock-note">{{ nextMapName() }} ist jetzt freigeschaltet.</p>
+                  } @else {
+                    <p class="unlock-note">Alle Karten sind geschafft. Respekt.</p>
+                  }
                 }
                 <div class="gameover-actions">
                   @if (game.isHost()) {

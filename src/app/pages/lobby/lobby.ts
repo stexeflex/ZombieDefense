@@ -129,6 +129,11 @@ export class Lobby implements OnInit, OnDestroy {
     return this.progress.isCleared(mapId);
   }
 
+  nextMapName() {
+    const index = MAPS.findIndex((map) => map.id === this.activeMap().id);
+    return index >= 0 && index + 1 < MAPS.length ? MAPS[index + 1].name : '';
+  }
+
   ammoCost() {
     const weapon = this.game.player()?.weapon ?? 'pistol';
     return Math.round(WEAPONS[weapon].ammoCost * this.activeMap().moneyScale);
