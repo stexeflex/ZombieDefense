@@ -225,7 +225,7 @@ export class AudioService {
     const now = performance.now();
     if (now - this.budgetStamp > 100) {
       this.budgetStamp = now;
-      this.budget = 14;
+      this.budget = 8;
     }
     if (this.budget <= 0) return false;
     this.budget -= 1;

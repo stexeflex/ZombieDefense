@@ -994,7 +994,7 @@ class ArenaScene extends Phaser.Scene {
       onComplete: () => flash.destroy(),
     });
     if (weapon && WEAPONS[weapon]) this.audio.play(this.audio.weaponSound(weapon), 0.55);
-    else this.audio.play('shot', 0.4);
+    else this.audio.play('shot', 0.28);
   }
 
   private shockwave(x: number, y: number, radius: number, color: number) {
