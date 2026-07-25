@@ -683,20 +683,73 @@ kbd {
   font-weight: 900;
 }
 
+.focus-panel {
+  margin: 10px 0;
+  border: 1px solid rgba(105, 240, 174, 0.35);
+  background: rgba(105, 240, 174, 0.05);
+  padding: 9px 10px 10px;
+}
+
+.focus-panel header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.focus-panel header strong {
+  font-size: 0.68rem;
+  color: var(--acid);
+}
+
+.focus-panel header span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+}
+
+.focus-hint {
+  margin: 10px 0;
+  padding: 9px 10px;
+  border: 1px dashed var(--line-bright);
+  color: var(--muted-2);
+  font-size: 0.58rem;
+  line-height: 1.5;
+}
+
 .defense-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 7px;
-  margin: 10px 0;
 }
 
 .defense-actions button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
   border: 1px solid var(--line-bright);
   background: transparent;
   color: var(--muted);
-  padding: 9px;
-  font-size: 0.62rem;
+  padding: 8px;
+  font-size: 0.6rem;
   font-weight: 800;
+}
+
+.defense-actions button:disabled {
+  opacity: 0.45;
+}
+
+.defense-actions kbd {
+  color: var(--acid);
+  font-weight: 900;
+}
+
+.defense-actions b {
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 0.62rem;
 }
 
 .ready-button {

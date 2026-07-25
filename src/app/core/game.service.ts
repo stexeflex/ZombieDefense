@@ -3,8 +3,11 @@ import { Client, type Room } from '@colyseus/sdk';
 import { Subject } from 'rxjs';
 import {
   DEFAULT_MAP_ID,
+  DEFENSES,
   PLAYER_BASE_SPEED,
   findMap,
+  repairCost,
+  sellRefund,
   type DefenseType,
   type FxEvent,
   type GamePhase,
@@ -34,6 +37,7 @@ export class GameService {
   readonly selectedBuild = signal<DefenseType | null>(null);
   readonly placementRotation = signal(0);
   readonly preferredMap = signal(this.storedMap());
+  readonly focusedDefenseId = signal('');
   readonly fx$ = new Subject<FxEvent[]>();
   readonly snapshot$ = new Subject<GameSnapshot>();
 
@@ -43,6 +47,21 @@ export class GameService {
   });
   readonly isHost = computed(() => this.snapshot()?.hostSessionId === this.sessionId());
   readonly activeMap = computed(() => findMap(this.snapshot()?.mapId ?? this.preferredMap()));
+
+  /** The structure the player stands next to, with its repair and sell price. */
+  readonly focusedDefense = computed(() => {
+    const snapshot = this.snapshot();
+    const defense = snapshot?.defenses[this.focusedDefenseId()];
+    if (!snapshot || !defense || snapshot.phase !== 'build') return null;
+    return {
+      id: defense.id,
+      label: DEFENSES[defense.type].label,
+      health: Math.round(defense.health),
+      maxHealth: defense.maxHealth,
+      repairCost: repairCost(defense),
+      sellRefund: sellRefund(defense.type),
+    };
+  });
 
   async connect(lobbyCode: string, name: string, create: boolean) {
     if (this.connection() === 'connecting') return;
@@ -88,6 +107,7 @@ export class GameService {
     this.sessionId.set('');
     this.selectedBuild.set(null);
     this.placementRotation.set(0);
+    this.focusedDefenseId.set('');
     this.connection.set('idle');
     this.lastPhase = null;
     this.lastWave = 0;
@@ -159,14 +179,23 @@ export class GameService {
     return PLAYER_BASE_SPEED * (1 + this.progress.upgrades().moveSpeed * 0.02);
   }
 
-  sellNearest() {
-    this.audio.play('ui');
-    this.room?.send('sell');
+  /** Called by the scene so panel and highlight always mean the same structure. */
+  setFocusedDefense(id: string) {
+    if (this.focusedDefenseId() !== id) this.focusedDefenseId.set(id);
   }
 
-  repairNearest() {
+  sellFocused() {
+    const target = this.focusedDefense();
+    if (!target) return;
+    this.audio.play('ui');
+    this.room?.send('sell', { id: target.id });
+  }
+
+  repairFocused() {
+    const target = this.focusedDefense();
+    if (!target || target.repairCost === 0) return;
     this.audio.play('build');
-    this.room?.send('repair');
+    this.room?.send('repair', { id: target.id });
   }
 
   throwGrenade(x: number, y: number) {

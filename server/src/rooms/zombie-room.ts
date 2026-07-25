@@ -5,15 +5,21 @@ import {
   BUILD_SECONDS,
   DEFAULT_MAP_ID,
   DEFENSES,
+  DEFENSE_REACH,
   EMPTY_UPGRADES,
+  PLACE_RANGE,
   PLAYER_BASE_SPEED,
   PLAYER_RADIUS,
+  REPAIR_COST_PER_HP,
   REVIVE_RADIUS,
   REVIVE_SECONDS,
   START_MONEY,
   WEAPONS,
   ZOMBIES,
+  canPlaceDefense,
+  distanceToDefense,
   findMap,
+  sellRefund,
   weaponLife,
   type DefenseType,
   type FxEvent,
@@ -146,8 +152,12 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       (client, payload: { type?: DefenseType; x?: number; y?: number; rotation?: number }) =>
         this.placeDefense(client.sessionId, payload),
     );
-    this.onMessage('sell', (client) => this.sellNearest(client.sessionId));
-    this.onMessage('repair', (client) => this.repairNearest(client.sessionId));
+    this.onMessage('sell', (client, payload?: { id?: string }) =>
+      this.sellDefense(client.sessionId, payload?.id),
+    );
+    this.onMessage('repair', (client, payload?: { id?: string }) =>
+      this.repairDefense(client.sessionId, payload?.id),
+    );
     this.onMessage('grenade', (client, target: { x?: number; y?: number }) =>
       this.throwGrenade(client.sessionId, target),
     );
@@ -1140,12 +1150,21 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const config = DEFENSES[type];
     const x = this.clamp(Number(payload.x) || player.x, 70, ARENA.width - 70);
     const y = this.clamp(Number(payload.y) || player.y, 70, ARENA.height - 70);
-    const overlaps = [...this.state.defenses.values()].some(
-      (defense) => Math.hypot(defense.x - x, defense.y - y) < 62,
-    );
-    if (player.money < config.cost || overlaps) return;
-    if (Math.hypot(player.x - x, player.y - y) > 380) return;
-    if (!this.canStand(x, y, Math.max(config.width, config.height) / 2 - 6)) return;
+    const rotation =
+      config.kind === 'barricade'
+        ? (Math.round((Number(payload.rotation) || 0) / (Math.PI / 2)) * (Math.PI / 2)) % Math.PI
+        : 0;
+    if (player.money < config.cost) return;
+    if (Math.hypot(player.x - x, player.y - y) > PLACE_RANGE) return;
+    if (
+      !canPlaceDefense(
+        { type, x, y, rotation },
+        this.state.defenses.values(),
+        this.map.obstacles,
+      )
+    ) {
+      return;
+    }
 
     const defense = new DefenseState();
     defense.id = this.nextId('d');
@@ -1153,10 +1172,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     defense.type = type;
     defense.x = x;
     defense.y = y;
-    defense.rotation =
-      config.kind === 'barricade'
-        ? (Math.round((Number(payload.rotation) || 0) / (Math.PI / 2)) * (Math.PI / 2)) % Math.PI
-        : 0;
+    defense.rotation = rotation;
     const bonus = config.kind === 'barricade' ? 1 + runtime.upgrades.barricadeHealth * 0.02 : 1;
     defense.maxHealth = Math.round(config.health * bonus);
     defense.health = defense.maxHealth;
@@ -1165,33 +1181,52 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.pushFx({ k: 'structure', x, y, s: type });
   }
 
-  private sellNearest(sessionId: string) {
+  /**
+   * The structure a player can work on: the one the client highlights, or the
+   * closest one in reach when no id was sent.
+   */
+  private focusedDefense(sessionId: string, id?: string) {
     const player = this.state.players.get(sessionId);
-    if (!player || this.state.phase !== 'build') return;
-    const nearest = [...this.state.defenses.values()]
-      .filter((defense) => defense.ownerId === sessionId)
-      .sort(
-        (a, b) =>
-          Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y),
-      )[0];
-    if (!nearest || Math.hypot(nearest.x - player.x, nearest.y - player.y) > 110) return;
-    player.money += Math.round(DEFENSES[nearest.type].cost * 0.7);
-    this.state.defenses.delete(nearest.id);
+    if (!player || this.state.phase !== 'build') return undefined;
+    if (id) {
+      const picked = this.state.defenses.get(id);
+      if (!picked) return undefined;
+      // The client highlights from its predicted position, so allow a little
+      // more than the display reach instead of dropping borderline clicks.
+      return distanceToDefense(player.x, player.y, picked) <= DEFENSE_REACH + 40
+        ? picked
+        : undefined;
+    }
+    let best: DefenseState | undefined;
+    let bestDistance = DEFENSE_REACH;
+    this.state.defenses.forEach((defense) => {
+      const distance = distanceToDefense(player.x, player.y, defense);
+      if (distance > bestDistance) return;
+      bestDistance = distance;
+      best = defense;
+    });
+    return best;
   }
 
-  private repairNearest(sessionId: string) {
+  private sellDefense(sessionId: string, id?: string) {
     const player = this.state.players.get(sessionId);
-    if (!player || this.state.phase !== 'build') return;
-    const nearest = [...this.state.defenses.values()].sort(
-      (a, b) =>
-        Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y),
-    )[0];
-    if (!nearest || Math.hypot(nearest.x - player.x, nearest.y - player.y) > 115) return;
-    const missing = nearest.maxHealth - nearest.health;
-    const repair = Math.min(missing, Math.floor(player.money / 0.35));
+    const target = this.focusedDefense(sessionId, id);
+    if (!player || !target) return;
+    player.money += sellRefund(target.type);
+    this.state.defenses.delete(target.id);
+    this.pushFx({ k: 'wreck', x: target.x, y: target.y, s: target.type });
+  }
+
+  private repairDefense(sessionId: string, id?: string) {
+    const player = this.state.players.get(sessionId);
+    const target = this.focusedDefense(sessionId, id);
+    if (!player || !target) return;
+    const missing = target.maxHealth - target.health;
+    const repair = Math.min(missing, Math.floor(player.money / REPAIR_COST_PER_HP));
     if (repair <= 0) return;
-    player.money -= Math.ceil(repair * 0.35);
-    nearest.health += repair;
+    player.money -= Math.ceil(repair * REPAIR_COST_PER_HP);
+    target.health += repair;
+    this.pushFx({ k: 'structure', x: target.x, y: target.y, s: target.type });
   }
 
   private throwGrenade(sessionId: string, target: { x?: number; y?: number }) {

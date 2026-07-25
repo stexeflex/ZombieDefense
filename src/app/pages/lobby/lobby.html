@@ -240,7 +240,8 @@
             <span><kbd>Maus</kbd> Zielen &amp; schießen</span>
             @if (snapshot.phase === 'build') {
               <span><kbd>R</kbd> Barrikade drehen</span>
-              <span><kbd>Rechtsklick</kbd> Auswahl abbrechen</span>
+              <span><kbd>F</kbd> Reparieren</span>
+              <span><kbd>V</kbd> Verkaufen</span>
             } @else {
               <span><kbd>R</kbd> Nachladen</span>
               <span><kbd>G</kbd> Granate</span>
@@ -409,10 +410,33 @@
                 </div>
               }
 
-              <div class="defense-actions">
-                <button type="button" (click)="game.repairNearest()">Reparieren</button>
-                <button type="button" (click)="game.sellNearest()">Verkaufen</button>
-              </div>
+              @if (game.focusedDefense(); as focus) {
+                <div class="focus-panel">
+                  <header>
+                    <strong>{{ focus.label }}</strong>
+                    <span>{{ focus.health }} / {{ focus.maxHealth }} HP</span>
+                  </header>
+                  <div class="defense-actions">
+                    <button
+                      type="button"
+                      [disabled]="focus.repairCost === 0"
+                      (click)="game.repairFocused()"
+                    >
+                      <span><kbd>F</kbd> Reparieren</span>
+                      <b>{{ focus.repairCost === 0 ? 'ganz' : '$ ' + focus.repairCost }}</b>
+                    </button>
+                    <button type="button" (click)="game.sellFocused()">
+                      <span><kbd>V</kbd> Verkaufen</span>
+                      <b>+$ {{ focus.sellRefund }}</b>
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <p class="focus-hint">
+                  Stell dich neben eine Barrikade oder einen Turm, um sie zu reparieren
+                  oder zu verkaufen.
+                </p>
+              }
 
               <button
                 class="ready-button"

@@ -2,14 +2,25 @@ import {
   ARENA,
   BARRICADE_ORDER,
   DEFENSES,
+  DEFENSE_REACH,
   MAPS,
+  REPAIR_COST_PER_HP,
   REVIVE_RADIUS,
   REVIVE_SECONDS,
+  SELL_REFUND,
   TURRET_ORDER,
   VIEWPORT,
   WEAPONS,
   WEAPON_ORDER,
   ZOMBIES,
+  canPlaceDefense,
+  defenseFootprint,
+  distanceToDefense,
+  repairCost,
+  sellRefund,
+  snapDefense,
+  type MapObstacle,
+  type PlacedDefense,
   type WeaponType,
 } from '../../../shared/game-types';
 
@@ -19,8 +30,8 @@ function dps(weapon: WeaponType) {
 }
 
 describe('map campaign', () => {
-  it('offers four maps that get harder and pay out more', () => {
-    expect(MAPS).toHaveLength(4);
+  it('offers seven maps that get harder and pay out more', () => {
+    expect(MAPS).toHaveLength(7);
     for (let index = 1; index < MAPS.length; index += 1) {
       expect(MAPS[index].difficulty).toBeGreaterThan(MAPS[index - 1].difficulty);
       expect(MAPS[index].reward).toBeGreaterThan(MAPS[index - 1].reward);
@@ -126,6 +137,70 @@ describe('defenses', () => {
       expect(DEFENSES[type].range).toBeGreaterThan(0);
       expect(DEFENSES[type].fireDelay).toBeGreaterThan(0);
       expect(DEFENSES[type].damage).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('building rules', () => {
+  const wood = DEFENSES.wood;
+  const barricade = (x: number, y: number, rotation = 0): PlacedDefense => ({
+    type: 'wood',
+    x,
+    y,
+    rotation,
+  });
+
+  it('turns the footprint with the barricade', () => {
+    expect(defenseFootprint('wood', 0)).toEqual({ w: wood.width, h: wood.height });
+    expect(defenseFootprint('wood', Math.PI / 2)).toEqual({ w: wood.height, h: wood.width });
+  });
+
+  it('lets two barricades stand flush but not overlap', () => {
+    const placed = barricade(1000, 800);
+    expect(canPlaceDefense(barricade(1000 + wood.width, 800), [placed], [])).toBe(true);
+    expect(canPlaceDefense(barricade(1000, 800 + wood.height), [placed], [])).toBe(true);
+    expect(canPlaceDefense(barricade(1000 + wood.width - 6, 800), [placed], [])).toBe(false);
+  });
+
+  it('snaps a loose preview flush against its neighbour', () => {
+    const placed = barricade(1000, 800);
+    const loose = barricade(1000 + wood.width + 9, 800);
+    expect(snapDefense(loose, [placed], []).x).toBe(1000 + wood.width);
+    const faraway = barricade(1000 + wood.width + 120, 800);
+    expect(snapDefense(faraway, [placed], []).x).toBe(faraway.x);
+  });
+
+  it('keeps structures off map obstacles', () => {
+    const rock: MapObstacle = {
+      x: 1000,
+      y: 800,
+      w: 80,
+      h: 80,
+      kind: 'rock',
+      rotation: 0,
+      solid: true,
+    };
+    expect(canPlaceDefense(barricade(1000, 800), [], [rock])).toBe(false);
+    expect(canPlaceDefense(barricade(1000 + 40 + wood.width / 2, 800), [], [rock])).toBe(true);
+  });
+
+  it('measures reach from the edge of a structure', () => {
+    const placed = barricade(1000, 800);
+    expect(distanceToDefense(1000, 800, placed)).toBe(0);
+    expect(distanceToDefense(1000 + wood.width / 2 + 30, 800, placed)).toBeCloseTo(30);
+    expect(distanceToDefense(1000 + wood.width / 2 + DEFENSE_REACH + 1, 800, placed)).toBeGreaterThan(
+      DEFENSE_REACH,
+    );
+  });
+
+  it('prices repair by missing health and sell by build price', () => {
+    expect(repairCost({ health: wood.health, maxHealth: wood.health })).toBe(0);
+    expect(repairCost({ health: wood.health - 200, maxHealth: wood.health })).toBe(
+      Math.ceil(200 * REPAIR_COST_PER_HP),
+    );
+    expect(sellRefund('wood')).toBe(Math.round(wood.cost * SELL_REFUND));
+    for (const type of [...BARRICADE_ORDER, ...TURRET_ORDER]) {
+      expect(sellRefund(type)).toBeLessThan(DEFENSES[type].cost);
     }
   });
 });

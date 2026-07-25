@@ -11,16 +11,25 @@ import { Subscription } from 'rxjs';
 import {
   ARENA,
   DEFENSES,
+  DEFENSE_REACH,
+  PLACE_RANGE,
   PLAYER_RADIUS,
   VIEWPORT,
   WEAPONS,
   ZOMBIES,
+  canPlaceDefense,
+  defenseFootprint,
+  distanceToDefense,
   findMap,
+  repairCost,
+  sellRefund,
+  snapDefense,
   type DefenseSnapshot,
   type DefenseType,
   type FxEvent,
   type GameMap,
   type GameSnapshot,
+  type PlacedDefense,
   type PlayerInput,
   type PlayerSnapshot,
   type ProjectileSnapshot,
@@ -139,6 +148,10 @@ class ArenaScene extends Phaser.Scene {
   private crosshair!: Phaser.GameObjects.Container;
   private ghost!: Phaser.GameObjects.Image;
   private ghostRange!: Phaser.GameObjects.Arc;
+  private placement?: PlacedDefense;
+  private focusOutline!: Phaser.GameObjects.Graphics;
+  private focusLabel!: Phaser.GameObjects.Text;
+  private focusPulse = 0;
   private lightning!: Phaser.GameObjects.Graphics;
   private world?: Phaser.GameObjects.Container;
   private worldMapId = '';
@@ -159,7 +172,7 @@ class ArenaScene extends Phaser.Scene {
     this.cameras.main.centerOn(ARENA.width / 2, ARENA.height / 2);
     this.cameras.main.setDeadzone(220, 140);
 
-    this.keys = this.input.keyboard!.addKeys('W,S,A,D,UP,DOWN,LEFT,RIGHT,R,G') as Record<
+    this.keys = this.input.keyboard!.addKeys('W,S,A,D,UP,DOWN,LEFT,RIGHT,R,G,F,V') as Record<
       string,
       Phaser.Input.Keyboard.Key
     >;
@@ -178,6 +191,7 @@ class ArenaScene extends Phaser.Scene {
       .setAlpha(0.62)
       .setVisible(false)
       .setDepth(30);
+    this.createFocusHighlight();
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       this.audio.unlock();
@@ -189,7 +203,12 @@ class ArenaScene extends Phaser.Scene {
       if (pointer.leftButtonDown()) {
         const selected = this.gameService.selectedBuild();
         if (this.snapshot?.phase === 'build' && selected) {
-          this.gameService.placeDefense(selected, pointer.worldX, pointer.worldY);
+          const spot = this.placement;
+          this.gameService.placeDefense(
+            selected,
+            spot ? spot.x : pointer.worldX,
+            spot ? spot.y : pointer.worldY,
+          );
         } else {
           this.shooting = true;
         }
@@ -232,12 +251,18 @@ class ArenaScene extends Phaser.Scene {
       this.audio.play('reload', 0.7);
     }
 
+    if (this.snapshot?.phase === 'build') {
+      if (Phaser.Input.Keyboard.JustDown(this.keys['F'])) this.gameService.repairFocused();
+      if (Phaser.Input.Keyboard.JustDown(this.keys['V'])) this.gameService.sellFocused();
+    }
+
     const input = this.buildInput();
     this.movePlayerViews(deltaMs, input);
     this.animateZombies(deltaMs);
     this.moveViews(this.defenses, 30, deltaMs);
     this.moveProjectiles(deltaMs);
     this.updatePointer();
+    this.updateFocusHighlight(deltaMs);
     this.updateBolts(deltaMs);
 
     this.sendTimer += deltaMs;
@@ -410,22 +435,113 @@ class ArenaScene extends Phaser.Scene {
     const selected = this.gameService.selectedBuild();
     const showGhost = this.snapshot?.phase === 'build' && Boolean(selected);
     if (!showGhost || !selected) {
+      this.placement = undefined;
       this.ghost.setVisible(false);
       this.ghostRange.setVisible(false);
       return;
     }
     const config = DEFENSES[selected];
     const turret = config.kind === 'turret';
+    const others = Object.values(this.snapshot?.defenses ?? {});
+    const spot = snapDefense(
+      {
+        type: selected,
+        x: Math.round(pointer.worldX),
+        y: Math.round(pointer.worldY),
+        rotation: turret ? 0 : this.gameService.placementRotation(),
+      },
+      others,
+      this.map.obstacles,
+    );
+    this.placement = spot;
+
+    const me = this.players.get(this.gameService.sessionId());
+    const inRange = me
+      ? Math.hypot(me.root.x - spot.x, me.root.y - spot.y) <= PLACE_RANGE
+      : true;
+    const affordable = (this.snapshot?.players[this.gameService.sessionId()]?.money ?? 0) >= config.cost;
+    const valid = inRange && affordable && canPlaceDefense(spot, others, this.map.obstacles);
+
     this.ghost
       .setVisible(true)
       .setTexture(turret ? `turret-base-${selected}` : `defense-${selected}`)
-      .setPosition(pointer.worldX, pointer.worldY)
+      .setPosition(spot.x, spot.y)
       .setDisplaySize(config.width, config.height)
-      .setRotation(turret ? 0 : this.gameService.placementRotation());
+      .setRotation(spot.rotation)
+      .setAlpha(valid ? 0.62 : 0.4);
+    if (valid) this.ghost.clearTint();
+    else this.ghost.setTint(0xff5f71);
     this.ghostRange
       .setVisible(turret)
-      .setPosition(pointer.worldX, pointer.worldY)
+      .setPosition(spot.x, spot.y)
       .setRadius(config.range ?? 100);
+  }
+
+  // ------------------------------------------------------------ build focus
+
+  private createFocusHighlight() {
+    this.focusOutline = this.add.graphics().setDepth(31).setVisible(false);
+    this.focusLabel = this.add
+      .text(0, 0, '', {
+        align: 'center',
+        color: '#e8f4ed',
+        fontFamily: 'Inter, Arial, sans-serif',
+        fontStyle: 'bold',
+        fontSize: '12px',
+        stroke: '#04100b',
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(32)
+      .setVisible(false);
+  }
+
+  /**
+   * Marks the structure the player can work on and shows what repairing or
+   * selling it costs, so both the panel and the field mean the same piece.
+   */
+  private updateFocusHighlight(deltaMs: number) {
+    const snapshot = this.snapshot;
+    const me = this.players.get(this.gameService.sessionId());
+    let target: DefenseSnapshot | undefined;
+    if (snapshot?.phase === 'build' && me) {
+      let bestDistance = DEFENSE_REACH;
+      for (const defense of Object.values(snapshot.defenses)) {
+        const distance = distanceToDefense(me.root.x, me.root.y, defense);
+        if (distance > bestDistance) continue;
+        bestDistance = distance;
+        target = defense;
+      }
+    }
+    this.gameService.setFocusedDefense(target?.id ?? '');
+
+    if (!target) {
+      this.focusOutline.setVisible(false);
+      this.focusLabel.setVisible(false);
+      return;
+    }
+
+    this.focusPulse += deltaMs / 1000;
+    const size = defenseFootprint(target.type, target.rotation);
+    const width = size.w + 14;
+    const height = size.h + 14;
+    const alpha = 0.55 + Math.sin(this.focusPulse * 5) * 0.2;
+    this.focusOutline
+      .setVisible(true)
+      .clear()
+      .lineStyle(2, 0x69f0ae, alpha)
+      .strokeRect(target.x - width / 2, target.y - height / 2, width, height);
+
+    const repair = repairCost(target);
+    this.focusLabel
+      .setVisible(true)
+      // clears the structure's own health bar, which sits just above it
+      .setPosition(target.x, target.y - height / 2 - 16)
+      .setText(
+        `${DEFENSES[target.type].label}  ${Math.round(target.health)} / ${target.maxHealth}\n` +
+          `[F] ${repair > 0 ? `Reparieren $${repair}` : 'ganz repariert'}   ` +
+          `[V] Verkaufen +$${sellRefund(target.type)}`,
+      );
   }
 
   private buildInput(): PlayerInput {

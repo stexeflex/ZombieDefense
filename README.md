@@ -1,7 +1,7 @@
 # Zombie Defense
 
 Kooperatives 2D-Top-down-Spiel für 1–4 Freunde. Ein Spieler erstellt eine
-Lobby, teilt den Link und kämpft sich durch vier Karten mit festen Wellen,
+Lobby, teilt den Link und kämpft sich durch sieben Karten mit festen Wellen,
 Mini-Bossen und einem Endboss pro Karte.
 
 Der aktuelle Stand ist ein spielbarer Online-Prototyp. Er braucht keine
@@ -16,13 +16,16 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 - Link-Lobbys mit fünfstelligem Code, 1–4 Spieler über Colyseus/WebSockets
 - autoritative Bewegung, Zombie-KI, Treffer und Wellen auf dem Server
-- vier Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
+- sieben Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
 - jede Karte endet mit einem Endboss und schaltet die nächste Karte frei
 - feste Mini-Boss-Wellen mit dem „Zerstörer“ (Sturmangriff und Schockwelle)
 - sechs Zombiearten: Läufer, Renner, Koloss, Sprengling, Zerstörer, Fleischkönig
 - zehn Waffen von der Pistole bis zur Laserkanone
 - vier Barrikaden (Holz, Stachel, Stein, Stahl) und drei Türme (MG,
   Scharfschütze, Rakete)
+- Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein
+- die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
+  Verkaufspreis
 - Munition, Erste Hilfe, Reparieren und Verkaufen im Bau-Shop
 - automatische Wiederbelebung gefallener Spieler durch kurzes Danebenstehen
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte
@@ -37,6 +40,9 @@ Aufruf kann das Laden deshalb kurz dauern.
 | Industriehafen | 12 | ×1,45 | 320 |
 | Militärbasis Nord | 14 | ×2 | 600 |
 | Krater-Quarantäne | 16 | ×2,8 | 1000 |
+| Metro Sektor 9 | 17 | ×3,6 | 1500 |
+| Stahlwerk Kessel 3 | 18 | ×4,4 | 2100 |
+| Zitadelle Alpha | 20 | ×5,2 | 3000 |
 
 ### Waffen
 
@@ -102,13 +108,20 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | Linke Maustaste | Schießen |
 | `R` | Nachladen; beim Platzieren Barrikade drehen |
 | `G` | Granate zum Mauszeiger werfen |
+| `F` | markierte Verteidigung reparieren (nur Bauphase) |
+| `V` | markierte Verteidigung verkaufen (nur Bauphase) |
 | Rechtsklick | ausgewählte Verteidigung abwählen |
 
 In der Bauphase wird im Seitenmenü zwischen Waffen, Barrikaden und Türmen
 gewechselt, ein Bauteil ausgewählt und danach auf dem Spielfeld platziert.
-Spieler können sich dabei weiterhin bewegen. Zum Wiederbeleben genügt es, kurz
-neben einem gefallenen Mitspieler stehen zu bleiben. Sound und Musik lassen
-sich oben rechts abschalten.
+Spieler können sich dabei weiterhin bewegen. Die Vorschau rastet an
+Nachbarbauten und Hindernissen ein, sodass Wände lückenlos entstehen; rot
+bedeutet, dass dort nicht gebaut werden kann.
+
+Wer neben einer eigenen oder fremden Verteidigung steht, sieht sie umrandet,
+dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Zum
+Wiederbeleben genügt es, kurz neben einem gefallenen Mitspieler stehen zu
+bleiben. Sound und Musik lassen sich oben rechts abschalten.
 
 ## Projektstruktur
 

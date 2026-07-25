@@ -14,7 +14,9 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const load = (path) => import(pathToFileURL(resolve(root, path)).href);
 
 const { ZombieRoom } = await load('server/build/server/src/rooms/zombie-room.js');
-const { DEFENSES, MAPS, WEAPONS, WEAPON_ORDER } = await load('server/build/shared/game-types.js');
+const { DEFENSES, MAPS, REPAIR_COST_PER_HP, WEAPONS, WEAPON_ORDER, sellRefund } = await load(
+  'server/build/shared/game-types.js',
+);
 
 const failures = [];
 
@@ -172,6 +174,54 @@ console.log('\n== Verteidigungen ==');
   }
   step(room, 400, 'p1');
   check('Zombies werden bekämpft', room.state.zombies.size < 25, `(${room.state.zombies.size})`);
+}
+
+console.log('\n== Bauen, Reparieren, Verkaufen ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.startRun();
+  room.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 1150;
+
+  const wood = DEFENSES.wood;
+  room.placeDefense('p1', { type: 'wood', x: 1200, y: 1050, rotation: 0 });
+  room.placeDefense('p1', { type: 'wood', x: 1200 + wood.width, y: 1050, rotation: 0 });
+  check('Barrikaden stehen lückenlos nebeneinander', room.state.defenses.size === 2);
+
+  room.placeDefense('p1', { type: 'wood', x: 1200 + wood.width - 8, y: 1050, rotation: 0 });
+  check('Überlappende Barrikade wird abgelehnt', room.state.defenses.size === 2);
+
+  const [first] = [...room.state.defenses.values()];
+  first.health = first.maxHealth - 200;
+  player.money = 500;
+  room.repairDefense('p1', first.id);
+  check(
+    'Reparieren füllt auf und kostet den angezeigten Preis',
+    first.health === first.maxHealth && player.money === 500 - Math.ceil(200 * REPAIR_COST_PER_HP),
+    `(${first.health}/${first.maxHealth}, ${player.money} $)`,
+  );
+
+  const beforeSell = player.money;
+  room.sellDefense('p1', first.id);
+  check(
+    'Verkaufen zahlt den Erlös aus',
+    room.state.defenses.size === 1 && player.money === beforeSell + sellRefund('wood'),
+    `(${player.money} $)`,
+  );
+
+  const [remaining] = [...room.state.defenses.values()];
+  player.x = 400;
+  player.y = 400;
+  const moneyOutOfReach = player.money;
+  room.sellDefense('p1', remaining.id);
+  room.repairDefense('p1', remaining.id);
+  check(
+    'Außer Reichweite passiert nichts',
+    room.state.defenses.size === 1 && player.money === moneyOutOfReach,
+  );
 }
 
 console.log('\n== Sonderzombies ==');

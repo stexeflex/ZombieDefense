@@ -613,6 +613,135 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
 export const BARRICADE_ORDER: DefenseType[] = ['wood', 'spike', 'stone', 'steel'];
 export const TURRET_ORDER: DefenseType[] = ['mg', 'marksman', 'launcher'];
 
+/** How far from the player a new structure may be placed. */
+export const PLACE_RANGE = 380;
+/** How far a structure may be from the player to repair or sell it. */
+export const DEFENSE_REACH = 92;
+/** Money per repaired hit point. */
+export const REPAIR_COST_PER_HP = 0.35;
+/** Share of the build price paid back when selling. */
+export const SELL_REFUND = 0.7;
+/** Distance at which the placement preview snaps flush against a neighbour. */
+export const SNAP_DISTANCE = 30;
+/** A hair of slack so two structures may sit flush without counting as overlap. */
+const TOUCH_SLACK = 1;
+
+export interface PlacedDefense {
+  type: DefenseType;
+  x: number;
+  y: number;
+  rotation: number;
+}
+
+interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Axis aligned size of a structure; barricades may be turned by 90°. */
+export function defenseFootprint(type: DefenseType, rotation: number) {
+  const config = DEFENSES[type];
+  const turned = Math.abs(Math.sin(rotation)) > 0.5;
+  return {
+    w: turned ? config.height : config.width,
+    h: turned ? config.width : config.height,
+  };
+}
+
+function defenseBox(defense: PlacedDefense): Box {
+  const size = defenseFootprint(defense.type, defense.rotation);
+  return { x: defense.x, y: defense.y, w: size.w, h: size.h };
+}
+
+function boxesOverlap(a: Box, b: Box) {
+  return (
+    Math.abs(a.x - b.x) < (a.w + b.w) / 2 - TOUCH_SLACK &&
+    Math.abs(a.y - b.y) < (a.h + b.h) / 2 - TOUCH_SLACK
+  );
+}
+
+/**
+ * Structures block each other by their real rectangle, so a wall can be built
+ * without gaps instead of keeping a fixed distance to the next piece.
+ */
+export function canPlaceDefense(
+  candidate: PlacedDefense,
+  existing: Iterable<PlacedDefense>,
+  obstacles: readonly MapObstacle[],
+) {
+  const box = defenseBox(candidate);
+  if (
+    box.x - box.w / 2 < 30 ||
+    box.x + box.w / 2 > ARENA.width - 30 ||
+    box.y - box.h / 2 < 30 ||
+    box.y + box.h / 2 > ARENA.height - 30
+  ) {
+    return false;
+  }
+  for (const rect of obstacles) if (boxesOverlap(box, rect)) return false;
+  for (const other of existing) if (boxesOverlap(box, defenseBox(other))) return false;
+  return true;
+}
+
+/**
+ * Pulls the preview flush against a neighbour or a map obstacle so closed walls
+ * are easy to build. Returns the original spot when nothing is close enough.
+ */
+export function snapDefense(
+  candidate: PlacedDefense,
+  existing: Iterable<PlacedDefense>,
+  obstacles: readonly MapObstacle[],
+): PlacedDefense {
+  const size = defenseFootprint(candidate.type, candidate.rotation);
+  const others = [...existing];
+  let best = candidate;
+  let bestDistance = SNAP_DISTANCE;
+
+  const consider = (x: number, y: number) => {
+    const distance = Math.hypot(x - candidate.x, y - candidate.y);
+    if (distance >= bestDistance) return;
+    const option = { ...candidate, x: Math.round(x), y: Math.round(y) };
+    if (!canPlaceDefense(option, others, obstacles)) return;
+    best = option;
+    bestDistance = distance;
+  };
+
+  const neighbours: Box[] = [...others.map(defenseBox), ...obstacles];
+  for (const box of neighbours) {
+    if (Math.hypot(box.x - candidate.x, box.y - candidate.y) > 260) continue;
+    const gapX = (size.w + box.w) / 2;
+    const gapY = (size.h + box.h) / 2;
+    consider(box.x - gapX, candidate.y);
+    consider(box.x + gapX, candidate.y);
+    consider(candidate.x, box.y - gapY);
+    consider(candidate.x, box.y + gapY);
+    consider(box.x - gapX, box.y);
+    consider(box.x + gapX, box.y);
+    consider(box.x, box.y - gapY);
+    consider(box.x, box.y + gapY);
+  }
+  return best;
+}
+
+/** Distance from a point to the edge of a structure, 0 while standing on it. */
+export function distanceToDefense(x: number, y: number, defense: PlacedDefense) {
+  const size = defenseFootprint(defense.type, defense.rotation);
+  return Math.hypot(
+    Math.max(Math.abs(x - defense.x) - size.w / 2, 0),
+    Math.max(Math.abs(y - defense.y) - size.h / 2, 0),
+  );
+}
+
+export function repairCost(defense: { health: number; maxHealth: number }) {
+  return Math.ceil(Math.max(0, defense.maxHealth - defense.health) * REPAIR_COST_PER_HP);
+}
+
+export function sellRefund(type: DefenseType) {
+  return Math.round(DEFENSES[type].cost * SELL_REFUND);
+}
+
 export type WaveKind = 'normal' | 'mini' | 'boss';
 
 export interface WaveDefinition {
@@ -865,6 +994,61 @@ const CRATER_STRUCTURES: MapObstacle[] = [
   obstacle('pipe', 960, 420, Math.PI / 2),
 ];
 
+const SUBWAY_STRUCTURES: MapObstacle[] = [
+  obstacle('wall', 600, 520),
+  obstacle('wall', 1800, 520),
+  obstacle('wall', 600, 1080),
+  obstacle('wall', 1800, 1080),
+  obstacle('pipe', 1200, 360),
+  obstacle('pipe', 1200, 1240),
+  obstacle('container', 340, 800),
+  obstacle('container', 2060, 800),
+  obstacle('container', 900, 300, Math.PI / 2),
+  obstacle('container', 1500, 1300, Math.PI / 2),
+  obstacle('ruin', 2040, 400),
+  obstacle('ruin', 360, 1200),
+  obstacle('sandbag', 960, 800),
+  obstacle('sandbag', 1440, 800),
+  obstacle('crate', 1200, 560),
+];
+
+const FOUNDRY_STRUCTURES: MapObstacle[] = [
+  obstacle('ruin', 700, 470),
+  obstacle('ruin', 1700, 470),
+  obstacle('ruin', 700, 1130),
+  obstacle('ruin', 1700, 1130),
+  obstacle('pipe', 1200, 300),
+  obstacle('pipe', 1200, 1300),
+  obstacle('container', 400, 800),
+  obstacle('container', 2000, 800),
+  obstacle('wall', 950, 1050, Math.PI / 2),
+  obstacle('wall', 1450, 550, Math.PI / 2),
+  obstacle('barrel', 1000, 620),
+  obstacle('barrel', 1400, 980),
+  obstacle('crate', 380, 380),
+  obstacle('crate', 2020, 1220),
+  obstacle('rock', 1200, 1420),
+];
+
+const CITADEL_STRUCTURES: MapObstacle[] = [
+  obstacle('wall', 880, 500),
+  obstacle('wall', 1520, 500),
+  obstacle('wall', 880, 1100),
+  obstacle('wall', 1520, 1100),
+  obstacle('wall', 640, 800, Math.PI / 2),
+  obstacle('wall', 1760, 800, Math.PI / 2),
+  obstacle('sandbag', 1200, 580),
+  obstacle('sandbag', 1200, 1020),
+  obstacle('container', 1200, 260),
+  obstacle('container', 1200, 1340),
+  obstacle('car', 460, 420),
+  obstacle('car', 1940, 1180),
+  obstacle('ruin', 1940, 420),
+  obstacle('ruin', 460, 1180),
+  obstacle('rock', 2120, 800),
+  obstacle('rock', 280, 800),
+];
+
 export const MAPS: GameMap[] = [
   {
     id: 'outpost',
@@ -1005,6 +1189,127 @@ export const MAPS: GameMap[] = [
     ],
     obstacles: scatter(CRATER_STRUCTURES, ['rock', 'barrel', 'crate', 'ruin'], 22, 60127),
     decor: decorate(7714, ['crack', 'blood', 'bones', 'rubble', 'puddle'], 130),
+  },
+  {
+    id: 'subway',
+    name: 'Metro Sektor 9',
+    subtitle: 'Stillgelegte Tunnelkreuzung',
+    description:
+      'Bahnsteige und blockierte Gleise. Siebzehn Wellen, vier Mini-Boss-Wellen und ein Endboss im Dunkeln.',
+    difficulty: 3.6,
+    moneyScale: 2.15,
+    reward: 1500,
+    theme: {
+      ground: '#0d1418',
+      groundAlt: '#121d22',
+      grid: '#1b2b31',
+      accent: '#4ce0d5',
+      edge: '#26424a',
+      fog: '#050b0e',
+    },
+    waves: [
+      wave({ normal: 34, fast: 18, big: 3, exploder: 7 }),
+      wave({ normal: 38, fast: 24, big: 5, exploder: 9 }),
+      wave({ normal: 42, fast: 28, big: 6, exploder: 11 }),
+      miniWave({ normal: 32, fast: 20, big: 5, exploder: 9 }, 2),
+      wave({ normal: 46, fast: 32, big: 7, exploder: 12 }),
+      wave({ normal: 50, fast: 36, big: 8, exploder: 14 }),
+      wave({ normal: 54, fast: 40, big: 9, exploder: 15 }),
+      miniWave({ normal: 42, fast: 28, big: 7, exploder: 12 }, 3),
+      wave({ normal: 58, fast: 44, big: 10, exploder: 16 }),
+      wave({ normal: 62, fast: 46, big: 11, exploder: 17 }),
+      wave({ normal: 64, fast: 48, big: 12, exploder: 18 }),
+      miniWave({ normal: 48, fast: 34, big: 9, exploder: 15 }, 4),
+      wave({ normal: 66, fast: 50, big: 12, exploder: 19 }),
+      wave({ normal: 68, fast: 52, big: 13, exploder: 20 }),
+      miniWave({ normal: 52, fast: 38, big: 11, exploder: 16 }, 5),
+      wave({ normal: 70, fast: 54, big: 14, exploder: 21 }),
+      bossWave({ normal: 56, fast: 42, big: 12, exploder: 20 }),
+    ],
+    obstacles: scatter(SUBWAY_STRUCTURES, ['crate', 'barrel', 'pipe', 'rock'], 20, 41209),
+    decor: decorate(8123, ['crack', 'rubble', 'puddle', 'marking', 'bones'], 130),
+  },
+  {
+    id: 'foundry',
+    name: 'Stahlwerk Kessel 3',
+    subtitle: 'Glühende Gießhalle',
+    description:
+      'Enge Gänge zwischen Hochöfen. Achtzehn Wellen, fünf Mini-Boss-Wellen und ein Endboss, der Barrikaden zerlegt.',
+    difficulty: 4.4,
+    moneyScale: 2.5,
+    reward: 2100,
+    theme: {
+      ground: '#1d120c',
+      groundAlt: '#281710',
+      grid: '#3a2015',
+      accent: '#ff8f4a',
+      edge: '#5c2f18',
+      fog: '#0e0703',
+    },
+    waves: [
+      wave({ normal: 34, fast: 20, big: 4, exploder: 8 }),
+      wave({ normal: 38, fast: 24, big: 5, exploder: 10 }),
+      wave({ normal: 42, fast: 28, big: 6, exploder: 11 }),
+      miniWave({ normal: 32, fast: 20, big: 5, exploder: 9 }, 2),
+      wave({ normal: 46, fast: 32, big: 7, exploder: 12 }),
+      wave({ normal: 48, fast: 34, big: 8, exploder: 13 }),
+      wave({ normal: 52, fast: 38, big: 9, exploder: 14 }),
+      miniWave({ normal: 38, fast: 26, big: 7, exploder: 12 }, 3),
+      wave({ normal: 54, fast: 40, big: 10, exploder: 15 }),
+      wave({ normal: 56, fast: 42, big: 10, exploder: 16 }),
+      miniWave({ normal: 42, fast: 30, big: 8, exploder: 13 }, 3),
+      wave({ normal: 58, fast: 44, big: 11, exploder: 17 }),
+      wave({ normal: 60, fast: 46, big: 12, exploder: 18 }),
+      miniWave({ normal: 46, fast: 32, big: 10, exploder: 15 }, 4),
+      wave({ normal: 62, fast: 48, big: 12, exploder: 19 }),
+      miniWave({ normal: 50, fast: 36, big: 11, exploder: 16 }, 4),
+      wave({ normal: 64, fast: 50, big: 13, exploder: 20 }),
+      bossWave({ normal: 52, fast: 40, big: 12, exploder: 19 }),
+    ],
+    obstacles: scatter(FOUNDRY_STRUCTURES, ['barrel', 'crate', 'pipe', 'ruin'], 20, 55841),
+    decor: decorate(6608, ['crack', 'rubble', 'marking', 'blood', 'bones'], 135),
+  },
+  {
+    id: 'citadel',
+    name: 'Zitadelle Alpha',
+    subtitle: 'Letzte Bastion',
+    description:
+      'Der Endsektor. Zwanzig Wellen, sechs Mini-Boss-Wellen und ein Endboss, der alles mitbringt.',
+    difficulty: 5.2,
+    moneyScale: 2.9,
+    reward: 3000,
+    theme: {
+      ground: '#131722',
+      groundAlt: '#1a1f2d',
+      grid: '#252c3d',
+      accent: '#b58cff',
+      edge: '#3b3355',
+      fog: '#07090f',
+    },
+    waves: [
+      wave({ normal: 40, fast: 26, big: 6, exploder: 11 }),
+      wave({ normal: 44, fast: 32, big: 8, exploder: 13 }),
+      wave({ normal: 48, fast: 36, big: 9, exploder: 15 }),
+      miniWave({ normal: 38, fast: 26, big: 8, exploder: 13 }, 3),
+      wave({ normal: 52, fast: 40, big: 10, exploder: 16 }),
+      wave({ normal: 56, fast: 44, big: 11, exploder: 17 }),
+      miniWave({ normal: 42, fast: 30, big: 9, exploder: 14 }, 4),
+      wave({ normal: 60, fast: 46, big: 12, exploder: 18 }),
+      wave({ normal: 62, fast: 48, big: 13, exploder: 19 }),
+      miniWave({ normal: 46, fast: 34, big: 11, exploder: 16 }, 4),
+      wave({ normal: 64, fast: 50, big: 13, exploder: 20 }),
+      wave({ normal: 66, fast: 52, big: 14, exploder: 21 }),
+      miniWave({ normal: 50, fast: 36, big: 12, exploder: 17 }, 5),
+      wave({ normal: 68, fast: 54, big: 15, exploder: 22 }),
+      wave({ normal: 70, fast: 56, big: 15, exploder: 23 }),
+      miniWave({ normal: 54, fast: 40, big: 13, exploder: 19 }, 5),
+      wave({ normal: 72, fast: 58, big: 16, exploder: 24 }),
+      miniWave({ normal: 58, fast: 42, big: 14, exploder: 20 }, 6),
+      wave({ normal: 74, fast: 60, big: 17, exploder: 25 }),
+      bossWave({ normal: 60, fast: 46, big: 16, exploder: 24 }),
+    ],
+    obstacles: scatter(CITADEL_STRUCTURES, ['sandbag', 'crate', 'rock', 'car'], 22, 90733),
+    decor: decorate(4470, ['marking', 'crack', 'rubble', 'blood', 'bones'], 140),
   },
 ];
 
