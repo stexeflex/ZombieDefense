@@ -13,7 +13,8 @@
     "server:start": "npm --prefix server start",
     "server:build": "npm --prefix server run build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "sim": "npm run server:build && node scripts/simulate-run.mjs"
   },
   "private": true,
   "engines": {

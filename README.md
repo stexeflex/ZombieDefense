@@ -134,8 +134,13 @@ Web-Audio-API. Das Spiel lädt deshalb keine externen Assets.
 
 ```text
 npm test -- --watch=false
+npm run sim
 npm run build:all
 ```
+
+`npm run sim` startet einen Rauchtest ohne Browser: Ein Bot spielt jede Karte
+bis zum Endboss durch und prüft Waffen, Verteidigungen, Bosse und ob jede
+Welle wirklich endet.
 
 Der fertige Browser-Build liegt danach unter
 `dist/zombie-defense/browser`. Der Server-Build liegt unter `server/build`.
