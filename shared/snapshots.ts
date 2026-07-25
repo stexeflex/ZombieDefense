@@ -9,6 +9,8 @@ export type WaveKind = 'normal' | 'mini' | 'swarm' | 'boss';
 export type FxKind =
   | 'hit'
   | 'blood'
+  /** A blow that ran into a dash and did nothing. */
+  | 'deflect'
   | 'death'
   | 'explosion'
   | 'burn'

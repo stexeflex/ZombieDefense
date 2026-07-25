@@ -17,6 +17,7 @@ export type SoundName =
   | 'build'
   | 'wave'
   | 'hurt'
+  | 'deflect'
   | 'heal'
   | 'gameover'
   | 'victory';
@@ -149,6 +150,12 @@ export class AudioService {
       case 'hurt':
         this.tone(at, 'sine', 320, 90, 0.24, 0.3 * volume);
         this.burst(at, 0.1, 500, 0.24 * volume, 'lowpass');
+        break;
+      // Hit while dashing: a bright metallic swipe instead of the dull thud,
+      // so a dodge is audible even with the eyes somewhere else.
+      case 'deflect':
+        this.tone(at, 'triangle', 1500, 2400, 0.09, 0.16 * volume, 'bandpass', 2600);
+        this.burst(at, 0.09, 4200, 0.2 * volume, 'highpass');
         break;
       case 'heal':
         this.tone(at, 'sine', 420, 880, 0.34, 0.24 * volume);

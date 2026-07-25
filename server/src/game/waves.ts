@@ -71,7 +71,7 @@ export class WaveSystem {
       player.reserveAmmo = reserveCapacity('pistol', upgrades.reserveAmmo);
       player.grenades = this.players.maxGrenades(this.world.perksOf(id));
       player.grenadeCooldown = 0;
-      player.dashMax = this.players.maxDashes(upgrades, this.world.perksOf(id));
+      player.dashMax = this.players.maxDashes(upgrades);
       player.dashCharges = player.dashMax;
       player.dashCooldown = 0;
       player.dashing = 0;

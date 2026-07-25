@@ -362,14 +362,14 @@ console.log('\n== Einmalige Vorteile ==');
 console.log('\n== Dash ==');
 {
   const room = makeRoom('outpost');
-  const player = join(room, 'p1', { upgrades: { dashCharges: 1 }, perks: { extraDash: true } });
+  const player = join(room, 'p1', { upgrades: { dashCharges: 2 } });
   const runtime = room.systems.world.runtime.get('p1');
   room.systems.waves.startRun();
   room.systems.waves.spawnQueue = ['normal'];
   room.systems.waves.spawnDelay = 1e6;
   room.state.zombies.clear();
 
-  check('Vier Ladungen mit Stufe und Vorteil', player.dashMax === 4, `(${player.dashMax})`);
+  check('Vier Ladungen mit zwei Stufen', player.dashMax === 4, `(${player.dashMax})`);
   const startX = player.x;
   runtime.input = { ...IDLE, dash: true, right: true, aimX: player.x + 200, aimY: player.y };
   room.update(50);
@@ -390,6 +390,50 @@ console.log('\n== Dash ==');
 
   step(room, 100);
   check('Ladung lädt nach', player.dashCharges === 4, `(${player.dashCharges})`);
+}
+
+console.log('\n== Treffer im Dash klingt anders ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = [];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+
+  const world = room.systems.world;
+  const seen = [];
+  const pushFx = world.pushFx.bind(world);
+  world.pushFx = (event) => {
+    seen.push(event);
+    pushFx(event);
+  };
+
+  const zombie = world.spawnZombie('normal', { x: player.x, y: player.y });
+  zombie.attackCooldown = 0;
+  // Dash-Fenster ohne Bewegung, damit der Zombie in Reichweite bleibt.
+  player.dashing = 1;
+  const healthBefore = player.health;
+  room.update(50);
+  check('Dash schluckt den Schlag', player.health === healthBefore);
+  check(
+    'Abgewehrter Treffer meldet sich eigen',
+    seen.some((event) => event.k === 'deflect') && !seen.some((event) => event.k === 'blood'),
+    `(${seen.map((event) => event.k).join(', ')})`,
+  );
+
+  seen.length = 0;
+  player.dashing = 0;
+  zombie.attackCooldown = 0;
+  zombie.x = player.x;
+  zombie.y = player.y;
+  room.update(50);
+  check('Ohne Dash fließt wieder Blut', player.health < healthBefore);
+  check(
+    'Echter Treffer bleibt beim Blut-Effekt',
+    seen.some((event) => event.k === 'blood') && !seen.some((event) => event.k === 'deflect'),
+    `(${seen.map((event) => event.k).join(', ')})`,
+  );
 }
 
 console.log('\n== Geld wird geteilt ==');

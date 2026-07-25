@@ -124,14 +124,25 @@
               <div class="upgrade-copy">
                 <h3>{{ upgrade.label }}</h3>
                 <p>{{ upgrade.description }} pro Stufe</p>
-                <div
-                  class="level-track"
-                  aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
-                >
-                  @for (dot of pips; track dot) {
-                    <span [class.filled]="pipFilled(upgrade.key, dot)"></span>
-                  }
-                </div>
+                @if (pips(upgrade.key); as steps) {
+                  <div
+                    class="level-track"
+                    [class.maxed]="maxed(upgrade.key)"
+                    aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
+                  >
+                    @for (step of steps; track step) {
+                      <span [class.filled]="level(upgrade.key) >= step"></span>
+                    }
+                  </div>
+                } @else {
+                  <div
+                    class="level-bar"
+                    [class.maxed]="maxed(upgrade.key)"
+                    aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
+                  >
+                    <span [style.width.%]="fillPercent(upgrade.key)"></span>
+                  </div>
+                }
               </div>
               <div class="upgrade-buy">
                 <b>Stufe {{ level(upgrade.key) }} / {{ maxLevel(upgrade.key) }}</b>

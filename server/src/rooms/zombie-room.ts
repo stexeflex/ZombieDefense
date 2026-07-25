@@ -177,7 +177,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.money = START_MONEY;
     player.ammo = this.playerSystem.magazineSize('pistol', upgrades);
     player.reserveAmmo = reserveCapacity('pistol', upgrades.reserveAmmo);
-    player.dashMax = this.playerSystem.maxDashes(upgrades, perks);
+    player.dashMax = this.playerSystem.maxDashes(upgrades);
     player.dashCharges = player.dashMax;
     player.grenades = this.playerSystem.maxGrenades(perks);
     player.owned.clear();

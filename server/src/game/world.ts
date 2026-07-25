@@ -298,9 +298,10 @@ export class GameWorld {
     if (scorer) scorer.kills += 1;
   }
 
+  /** Tells the caller whether the blow landed, so a dodge can look different. */
   damagePlayer(player: PlayerState, amount: number) {
     // A dash is a real dodge: nothing lands while it runs.
-    if (player.dashing > 0 || !player.alive) return;
+    if (player.dashing > 0 || !player.alive) return false;
     const runtime = this.runtime.get(player.id);
     const upgrades = runtime?.upgrades ?? EMPTY_UPGRADES;
     const reduction = 1 - armorReduction(upgrades.armor);
@@ -310,7 +311,7 @@ export class GameWorld {
       runtime.lastStandReady = false;
       player.health = 1;
       this.pushFx({ k: 'heal', x: player.x, y: player.y, s: 'laststand' });
-      return;
+      return true;
     }
     player.health = Math.max(0, next);
     if (player.health <= 0) {
@@ -318,6 +319,7 @@ export class GameWorld {
       player.reviveProgress = 0;
       this.pushFx({ k: 'blood', x: player.x, y: player.y, r: 40, s: 'down' });
     }
+    return true;
   }
 
   damageStructures(x: number, y: number, radius: number, damage: number) {

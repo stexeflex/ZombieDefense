@@ -40,7 +40,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, sechzehn Stufen-Upgrades und neun einmalige Vorteile über
+- permanentes Gold, sechzehn Stufen-Upgrades und acht einmalige Vorteile über
   `localStorage`
 
 ### Karten
@@ -162,13 +162,16 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 
 Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange
 er läuft, geht jeder Treffer daneben — der blaue Ring zeigt an, wann das gilt.
-Im permanenten Shop gibt es weitere Ladungen und eine schnellere Aufladung.
+Ein abgewehrter Schlag klingt hell und metallisch statt dumpf, so ist ein
+geglücktes Ausweichen auch ohne Blick auf den Ring zu hören. Im permanenten Shop
+gibt es weitere Ladungen und eine schnellere Aufladung.
 
 In der Bauphase wird im Seitenmenü zwischen Waffen, Barrikaden und Türmen
 gewechselt, ein Bauteil ausgewählt und danach auf dem Spielfeld platziert.
 Spieler können sich dabei weiterhin bewegen. Die Vorschau rastet an
 Nachbarbauten und Hindernissen ein, sodass Wände lückenlos entstehen; rot
-bedeutet, dass dort nicht gebaut werden kann.
+bedeutet, dass dort nicht gebaut werden kann. Mit dem Start der Welle fällt die
+Auswahl weg, die nächste Bauphase beginnt also ohne alte Vorschau.
 
 Wer neben einer eigenen oder fremden Verteidigung steht, sieht sie umrandet,
 dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Was in der
@@ -194,10 +197,13 @@ zwei Arten von Käufen:
   Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
   Wiederbelebung, Dash-Ladungen und Dash-Aufladung
 - **Einmalige Vorteile** – günstigere erste Waffe, erste Barrikaden und erster
-  Turm eines Runs, eine zusätzliche Dash-Ladung, ein Dash der Zombies
-  wegschleudert, doppelt so schnelles Wiederbeleben, günstigere Reparaturen,
-  eine Granate mehr und ein Aufbäumen, das einen tödlichen Treffer pro Welle
-  überlebt
+  Turm eines Runs, ein Dash der Zombies wegschleudert, doppelt so schnelles
+  Wiederbeleben, günstigere Reparaturen, eine Granate mehr und ein Aufbäumen,
+  das einen tödlichen Treffer pro Welle überlebt
+
+Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
+Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als
+gefüllten Balken — vierzig Striche wären nicht lesbar.
 
 Upgrades, die direkt Geld oder Gold bringen, gibt es bewusst nicht.
 

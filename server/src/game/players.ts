@@ -91,8 +91,8 @@ export class PlayerSystem {
 
   // -------------------------------------------------------------------- dash
 
-  maxDashes(upgrades: PermanentUpgrades, perks: PermanentPerks) {
-    return DASH_BASE_CHARGES + upgrades.dashCharges + (perks.extraDash ? 1 : 0);
+  maxDashes(upgrades: PermanentUpgrades) {
+    return DASH_BASE_CHARGES + upgrades.dashCharges;
   }
 
   private dashRechargeTime(upgrades: PermanentUpgrades) {
@@ -100,7 +100,7 @@ export class PlayerSystem {
   }
 
   private tickDash(player: PlayerState, runtime: RuntimePlayer, delta: number) {
-    player.dashMax = this.maxDashes(runtime.upgrades, runtime.perks);
+    player.dashMax = this.maxDashes(runtime.upgrades);
     runtime.dashLock = Math.max(0, runtime.dashLock - delta);
     runtime.dashRecharge = runtime.dashRecharge
       .map((timer) => timer - delta)

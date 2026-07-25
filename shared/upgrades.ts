@@ -81,8 +81,6 @@ export interface PermanentPerks {
   starterBarricade: boolean;
   /** The first turret of a run costs a lot less. */
   starterTurret: boolean;
-  /** One more dash charge on top of the levelled ones. */
-  extraDash: boolean;
   /** The dash knocks zombies aside and hurts them. */
   dashShock: boolean;
   /** Reviving is twice as fast and gets the squad mate up with more health. */
@@ -101,7 +99,6 @@ export const EMPTY_PERKS: PermanentPerks = {
   starterWeapon: false,
   starterBarricade: false,
   starterTurret: false,
-  extraDash: false,
   dashShock: false,
   fieldMedic: false,
   engineer: false,
@@ -113,7 +110,6 @@ export const PERK_COST: Record<PerkKey, number> = {
   starterWeapon: 900,
   starterBarricade: 750,
   starterTurret: 1100,
-  extraDash: 1600,
   dashShock: 1400,
   fieldMedic: 800,
   engineer: 700,

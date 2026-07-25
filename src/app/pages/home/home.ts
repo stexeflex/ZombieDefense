@@ -23,8 +23,18 @@ export class Home {
   readonly shopTab = signal<'levels' | 'perks'>('levels');
   readonly definitions = UPGRADE_DEFINITIONS;
   readonly perkDefinitions = PERK_DEFINITIONS;
-  /** Eight pips, so every pip is a whole block of levels. */
-  readonly pips = [0, 1, 2, 3, 4, 5, 6, 7];
+  /**
+   * A short ladder gets one pip per level, so a pip always means a level. Long
+   * ladders would need forty of them, there a filled bar is far easier to read.
+   */
+  private readonly pipSteps = new Map<UpgradeKey, number[]>(
+    UPGRADE_DEFINITIONS.filter((upgrade) => this.progress.maxLevel(upgrade.key) <= 10).map(
+      (upgrade) => [
+        upgrade.key,
+        Array.from({ length: this.progress.maxLevel(upgrade.key) }, (_, index) => index + 1),
+      ],
+    ),
+  );
   readonly mapCount = MAPS.length;
   readonly weaponCount = WEAPON_ORDER.length;
   readonly zombieCount = ZOMBIE_TYPES.length;
@@ -75,8 +85,17 @@ export class Home {
     return this.progress.maxLevel(key);
   }
 
-  pipFilled(key: UpgradeKey, pip: number) {
-    return this.level(key) > (pip * this.maxLevel(key)) / this.pips.length;
+  /** The pips of a short ladder, or nothing when the bar is used instead. */
+  pips(key: UpgradeKey) {
+    return this.pipSteps.get(key);
+  }
+
+  fillPercent(key: UpgradeKey) {
+    return (this.level(key) / this.maxLevel(key)) * 100;
+  }
+
+  maxed(key: UpgradeKey) {
+    return this.level(key) >= this.maxLevel(key);
   }
 
   private validateName() {

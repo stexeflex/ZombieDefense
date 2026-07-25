@@ -480,19 +480,42 @@ footer {
   margin: 0 0 10px;
 }
 
+/* Short ladders show one pip per level, so a pip always means a level. */
 .level-track {
   display: flex;
   gap: 4px;
 }
 
 .level-track span {
-  width: 11px;
-  height: 3px;
+  width: 22px;
+  height: 4px;
   background: var(--line-bright);
 }
 
 .level-track span.filled {
   background: var(--acid);
+}
+
+.level-track.maxed span.filled {
+  background: var(--gold);
+}
+
+/* Forty pips would be unreadable, so long ladders get a filled bar. */
+.level-bar {
+  width: min(100%, 160px);
+  height: 4px;
+  background: var(--line-bright);
+}
+
+.level-bar span {
+  display: block;
+  height: 100%;
+  background: var(--acid);
+  transition: width 160ms ease;
+}
+
+.level-bar.maxed span {
+  background: var(--gold);
 }
 
 .upgrade-buy {

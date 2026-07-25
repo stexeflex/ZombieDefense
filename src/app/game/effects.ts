@@ -113,6 +113,12 @@ export class EffectLayer {
         this.audio.play('hurt', 0.7);
         this.scene.cameras.main.shake(120, 0.004);
         break;
+      // The blow was dodged, so it stays bright and bloodless.
+      case 'deflect':
+        this.burst('energy', 5, event.x, event.y);
+        this.shockwave(event.x, event.y, 46, 0x9fdcff);
+        this.audio.play('deflect', 0.55);
+        break;
       case 'death':
         this.burst('blood', 12 + Math.round((event.r ?? 18) / 2), event.x, event.y);
         this.addDecal(event.x, event.y, (event.r ?? 18) * 2.6);

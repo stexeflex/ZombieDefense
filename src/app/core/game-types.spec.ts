@@ -330,6 +330,11 @@ describe('permanent upgrades', () => {
     expect(Object.keys(EMPTY_PERKS)).not.toContain('income');
   });
 
+  it('leaves extra dash charges to the levelled upgrade alone', () => {
+    expect(Object.keys(EMPTY_PERKS)).not.toContain('extraDash');
+    expect(upgradeMaxLevel('dashCharges')).toBeGreaterThan(0);
+  });
+
   it('prices every one-time perk', () => {
     for (const key of Object.keys(EMPTY_PERKS) as PerkKey[]) {
       expect(PERK_COST[key]).toBeGreaterThan(0);

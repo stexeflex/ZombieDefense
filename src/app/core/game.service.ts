@@ -308,6 +308,9 @@ export class GameService {
   private reactToPhase(snapshot: GameSnapshot) {
     if (snapshot.phase !== this.lastPhase) {
       this.lastPhase = snapshot.phase;
+      // A ghost left over from the last build phase would come back with the
+      // next one, so the start of a wave drops the selection.
+      if (snapshot.phase !== 'build' && this.selectedBuild()) this.selectBuild(null);
       if (snapshot.phase === 'combat') this.audio.play('wave', 0.9);
       this.audio.setTrack(
         snapshot.phase === 'combat'

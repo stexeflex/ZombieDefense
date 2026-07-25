@@ -115,8 +115,13 @@ export class ZombieSystem {
         if (zombie.attackCooldown <= 0) {
           zombie.attackCooldown = this.attackDelay(zombie.type, 1);
           zombie.attacking = 0.3;
-          this.world.damagePlayer(target, zombie.damage);
-          this.world.pushFx({ k: 'blood', x: target.x, y: target.y, s: 'player' });
+          // A swing that runs into a dash gets its own cue instead of blood.
+          const landed = this.world.damagePlayer(target, zombie.damage);
+          this.world.pushFx(
+            landed
+              ? { k: 'blood', x: target.x, y: target.y, s: 'player' }
+              : { k: 'deflect', x: target.x, y: target.y, s: 'dash' },
+          );
         }
       }
     });

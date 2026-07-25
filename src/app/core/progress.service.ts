@@ -73,12 +73,6 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     icon: '⌖',
   },
   {
-    key: 'extraDash',
-    label: 'Reserveschub',
-    description: 'Eine zusätzliche Dash-Ladung, zusätzlich zu den Stufen.',
-    icon: '»',
-  },
-  {
     key: 'dashShock',
     label: 'Stoßdash',
     description: 'Der Dash schleudert Zombies weg und verletzt sie.',
@@ -118,6 +112,12 @@ interface StoredProgress {
   clearedMaps: string[];
 }
 
+/** Perks that were dropped again, with the price they were bought for. */
+const RETIRED_PERKS: Record<string, number> = {
+  // "Reserveschub" only repeated what the dash-charge upgrade already does.
+  extraDash: 1600,
+};
+
 @Injectable({ providedIn: 'root' })
 export class ProgressService {
   private readonly storageKey = 'zombie-defense-progress-v1';
@@ -127,6 +127,10 @@ export class ProgressService {
   readonly upgrades = computed(() => this.progress().upgrades);
   readonly perks = computed(() => this.progress().perks);
   readonly clearedMaps = computed(() => this.progress().clearedMaps);
+
+  constructor() {
+    this.refundRetiredPerks();
+  }
 
   maxLevel(key: UpgradeKey) {
     return upgradeMaxLevel(key);
@@ -192,6 +196,25 @@ export class ProgressService {
       clearedMaps: cleared,
     });
     return true;
+  }
+
+  /** Gold spent on a perk that no longer exists goes back to the player. */
+  private refundRetiredPerks() {
+    let refund = 0;
+    try {
+      const stored = JSON.parse(localStorage.getItem(this.storageKey) ?? '{}') as {
+        perks?: Record<string, unknown>;
+      };
+      for (const [key, cost] of Object.entries(RETIRED_PERKS)) {
+        if (stored.perks?.[key]) refund += cost;
+      }
+    } catch {
+      return;
+    }
+    if (refund === 0) return;
+    // Saving drops the retired flag as well, so this pays out exactly once.
+    const current = this.progress();
+    this.save({ ...current, gold: current.gold + refund });
   }
 
   private load(): StoredProgress {
