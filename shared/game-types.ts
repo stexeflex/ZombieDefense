@@ -70,6 +70,8 @@ export interface PlayerSnapshot {
   alive: boolean;
   money: number;
   weapon: WeaponType;
+  /** Every weapon the player bought, in purchase order, pistol first. */
+  owned: WeaponType[];
   ammo: number;
   reserveAmmo: number;
   grenades: number;
@@ -114,6 +116,8 @@ export interface DefenseSnapshot {
   health: number;
   maxHealth: number;
   rotation: number;
+  /** What selling pays right now — the full price for a fresh build. */
+  refund: number;
 }
 
 export interface GameSnapshot {
@@ -126,7 +130,6 @@ export interface GameSnapshot {
   waveLabel: string;
   waveKind: WaveKind;
   enemiesRemaining: number;
-  nextWaveIn: number;
   statusText: string;
   bossName: string;
   bossHealth: number;
@@ -161,7 +164,6 @@ export interface PermanentUpgrades {
   barricadeHealth: number;
   turretDamage: number;
   armor: number;
-  income: number;
 }
 
 export const EMPTY_UPGRADES: PermanentUpgrades = {
@@ -176,10 +178,18 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   barricadeHealth: 0,
   turretDamage: 0,
   armor: 0,
-  income: 0,
 };
 
-export const UPGRADE_MAX_LEVEL = 20;
+/** Room to specialise: a focused player can push a single stat very far. */
+export const UPGRADE_MAX_LEVEL = 40;
+/** Gold for the next level of an upgrade. */
+export function upgradeCost(level: number) {
+  return 40 + level * 16;
+}
+/** Damage reduction from armour, capped so no build becomes untouchable. */
+export function armorReduction(level: number) {
+  return Math.min(0.35, level * 0.01);
+}
 
 export const ARENA = {
   width: 2400,
@@ -196,7 +206,6 @@ export const PLAYER_BASE_SPEED = 205;
 export const PLAYER_RADIUS = 18;
 export const REVIVE_RADIUS = 74;
 export const REVIVE_SECONDS = 1.6;
-export const BUILD_SECONDS = 90;
 export const START_MONEY = 400;
 
 export interface ZombieConfig {
@@ -482,6 +491,11 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   },
 };
 
+/** Upper limit for carried spare ammunition, one full resupply. */
+export function reserveCapacity(weapon: WeaponType) {
+  return WEAPONS[weapon].reserve;
+}
+
 export const WEAPON_ORDER: WeaponType[] = [
   'pistol',
   'smg',
@@ -740,6 +754,15 @@ export function repairCost(defense: { health: number; maxHealth: number }) {
 
 export function sellRefund(type: DefenseType) {
   return Math.round(DEFENSES[type].cost * SELL_REFUND);
+}
+
+/**
+ * A structure put down in the current build phase can be taken back for what it
+ * cost, so a misplaced wall is not a punishment. From the next wave on, selling
+ * pays the usual share.
+ */
+export function sellValue(type: DefenseType, fresh: boolean) {
+  return fresh ? DEFENSES[type].cost : sellRefund(type);
 }
 
 export type WaveKind = 'normal' | 'mini' | 'boss';

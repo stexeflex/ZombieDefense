@@ -3,22 +3,28 @@ import {
   BARRICADE_ORDER,
   DEFENSES,
   DEFENSE_REACH,
+  EMPTY_UPGRADES,
   MAPS,
   REPAIR_COST_PER_HP,
   REVIVE_RADIUS,
   REVIVE_SECONDS,
   SELL_REFUND,
   TURRET_ORDER,
+  UPGRADE_MAX_LEVEL,
   VIEWPORT,
   WEAPONS,
   WEAPON_ORDER,
   ZOMBIES,
+  armorReduction,
   canPlaceDefense,
   defenseFootprint,
   distanceToDefense,
   repairCost,
+  reserveCapacity,
   sellRefund,
+  sellValue,
   snapDefense,
+  upgradeCost,
   type MapObstacle,
   type PlacedDefense,
   type WeaponType,
@@ -202,6 +208,44 @@ describe('building rules', () => {
     for (const type of [...BARRICADE_ORDER, ...TURRET_ORDER]) {
       expect(sellRefund(type)).toBeLessThan(DEFENSES[type].cost);
     }
+  });
+
+  it('pays back the full price for a structure placed just now', () => {
+    for (const type of [...BARRICADE_ORDER, ...TURRET_ORDER]) {
+      expect(sellValue(type, true)).toBe(DEFENSES[type].cost);
+      expect(sellValue(type, false)).toBe(sellRefund(type));
+    }
+  });
+});
+
+describe('arsenal and ammunition', () => {
+  it('caps spare ammunition at one full resupply', () => {
+    for (const weapon of WEAPON_ORDER) {
+      expect(reserveCapacity(weapon)).toBe(WEAPONS[weapon].reserve);
+      expect(reserveCapacity(weapon)).toBeGreaterThan(WEAPONS[weapon].magazine);
+    }
+  });
+});
+
+describe('permanent upgrades', () => {
+  it('leaves room to specialise without runaway prices', () => {
+    expect(UPGRADE_MAX_LEVEL).toBeGreaterThanOrEqual(40);
+    for (let level = 1; level < UPGRADE_MAX_LEVEL; level += 1) {
+      expect(upgradeCost(level)).toBeGreaterThan(upgradeCost(level - 1));
+    }
+    // A single level must stay affordable next to what a run pays out.
+    expect(upgradeCost(UPGRADE_MAX_LEVEL - 1)).toBeLessThan(1000);
+  });
+
+  it('caps armour so no build becomes untouchable', () => {
+    expect(armorReduction(0)).toBe(0);
+    expect(armorReduction(10)).toBeCloseTo(0.1);
+    expect(armorReduction(UPGRADE_MAX_LEVEL)).toBeLessThanOrEqual(0.35);
+  });
+
+  it('has dropped the money upgrade', () => {
+    expect(Object.keys(EMPTY_UPGRADES)).not.toContain('income');
+    expect(Object.values(EMPTY_UPGRADES).every((level) => level === 0)).toBe(true);
   });
 });
 

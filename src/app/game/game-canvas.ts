@@ -22,7 +22,6 @@ import {
   distanceToDefense,
   findMap,
   repairCost,
-  sellRefund,
   snapDefense,
   type DefenseSnapshot,
   type DefenseType,
@@ -172,10 +171,9 @@ class ArenaScene extends Phaser.Scene {
     this.cameras.main.centerOn(ARENA.width / 2, ARENA.height / 2);
     this.cameras.main.setDeadzone(220, 140);
 
-    this.keys = this.input.keyboard!.addKeys('W,S,A,D,UP,DOWN,LEFT,RIGHT,R,G,F,V') as Record<
-      string,
-      Phaser.Input.Keyboard.Key
-    >;
+    this.keys = this.input.keyboard!.addKeys(
+      'W,S,A,D,UP,DOWN,LEFT,RIGHT,R,G,F,V,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,ZERO',
+    ) as Record<string, Phaser.Input.Keyboard.Key>;
 
     this.createEmitters();
     this.lightning = this.add.graphics().setDepth(72);
@@ -217,6 +215,12 @@ class ArenaScene extends Phaser.Scene {
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (pointer.leftButtonReleased()) this.shooting = false;
     });
+    this.input.on(
+      'wheel',
+      (_pointer: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
+        if (dy !== 0) this.gameService.cycleWeapon(dy > 0 ? 1 : -1);
+      },
+    );
     this.game.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
 
     this.subscriptions.add(
@@ -255,6 +259,7 @@ class ArenaScene extends Phaser.Scene {
       if (Phaser.Input.Keyboard.JustDown(this.keys['F'])) this.gameService.repairFocused();
       if (Phaser.Input.Keyboard.JustDown(this.keys['V'])) this.gameService.sellFocused();
     }
+    this.checkWeaponSlots();
 
     const input = this.buildInput();
     this.movePlayerViews(deltaMs, input);
@@ -267,9 +272,14 @@ class ArenaScene extends Phaser.Scene {
 
     this.sendTimer += deltaMs;
     this.inputHeartbeat += deltaMs;
+    // Pressing and releasing the trigger goes out at once; waiting for the next
+    // send window would add a noticeable delay to the first shot.
+    const urgent =
+      !this.lastSentInput || input.shoot !== this.lastSentInput.shoot || input.reload;
     if (
-      this.sendTimer >= 50 &&
-      (this.inputChanged(input, this.lastSentInput) || this.inputHeartbeat >= 250)
+      urgent ||
+      (this.sendTimer >= 50 &&
+        (this.inputChanged(input, this.lastSentInput) || this.inputHeartbeat >= 250))
     ) {
       this.sendTimer = 0;
       this.inputHeartbeat = 0;
@@ -533,6 +543,7 @@ class ArenaScene extends Phaser.Scene {
       .strokeRect(target.x - width / 2, target.y - height / 2, width, height);
 
     const repair = repairCost(target);
+    const full = target.refund >= DEFENSES[target.type].cost;
     this.focusLabel
       .setVisible(true)
       // clears the structure's own health bar, which sits just above it
@@ -540,8 +551,17 @@ class ArenaScene extends Phaser.Scene {
       .setText(
         `${DEFENSES[target.type].label}  ${Math.round(target.health)} / ${target.maxHealth}\n` +
           `[F] ${repair > 0 ? `Reparieren $${repair}` : 'ganz repariert'}   ` +
-          `[V] Verkaufen +$${sellRefund(target.type)}`,
+          `[V] Verkaufen +$${target.refund}${full ? ' (voller Preis)' : ''}`,
       );
+  }
+
+  /** Number keys pick a weapon from the arsenal, in the order it was bought. */
+  private checkWeaponSlots() {
+    const slots = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'ZERO'];
+    for (let index = 0; index < slots.length; index += 1) {
+      const key = this.keys[slots[index]];
+      if (key && Phaser.Input.Keyboard.JustDown(key)) this.gameService.selectWeaponSlot(index + 1);
+    }
   }
 
   private buildInput(): PlayerInput {
@@ -682,8 +702,6 @@ class ArenaScene extends Phaser.Scene {
       .setDepth(20);
 
     if (player.id === this.gameService.sessionId()) {
-      const ring = this.add.circle(0, 0, 30).setStrokeStyle(2, 0x69f0ae, 0.6);
-      root.addAt(ring, 1);
       this.cameras.main.startFollow(root, true, 0.14, 0.14);
     }
 

@@ -21,16 +21,22 @@ Aufruf kann das Laden deshalb kurz dauern.
 - feste Mini-Boss-Wellen mit dem „Zerstörer“ (Sturmangriff und Schockwelle)
 - sechs Zombiearten: Läufer, Renner, Koloss, Sprengling, Zerstörer, Fleischkönig
 - zehn Waffen von der Pistole bis zur Laserkanone
+- gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
+  jede Waffe behält ihre eigene Munition
 - vier Barrikaden (Holz, Stachel, Stein, Stahl) und drei Türme (MG,
   Scharfschütze, Rakete)
 - Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
-- Munition, Erste Hilfe, Reparieren und Verkaufen im Bau-Shop
+- gerade Gebautes lässt sich zum vollen Preis wieder verkaufen
+- Munition, Reparieren und Verkaufen im Bau-Shop
+- die Bauphase hat keine Uhr: die nächste Welle startet erst, wenn alle bereit
+  sind
+- am Wellenende wird der ganze Trupp geheilt und wieder aufgestellt
 - automatische Wiederbelebung gefallener Spieler durch kurzes Danebenstehen
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold und zwölf Upgrades über `localStorage`
+- permanentes Gold und elf Upgrades mit je 40 Stufen über `localStorage`
 
 ### Karten
 
@@ -107,6 +113,7 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | Maus | Zielen |
 | Linke Maustaste | Schießen |
 | `R` | Nachladen; beim Platzieren Barrikade drehen |
+| `1`–`9` oder Mausrad | Waffe aus dem Arsenal wählen |
 | `G` | Granate zum Mauszeiger werfen |
 | `F` | markierte Verteidigung reparieren (nur Bauphase) |
 | `V` | markierte Verteidigung verkaufen (nur Bauphase) |
@@ -119,9 +126,15 @@ Nachbarbauten und Hindernissen ein, sodass Wände lückenlos entstehen; rot
 bedeutet, dass dort nicht gebaut werden kann.
 
 Wer neben einer eigenen oder fremden Verteidigung steht, sieht sie umrandet,
-dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Zum
-Wiederbeleben genügt es, kurz neben einem gefallenen Mitspieler stehen zu
-bleiben. Sound und Musik lassen sich oben rechts abschalten.
+dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Was in der
+laufenden Bauphase gesetzt wurde, gibt es zum vollen Preis zurück; ab der
+nächsten Welle nur noch anteilig.
+
+Die Bauphase läuft ohne Uhr: Erst wenn alle auf „Bereit“ gedrückt haben, startet
+die nächste Welle. Zwischen den Wellen wird der Trupp voll geheilt, Gefallene
+stehen wieder auf. Zum Wiederbeleben mitten in der Welle genügt es, kurz neben
+einem gefallenen Mitspieler stehen zu bleiben. Sound und Musik lassen sich oben
+rechts abschalten.
 
 ## Projektstruktur
 
@@ -166,7 +179,6 @@ Colyseus-WebSocket-Server über dieselbe öffentliche Adresse aus.
 
 ## Später sinnvoll
 
-- zweiter Waffenslot und Waffenwechsel
 - bessere Wegfindung um große Verteidigungsanlagen
 - eigene Zombiearten pro Karte
 - optionale Accounts und Datenbank für manipulationssicheren Fortschritt

@@ -5,9 +5,10 @@ import {
   DEFAULT_MAP_ID,
   DEFENSES,
   PLAYER_BASE_SPEED,
+  WEAPONS,
   findMap,
   repairCost,
-  sellRefund,
+  reserveCapacity,
   type DefenseType,
   type FxEvent,
   type GamePhase,
@@ -59,8 +60,27 @@ export class GameService {
       health: Math.round(defense.health),
       maxHealth: defense.maxHealth,
       repairCost: repairCost(defense),
-      sellRefund: sellRefund(defense.type),
+      sellRefund: defense.refund,
+      fresh: defense.refund >= DEFENSES[defense.type].cost,
     };
+  });
+
+  /** The arsenal with its slot numbers, ready for the HUD and the shop. */
+  readonly arsenal = computed(() => {
+    const player = this.player();
+    return (player?.owned ?? ['pistol']).map((weapon, index) => ({
+      type: weapon,
+      slot: index + 1,
+      label: WEAPONS[weapon].label,
+      short: WEAPONS[weapon].short,
+      active: player?.weapon === weapon,
+    }));
+  });
+
+  /** Spare rounds are capped, so a full player cannot waste money on ammo. */
+  readonly ammoFull = computed(() => {
+    const player = this.player();
+    return player ? player.reserveAmmo >= reserveCapacity(player.weapon) : false;
   });
 
   async connect(lobbyCode: string, name: string, create: boolean) {
@@ -144,14 +164,32 @@ export class GameService {
     this.room?.send('buy_weapon', weapon);
   }
 
-  buyAmmo() {
-    this.audio.play('reload');
-    this.room?.send('buy_ammo');
+  switchWeapon(weapon: WeaponType) {
+    const player = this.player();
+    if (!player || player.weapon === weapon || !player.owned.includes(weapon)) return;
+    this.audio.play('reload', 0.6);
+    this.room?.send('switch_weapon', weapon);
   }
 
-  buyHeal() {
-    this.audio.play('heal');
-    this.room?.send('buy_heal');
+  /** Steps through the arsenal, used by the mouse wheel. */
+  cycleWeapon(direction: number) {
+    const player = this.player();
+    const owned = player?.owned ?? [];
+    if (!player || owned.length < 2) return;
+    const index = owned.indexOf(player.weapon);
+    const next = (index + direction + owned.length * 2) % owned.length;
+    this.switchWeapon(owned[next]);
+  }
+
+  selectWeaponSlot(slot: number) {
+    const owned = this.player()?.owned ?? [];
+    if (slot >= 1 && slot <= owned.length) this.switchWeapon(owned[slot - 1]);
+  }
+
+  buyAmmo() {
+    if (this.ammoFull()) return;
+    this.audio.play('reload');
+    this.room?.send('buy_ammo');
   }
 
   selectBuild(type: DefenseType | null) {

@@ -3,6 +3,7 @@ import {
   EMPTY_UPGRADES,
   MAPS,
   UPGRADE_MAX_LEVEL,
+  upgradeCost,
   type PermanentUpgrades,
 } from '../../../shared/game-types';
 
@@ -17,15 +18,24 @@ export interface UpgradeDefinition {
 
 export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'maxHealth', label: 'Maximales Leben', description: '+2 % Leben', icon: '♥' },
-  { key: 'armor', label: 'Panzerung', description: '−1 % Schaden', icon: '⛨' },
+  {
+    key: 'armor',
+    label: 'Panzerung',
+    description: '−1 % Schaden (max. −35 %)',
+    icon: '⛨',
+  },
   { key: 'moveSpeed', label: 'Bewegung', description: '+2 % Tempo', icon: '➜' },
   { key: 'weaponDamage', label: 'Waffenschaden', description: '+2 % Schaden', icon: '✦' },
   { key: 'reloadSpeed', label: 'Nachladen', description: '+2 % schneller', icon: '↻' },
   { key: 'magazineSize', label: 'Magazingröße', description: '+2 % Kapazität', icon: '▥' },
-  { key: 'income', label: 'Beute', description: '+2 % Run-Geld', icon: '$' },
   { key: 'grenadeDamage', label: 'Granatenschaden', description: '+2 % Schaden', icon: '●' },
   { key: 'grenadeCooldown', label: 'Granaten-Cooldown', description: '+2 % schneller', icon: '◷' },
-  { key: 'grenadeRadius', label: 'Explosionsradius', description: '+2 % Radius', icon: '◎' },
+  {
+    key: 'grenadeRadius',
+    label: 'Granaten-Explosionsradius',
+    description: '+2 % Radius der Granatenexplosion',
+    icon: '◎',
+  },
   { key: 'barricadeHealth', label: 'Barrikadenleben', description: '+2 % Leben', icon: '▰' },
   { key: 'turretDamage', label: 'Turmschaden', description: '+2 % Schaden', icon: '⌖' },
 ];
@@ -45,10 +55,10 @@ export class ProgressService {
   readonly gold = computed(() => this.progress().gold);
   readonly upgrades = computed(() => this.progress().upgrades);
   readonly clearedMaps = computed(() => this.progress().clearedMaps);
+  readonly maxLevel = UPGRADE_MAX_LEVEL;
 
   cost(key: UpgradeKey) {
-    const level = this.progress().upgrades[key];
-    return 50 + level * 35;
+    return upgradeCost(this.progress().upgrades[key]);
   }
 
   buy(key: UpgradeKey) {
@@ -98,12 +108,16 @@ export class ProgressService {
       const stored = JSON.parse(
         localStorage.getItem(this.storageKey) ?? '{}',
       ) as Partial<StoredProgress>;
+      const saved = (stored.upgrades ?? {}) as Record<string, unknown>;
       return {
         gold: Math.max(0, Number(stored.gold) || 0),
-        upgrades: {
-          ...EMPTY_UPGRADES,
-          ...(stored.upgrades ?? {}),
-        },
+        // Only known upgrades survive, so a removed one leaves no leftovers.
+        upgrades: Object.fromEntries(
+          Object.keys(EMPTY_UPGRADES).map((key) => [
+            key,
+            Math.min(UPGRADE_MAX_LEVEL, Math.max(0, Math.floor(Number(saved[key]) || 0))),
+          ]),
+        ) as unknown as PermanentUpgrades,
         rewardedRuns: Array.isArray(stored.rewardedRuns) ? stored.rewardedRuns.slice(-20) : [],
         clearedMaps: Array.isArray(stored.clearedMaps) ? stored.clearedMaps : [],
       };

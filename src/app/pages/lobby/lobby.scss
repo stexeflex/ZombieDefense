@@ -1107,6 +1107,65 @@ kbd {
   font-size: 1.05rem;
 }
 
+.weapon-strip {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+  /* a full arsenal scrolls instead of pushing the HUD wider */
+  max-width: 260px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* the HUD itself ignores the mouse, the arsenal must not */
+  pointer-events: auto;
+}
+
+.weapon-strip button {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  align-content: center;
+  padding: 6px 8px;
+  min-width: 42px;
+  border: 1px solid var(--line);
+  background: rgba(7, 13, 11, 0.87);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.weapon-strip button:hover {
+  border-color: rgba(105, 240, 174, 0.45);
+}
+
+.weapon-strip button.active {
+  border-color: var(--acid);
+  color: var(--acid);
+  background: rgba(105, 240, 174, 0.1);
+}
+
+.weapon-strip kbd {
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  color: var(--muted-2);
+}
+
+.weapon-strip span {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.ammo-item {
+  border-color: rgba(255, 204, 102, 0.32);
+}
+
+.ready-button span {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.54rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
 .wave-banner strong em {
   color: var(--muted);
   font-style: normal;
@@ -1328,6 +1387,11 @@ kbd {
   .money-block {
     min-width: 0;
     flex: 1;
+  }
+
+  .weapon-strip {
+    max-width: none;
+    flex-basis: 100%;
   }
 
   .map-picker {

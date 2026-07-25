@@ -39,6 +39,7 @@ export class Lobby implements OnInit, OnDestroy {
   readonly lobbyCode = signal('');
   readonly shopTab = signal<ShopTab>('weapons');
   readonly players = computed(() => Object.values(this.game.snapshot()?.players ?? {}));
+  readonly readyCount = computed(() => this.players().filter((player) => player.ready).length);
   readonly maps = MAPS;
   readonly weapons = WEAPON_ORDER.filter((type) => type !== 'pistol').map((type) => ({
     type,
@@ -139,19 +140,19 @@ export class Lobby implements OnInit, OnDestroy {
     return Math.round(WEAPONS[weapon].ammoCost * this.activeMap().moneyScale);
   }
 
-  healCost() {
-    return Math.round(260 * this.activeMap().moneyScale);
+  owns(weapon: WeaponType) {
+    return this.game.player()?.owned.includes(weapon) ?? false;
+  }
+
+  /** Buying puts a new weapon in the arsenal, a second click just equips it. */
+  weaponAction(weapon: WeaponType) {
+    if (this.owns(weapon)) this.game.switchWeapon(weapon);
+    else this.game.buyWeapon(weapon);
   }
 
   playerHealth(playerId: string) {
     const player = this.game.snapshot()?.players[playerId];
     return player ? Math.max(0, (player.health / player.maxHealth) * 100) : 0;
-  }
-
-  seconds(value: number) {
-    const seconds = Math.max(0, Math.ceil(value));
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
   }
 
   weaponName(type: WeaponType | undefined) {

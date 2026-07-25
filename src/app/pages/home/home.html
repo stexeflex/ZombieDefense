@@ -79,7 +79,10 @@
   </section>
 
   <footer>
-    <span>WASD zum Bewegen · Maus zum Zielen · G für Granate · R zum Nachladen</span>
+    <span>
+      WASD zum Bewegen · Maus zum Zielen · 1–9 für die Waffe · G für Granate ·
+      R zum Nachladen
+    </span>
     <span>Version 0.2 · Kampagne</span>
   </footer>
 </main>
@@ -110,20 +113,22 @@
             <div class="upgrade-copy">
               <h3>{{ upgrade.label }}</h3>
               <p>{{ upgrade.description }} pro Stufe</p>
-              <div class="level-track" aria-label="Stufe {{ level(upgrade.key) }} von 20">
-                @for (dot of [0, 1, 2, 3, 4]; track dot) {
-                  <span [class.filled]="level(upgrade.key) > dot * 4"></span>
+              <div class="level-track" aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel }}">
+                @for (dot of pips; track dot) {
+                  <span [class.filled]="pipFilled(upgrade.key, dot)"></span>
                 }
               </div>
             </div>
             <div class="upgrade-buy">
-              <b>Stufe {{ level(upgrade.key) }}</b>
+              <b>Stufe {{ level(upgrade.key) }} / {{ maxLevel }}</b>
               <button
                 type="button"
-                [disabled]="progress.gold() < progress.cost(upgrade.key) || level(upgrade.key) >= 20"
+                [disabled]="
+                  progress.gold() < progress.cost(upgrade.key) || level(upgrade.key) >= maxLevel
+                "
                 (click)="buyUpgrade(upgrade.key)"
               >
-                @if (level(upgrade.key) >= 20) {
+                @if (level(upgrade.key) >= maxLevel) {
                   MAX
                 } @else {
                   ◆ {{ progress.cost(upgrade.key) }}

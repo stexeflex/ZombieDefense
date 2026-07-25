@@ -184,7 +184,7 @@
             @if (snapshot.phase === 'combat') {
               <small>{{ snapshot.enemiesRemaining }} Gegner</small>
             } @else if (snapshot.phase === 'build') {
-              <small>{{ seconds(snapshot.nextWaveIn) }}</small>
+              <small>Baut in Ruhe auf</small>
             }
           </div>
 
@@ -222,6 +222,21 @@
                 <em>Nachladen …</em>
               }
             </div>
+            @if (game.arsenal().length > 1) {
+              <div class="weapon-strip" aria-label="Arsenal">
+                @for (slot of game.arsenal(); track slot.type) {
+                  <button
+                    type="button"
+                    [class.active]="slot.active"
+                    [title]="slot.label"
+                    (click)="game.switchWeapon(slot.type)"
+                  >
+                    <kbd>{{ slot.slot === 10 ? 0 : slot.slot }}</kbd>
+                    <span>{{ slot.short }}</span>
+                  </button>
+                }
+              </div>
+            }
             <div class="grenade-block">
               <small>Granate [G]</small>
               <strong>● × {{ game.player()?.grenades }}</strong>
@@ -245,6 +260,9 @@
             } @else {
               <span><kbd>R</kbd> Nachladen</span>
               <span><kbd>G</kbd> Granate</span>
+            }
+            @if (game.arsenal().length > 1) {
+              <span><kbd>1–9</kbd> / <kbd>Mausrad</kbd> Waffe wechseln</span>
             }
           </div>
 
@@ -336,38 +354,49 @@
 
               @if (shopTab() === 'weapons') {
                 <div class="shop-scroll">
+                  <button
+                    class="shop-item ammo-item"
+                    type="button"
+                    [disabled]="(game.player()?.money ?? 0) < ammoCost() || game.ammoFull()"
+                    (click)="game.buyAmmo()"
+                  >
+                    <span class="item-icon">AM</span>
+                    <span>
+                      <b>Munition · {{ weaponName(game.player()?.weapon) }}</b>
+                      <small>
+                        {{
+                          game.ammoFull()
+                            ? 'Vorrat ist voll'
+                            : 'Vorrat auffüllen (' + game.player()?.reserveAmmo + ' Schuss)'
+                        }}
+                      </small>
+                    </span>
+                    <strong>{{ game.ammoFull() ? 'Voll' : '$ ' + ammoCost() }}</strong>
+                  </button>
                   @for (weapon of weapons; track weapon.type) {
                     <button
                       class="shop-item"
                       type="button"
-                      [disabled]="(game.player()?.money ?? 0) < weapon.cost || game.player()?.weapon === weapon.type"
-                      (click)="game.buyWeapon(weapon.type)"
+                      [class.selected]="game.player()?.weapon === weapon.type"
+                      [disabled]="
+                        (!owns(weapon.type) && (game.player()?.money ?? 0) < weapon.cost) ||
+                        game.player()?.weapon === weapon.type
+                      "
+                      (click)="weaponAction(weapon.type)"
                     >
                       <span class="item-icon">{{ weapon.short }}</span>
                       <span><b>{{ weapon.label }}</b><small>{{ weapon.description }}</small></span>
-                      <strong>{{ game.player()?.weapon === weapon.type ? 'Aktiv' : '$ ' + weapon.cost }}</strong>
+                      <strong>
+                        {{
+                          game.player()?.weapon === weapon.type
+                            ? 'Aktiv'
+                            : owns(weapon.type)
+                              ? 'Wechseln'
+                              : '$ ' + weapon.cost
+                        }}
+                      </strong>
                     </button>
                   }
-                  <button
-                    class="shop-item"
-                    type="button"
-                    [disabled]="(game.player()?.money ?? 0) < ammoCost()"
-                    (click)="game.buyAmmo()"
-                  >
-                    <span class="item-icon">AM</span>
-                    <span><b>Munition</b><small>Voller Vorrat</small></span>
-                    <strong>$ {{ ammoCost() }}</strong>
-                  </button>
-                  <button
-                    class="shop-item"
-                    type="button"
-                    [disabled]="(game.player()?.money ?? 0) < healCost()"
-                    (click)="game.buyHeal()"
-                  >
-                    <span class="item-icon">✚</span>
-                    <span><b>Erste Hilfe</b><small>Leben komplett auffüllen</small></span>
-                    <strong>$ {{ healCost() }}</strong>
-                  </button>
                 </div>
               } @else if (shopTab() === 'barricades') {
                 <div class="shop-scroll">
@@ -426,7 +455,7 @@
                       <b>{{ focus.repairCost === 0 ? 'ganz' : '$ ' + focus.repairCost }}</b>
                     </button>
                     <button type="button" (click)="game.sellFocused()">
-                      <span><kbd>V</kbd> Verkaufen</span>
+                      <span><kbd>V</kbd> Verkaufen{{ focus.fresh ? ' (voller Preis)' : '' }}</span>
                       <b>+$ {{ focus.sellRefund }}</b>
                     </button>
                   </div>
@@ -445,6 +474,11 @@
                 (click)="toggleReady()"
               >
                 {{ game.player()?.ready ? 'Bereit ✓' : 'Bereit für nächste Welle' }}
+                @if (players().length > 1) {
+                  <span>{{ readyCount() }} / {{ players().length }} bereit</span>
+                } @else {
+                  <span>Die Welle startet erst auf Knopfdruck</span>
+                }
               </button>
             </section>
           } @else {

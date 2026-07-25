@@ -14,9 +14,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const load = (path) => import(pathToFileURL(resolve(root, path)).href);
 
 const { ZombieRoom } = await load('server/build/server/src/rooms/zombie-room.js');
-const { DEFENSES, MAPS, REPAIR_COST_PER_HP, WEAPONS, WEAPON_ORDER, sellRefund } = await load(
-  'server/build/shared/game-types.js',
-);
+const { DEFENSES, MAPS, REPAIR_COST_PER_HP, WEAPONS, WEAPON_ORDER, reserveCapacity, sellRefund } =
+  await load('server/build/shared/game-types.js');
 
 const failures = [];
 
@@ -207,8 +206,8 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
   const beforeSell = player.money;
   room.sellDefense('p1', first.id);
   check(
-    'Verkaufen zahlt den Erlös aus',
-    room.state.defenses.size === 1 && player.money === beforeSell + sellRefund('wood'),
+    'Frisch gebaut zahlt den vollen Preis zurück',
+    room.state.defenses.size === 1 && player.money === beforeSell + wood.cost,
     `(${player.money} $)`,
   );
 
@@ -221,6 +220,144 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
   check(
     'Außer Reichweite passiert nichts',
     room.state.defenses.size === 1 && player.money === moneyOutOfReach,
+  );
+
+  // Sobald die nächste Welle läuft, ist der Bau gebraucht.
+  room.startNextWave();
+  check('Nach dem Wellenstart nur noch Teilerlös', remaining.refund === sellRefund('wood'));
+  room.finishWave();
+  player.x = remaining.x;
+  player.y = remaining.y + 40;
+  const beforeUsedSell = player.money;
+  room.sellDefense('p1', remaining.id);
+  check(
+    'Älterer Bau zahlt den Teilerlös',
+    room.state.defenses.size === 0 && player.money === beforeUsedSell + sellRefund('wood'),
+    `(${player.money - beforeUsedSell} $)`,
+  );
+}
+
+console.log('\n== Wellenende heilt den Trupp ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.startRun();
+  player.health = 1;
+  player.alive = false;
+  player.reviveProgress = 0.4;
+  room.finishWave();
+  check(
+    'Am Wellenende voll geheilt und wieder auf den Beinen',
+    player.alive && player.health === player.maxHealth && player.reviveProgress === 0,
+    `(${player.health}/${player.maxHealth}, alive=${player.alive})`,
+  );
+  check('Keine Bauzeit-Uhr mehr', room.state.nextWaveIn === undefined);
+
+  const before = room.state.wave;
+  room.update(50);
+  room.update(50);
+  check(
+    'Bauphase läuft nicht von selbst ab',
+    room.state.phase === 'build' && room.state.wave === before,
+  );
+  player.ready = true;
+  if (room.everyoneReady()) room.startNextWave();
+  check('Bereit startet die nächste Welle', room.state.phase === 'combat' && room.state.wave === before + 1);
+}
+
+console.log('\n== Arsenal ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.startRun();
+  room.finishWave();
+  player.money = 1e6;
+
+  room.buyWeapon('p1', 'smg');
+  room.buyWeapon('p1', 'rifle');
+  check(
+    'Gekaufte Waffen bleiben im Arsenal',
+    [...player.owned].join() === 'pistol,smg,rifle',
+    `(${[...player.owned].join()})`,
+  );
+  check('Zuletzt gekaufte Waffe ist in der Hand', player.weapon === 'rifle');
+
+  player.ammo = 7;
+  room.selectWeapon('p1', 'smg');
+  check('Wechsel auf eine besessene Waffe', player.weapon === 'smg');
+  room.selectWeapon('p1', 'rifle');
+  check('Munition bleibt pro Waffe erhalten', player.ammo === 7, `(${player.ammo})`);
+
+  room.selectWeapon('p1', 'laser');
+  check('Nicht gekaufte Waffe bleibt gesperrt', player.weapon === 'rifle');
+
+  room.selectWeapon('p1', 'pistol');
+  check('Startwaffe bleibt jederzeit verfügbar', player.weapon === 'pistol');
+
+  const money = player.money;
+  player.reserveAmmo = reserveCapacity('pistol');
+  room.buyAmmo('p1');
+  check('Kein Munitionskauf bei vollem Vorrat', player.money === money);
+  player.reserveAmmo = 10;
+  room.buyAmmo('p1');
+  check(
+    'Munitionskauf füllt bis zum Maximum',
+    player.money < money && player.reserveAmmo === reserveCapacity('pistol'),
+    `(${player.reserveAmmo})`,
+  );
+}
+
+console.log('\n== Feuerrate ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.runtimePlayers.get('p1');
+  room.startRun();
+  // Ein Eintrag in der Warteschlange hält die Welle offen, die riesige
+  // Spawn-Pause sorgt dafür, dass trotzdem kein Gegner auftaucht.
+  room.spawnQueue = ['normal'];
+  room.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  makeInvincible(player);
+  const idle = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    shoot: false,
+    reload: false,
+    aimX: player.x + 200,
+    aimY: player.y,
+  };
+
+  for (const weapon of ['pistol', 'smg', 'lmg', 'flamer', 'laser']) {
+    player.weapon = weapon;
+    player.fireCooldown = 0;
+    runtime.input = { ...idle };
+    step(room, 6);
+    player.ammo = 9999;
+    player.reserveAmmo = 9999;
+    player.reloading = 0;
+    const before = player.ammo;
+    runtime.input = { ...idle, shoot: true };
+    room.update(50);
+    const fired = before - player.ammo;
+    check(`${WEAPONS[weapon].label}: erster Schuss feuert genau einmal`, fired === 1, `(${fired})`);
+    runtime.input = { ...idle };
+    room.update(50);
+  }
+
+  // Dauerfeuer muss trotzdem die volle Kadenz halten.
+  player.weapon = 'smg';
+  player.ammo = 9999;
+  player.fireCooldown = 0;
+  runtime.input = { ...idle, shoot: true };
+  const sustainedStart = player.ammo;
+  step(room, 20);
+  const rate = (sustainedStart - player.ammo) / 1;
+  check(
+    `Dauerfeuer hält die Kadenz (${rate} statt ${Math.round(1000 / WEAPONS.smg.fireDelay)} Schuss/s)`,
+    rate >= 1000 / WEAPONS.smg.fireDelay - 1.5,
   );
 }
 
@@ -295,7 +432,7 @@ for (const map of MAPS) {
     player.ammo = 9999;
     player.reserveAmmo = 9999;
     player.reloading = 0;
-    if (room.state.phase === 'build') room.state.nextWaveIn = 0;
+    if (room.state.phase === 'build') room.startNextWave();
     step(room, 1, 'p1');
     ticks += 1;
     if (room.state.wave !== currentWave) {

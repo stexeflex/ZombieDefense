@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { UPGRADE_MAX_LEVEL } from '../../../../shared/game-types';
 import {
   ProgressService,
   UPGRADE_DEFINITIONS,
@@ -18,6 +19,9 @@ export class Home {
   readonly progress = inject(ProgressService);
   readonly upgradesOpen = signal(false);
   readonly definitions = UPGRADE_DEFINITIONS;
+  readonly maxLevel = UPGRADE_MAX_LEVEL;
+  /** Eight pips, so every pip is a whole block of levels. */
+  readonly pips = [0, 1, 2, 3, 4, 5, 6, 7];
 
   name = localStorage.getItem('zombie-defense-name') ?? '';
   lobbyCode = '';
@@ -55,6 +59,10 @@ export class Home {
 
   level(key: UpgradeKey) {
     return this.progress.upgrades()[key];
+  }
+
+  pipFilled(key: UpgradeKey, pip: number) {
+    return this.level(key) > (pip * this.maxLevel) / this.pips.length;
   }
 
   private validateName() {

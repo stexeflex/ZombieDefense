@@ -2,7 +2,6 @@ import type { Client } from 'colyseus';
 import { Room } from 'colyseus';
 import {
   ARENA,
-  BUILD_SECONDS,
   DEFAULT_MAP_ID,
   DEFENSES,
   DEFENSE_REACH,
@@ -14,12 +13,15 @@ import {
   REVIVE_RADIUS,
   REVIVE_SECONDS,
   START_MONEY,
+  UPGRADE_MAX_LEVEL,
   WEAPONS,
   ZOMBIES,
+  armorReduction,
   canPlaceDefense,
   distanceToDefense,
   findMap,
-  sellRefund,
+  reserveCapacity,
+  sellValue,
   weaponLife,
   type DefenseType,
   type FxEvent,
@@ -45,11 +47,19 @@ interface JoinOptions {
   upgrades?: Partial<PermanentUpgrades>;
 }
 
+interface AmmoStore {
+  ammo: number;
+  reserveAmmo: number;
+}
+
 interface RuntimePlayer {
   input: PlayerInput;
   upgrades: PermanentUpgrades;
   grenadeRecharge: number[];
   grenadeThrowLock: number;
+  /** Magazine and spare rounds of every weapon that is not in hand. */
+  stowed: Map<WeaponType, AmmoStore>;
+  wasFiring: boolean;
 }
 
 const COLORS = ['#69f0ae', '#57b8ff', '#ffcc66', '#ff6b8a'];
@@ -145,8 +155,10 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.onMessage('buy_weapon', (client, weapon: WeaponType) =>
       this.buyWeapon(client.sessionId, weapon),
     );
+    this.onMessage('switch_weapon', (client, weapon: WeaponType) =>
+      this.selectWeapon(client.sessionId, weapon),
+    );
     this.onMessage('buy_ammo', (client) => this.buyAmmo(client.sessionId));
-    this.onMessage('buy_heal', (client) => this.buyHeal(client.sessionId));
     this.onMessage(
       'place',
       (client, payload: { type?: DefenseType; x?: number; y?: number; rotation?: number }) =>
@@ -177,6 +189,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.money = START_MONEY;
     player.ammo = this.magazineSize('pistol', upgrades);
     player.reserveAmmo = WEAPONS.pistol.reserve;
+    player.owned.clear();
+    player.owned.push('pistol');
 
     this.state.players.set(client.sessionId, player);
     this.runtimePlayers.set(client.sessionId, {
@@ -184,6 +198,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       upgrades,
       grenadeRecharge: [],
       grenadeThrowLock: 0,
+      stowed: new Map(),
+      wasFiring: false,
     });
     if (!this.state.hostSessionId) this.state.hostSessionId = client.sessionId;
     this.broadcastSnapshot();
@@ -196,6 +212,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       this.state.hostSessionId = this.state.players.keys().next().value ?? '';
     }
     if (this.state.phase === 'combat') this.checkDefeat();
+    // Nothing counts down any more, so a leaver must not keep the rest waiting.
+    if (this.state.phase === 'build' && this.everyoneReady()) this.startNextWave();
   }
 
   // ---------------------------------------------------------------- map setup
@@ -242,17 +260,23 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     }
   }
 
+  /** The build phase lasts as long as the squad wants; only "ready" ends it. */
   private updateBuild(delta: number) {
     this.updatePlayers(delta);
-    this.state.nextWaveIn = Math.max(0, this.state.nextWaveIn - delta);
-    if (this.state.nextWaveIn <= 0) this.startNextWave();
   }
 
   private updatePlayers(delta: number) {
     this.state.players.forEach((player, sessionId) => {
       const runtime = this.runtimePlayers.get(sessionId);
       if (!runtime) return;
+      // Held fire keeps a little credit across ticks so a fast weapon holds its
+      // rate. A fresh trigger press must not cash that in, or the first shot of
+      // a quick weapon would come out twice at once.
+      const firingNow =
+        runtime.input.shoot && player.reloading === 0 && this.state.phase === 'combat';
       player.fireCooldown = Math.max(-0.1, player.fireCooldown - delta);
+      if (!firingNow || !runtime.wasFiring) player.fireCooldown = Math.max(0, player.fireCooldown);
+      runtime.wasFiring = firingNow;
       player.firing = Math.max(0, player.firing - delta);
       player.hurt = Math.max(0, player.hurt - delta);
       runtime.grenadeThrowLock = Math.max(0, runtime.grenadeThrowLock - delta);
@@ -294,7 +318,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
         this.shoot(player, runtime.upgrades);
       }
       if (this.state.phase === 'combat' && player.ammo <= 0 && player.reloading === 0) {
-        if (player.reserveAmmo <= 0) this.fallBackToPistol(player);
+        if (player.reserveAmmo <= 0) this.fallBackToPistol(player, runtime);
         this.beginReload(player, runtime.upgrades);
       }
     });
@@ -806,10 +830,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const owner = ownerId ? this.state.players.get(ownerId) : undefined;
     if (owner) {
       owner.kills += 1;
-      const upgrades = this.runtimePlayers.get(ownerId)?.upgrades ?? EMPTY_UPGRADES;
-      owner.money += Math.round(
-        zombie.reward * this.map.moneyScale * (1 + upgrades.income * 0.02),
-      );
+      owner.money += Math.round(zombie.reward * this.map.moneyScale);
     }
     if (config.explode) this.explodeZombie(zombie, true);
   }
@@ -891,7 +912,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
 
   private damagePlayer(player: PlayerState, amount: number) {
     const upgrades = this.runtimePlayers.get(player.id)?.upgrades ?? EMPTY_UPGRADES;
-    const reduction = 1 - Math.min(0.2, upgrades.armor * 0.01);
+    const reduction = 1 - armorReduction(upgrades.armor);
     player.health = Math.max(0, player.health - amount * reduction);
     player.hurt = 0.35;
     if (player.health <= 0 && player.alive) {
@@ -905,12 +926,31 @@ export class ZombieRoom extends Room<{ state: GameState }> {
    * A dry weapon would otherwise leave a wave unfinishable, so the pistol is an
    * endless fallback.
    */
-  private fallBackToPistol(player: PlayerState) {
+  private fallBackToPistol(player: PlayerState, runtime: RuntimePlayer) {
     if (player.weapon !== 'pistol') {
-      player.weapon = 'pistol';
+      this.equipWeapon(player, runtime, 'pistol');
       this.pushFx({ k: 'heal', x: player.x, y: player.y, s: 'pistol' });
     }
     player.reserveAmmo = WEAPONS.pistol.reserve;
+  }
+
+  /**
+   * Puts the weapon in hand and parks the ammunition of the old one, so every
+   * bought weapon keeps its own magazine.
+   */
+  private equipWeapon(player: PlayerState, runtime: RuntimePlayer, weapon: WeaponType) {
+    if (player.weapon === weapon) return;
+    runtime.stowed.set(player.weapon, {
+      ammo: player.ammo,
+      reserveAmmo: player.reserveAmmo,
+    });
+    const stored = runtime.stowed.get(weapon);
+    player.weapon = weapon;
+    player.ammo = stored ? stored.ammo : this.magazineSize(weapon, runtime.upgrades);
+    player.reserveAmmo = stored ? stored.reserveAmmo : WEAPONS[weapon].reserve;
+    player.reloading = 0;
+    // Swapping must not be a free burst, so the next shot waits a moment.
+    player.fireCooldown = Math.max(player.fireCooldown, 0.3);
   }
 
   private beginReload(player: PlayerState, upgrades: PermanentUpgrades) {
@@ -1003,6 +1043,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       player.alive = true;
       player.money = START_MONEY;
       player.weapon = 'pistol';
+      player.owned.clear();
+      player.owned.push('pistol');
       player.ammo = this.magazineSize('pistol', upgrades);
       player.reserveAmmo = WEAPONS.pistol.reserve;
       player.grenades = 3;
@@ -1016,6 +1058,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       if (runtime) {
         runtime.grenadeRecharge = [];
         runtime.grenadeThrowLock = 0;
+        runtime.stowed.clear();
+        runtime.wasFiring = false;
       }
     });
     this.startNextWave();
@@ -1031,8 +1075,12 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const definition = this.map.waves[this.state.wave - 1];
     this.spawnQueue = [...definition.zombies];
     this.spawnDelay = 0.3;
-    this.state.nextWaveIn = 0;
     this.state.waveKind = definition.kind;
+    // Everything standing has served its purpose now, so it only sells second
+    // hand from here on.
+    this.state.defenses.forEach((defense) => {
+      defense.refund = sellValue(defense.type, false);
+    });
     this.state.waveLabel = definition.label;
     this.state.statusText =
       definition.kind === 'boss'
@@ -1054,20 +1102,21 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       (90 + this.state.wave * 42) * this.map.moneyScale * multiplier,
     );
     this.state.phase = 'build';
-    this.state.nextWaveIn = BUILD_SECONDS;
     this.state.statusText = `Welle geschafft · +${reward} $ für alle`;
     this.state.projectiles.clear();
     this.state.bossName = '';
     this.state.bossHealth = 0;
     this.state.bossMaxHealth = 0;
     this.state.players.forEach((player) => {
-      const upgrades = this.runtimePlayers.get(player.id)?.upgrades ?? EMPTY_UPGRADES;
-      player.money += Math.round(reward * (1 + upgrades.income * 0.02));
-      if (!player.alive) {
-        player.alive = true;
-        player.health = Math.ceil(player.maxHealth * 0.45);
-        player.reviveProgress = 0;
+      player.money += reward;
+      // The squad goes into the next wave whole: everyone is back on their feet
+      // and patched up.
+      if (!player.alive || player.health < player.maxHealth) {
+        this.pushFx({ k: 'heal', x: player.x, y: player.y });
       }
+      player.alive = true;
+      player.health = player.maxHealth;
+      player.reviveProgress = 0;
       player.grenades = 3;
       player.grenadeCooldown = 0;
       player.ready = false;
@@ -1106,37 +1155,44 @@ export class ZombieRoom extends Room<{ state: GameState }> {
 
   // -------------------------------------------------------------------- shop
 
+  /** Bought weapons stay in the arsenal, so a purchase is never a trade-in. */
   private buyWeapon(sessionId: string, weapon: WeaponType) {
     const player = this.state.players.get(sessionId);
     const runtime = this.runtimePlayers.get(sessionId);
     if (!player || !runtime || this.state.phase !== 'build' || !(weapon in WEAPONS)) return;
+    if (player.owned.includes(weapon)) {
+      this.selectWeapon(sessionId, weapon);
+      return;
+    }
     const config = WEAPONS[weapon];
-    if (weapon === 'pistol' || player.money < config.cost || player.weapon === weapon) return;
+    if (player.money < config.cost) return;
     player.money -= config.cost;
-    player.weapon = weapon;
-    player.ammo = this.magazineSize(weapon, runtime.upgrades);
-    player.reserveAmmo = config.reserve;
-    player.reloading = 0;
+    player.owned.push(weapon);
+    runtime.stowed.set(weapon, {
+      ammo: this.magazineSize(weapon, runtime.upgrades),
+      reserveAmmo: config.reserve,
+    });
+    this.equipWeapon(player, runtime, weapon);
+  }
+
+  private selectWeapon(sessionId: string, weapon: WeaponType) {
+    const player = this.state.players.get(sessionId);
+    const runtime = this.runtimePlayers.get(sessionId);
+    if (!player || !runtime || !(weapon in WEAPONS)) return;
+    if (this.state.phase !== 'build' && this.state.phase !== 'combat') return;
+    if (!player.owned.includes(weapon)) return;
+    this.equipWeapon(player, runtime, weapon);
   }
 
   private buyAmmo(sessionId: string) {
     const player = this.state.players.get(sessionId);
     if (!player || this.state.phase !== 'build') return;
     const config = WEAPONS[player.weapon];
+    const capacity = reserveCapacity(player.weapon);
     const cost = Math.round(config.ammoCost * this.map.moneyScale);
-    if (player.money < cost) return;
+    if (player.money < cost || player.reserveAmmo >= capacity) return;
     player.money -= cost;
-    player.reserveAmmo += config.reserve;
-  }
-
-  private buyHeal(sessionId: string) {
-    const player = this.state.players.get(sessionId);
-    if (!player || this.state.phase !== 'build') return;
-    const cost = Math.round(260 * this.map.moneyScale);
-    if (player.money < cost || player.health >= player.maxHealth) return;
-    player.money -= cost;
-    player.health = player.maxHealth;
-    this.pushFx({ k: 'heal', x: player.x, y: player.y });
+    player.reserveAmmo = capacity;
   }
 
   private placeDefense(
@@ -1176,6 +1232,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const bonus = config.kind === 'barricade' ? 1 + runtime.upgrades.barricadeHealth * 0.02 : 1;
     defense.maxHealth = Math.round(config.health * bonus);
     defense.health = defense.maxHealth;
+    defense.refund = sellValue(type, true);
     player.money -= config.cost;
     this.state.defenses.set(defense.id, defense);
     this.pushFx({ k: 'structure', x, y, s: type });
@@ -1212,7 +1269,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const player = this.state.players.get(sessionId);
     const target = this.focusedDefense(sessionId, id);
     if (!player || !target) return;
-    player.money += sellRefund(target.type);
+    // Exactly the price the client shows on the highlighted structure.
+    player.money += target.refund;
     this.state.defenses.delete(target.id);
     this.pushFx({ k: 'wreck', x: target.x, y: target.y, s: target.type });
   }
@@ -1548,7 +1606,11 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     return Object.fromEntries(
       Object.keys(EMPTY_UPGRADES).map((key) => [
         key,
-        this.clamp(Math.floor(Number(upgrades?.[key as keyof PermanentUpgrades]) || 0), 0, 20),
+        this.clamp(
+          Math.floor(Number(upgrades?.[key as keyof PermanentUpgrades]) || 0),
+          0,
+          UPGRADE_MAX_LEVEL,
+        ),
       ]),
     ) as unknown as PermanentUpgrades;
   }

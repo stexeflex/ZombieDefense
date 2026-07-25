@@ -454,7 +454,7 @@ footer {
 }
 
 .level-track span {
-  width: 18px;
+  width: 11px;
   height: 3px;
   background: var(--line-bright);
 }
@@ -472,6 +472,7 @@ footer {
 .upgrade-buy b {
   color: var(--muted);
   font-size: 0.65rem;
+  white-space: nowrap;
 }
 
 .upgrade-buy button {

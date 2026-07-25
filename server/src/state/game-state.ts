@@ -1,4 +1,4 @@
-import { MapSchema, Schema, type } from '@colyseus/schema';
+import { ArraySchema, MapSchema, Schema, type } from '@colyseus/schema';
 import type {
   DefenseType,
   GamePhase,
@@ -19,6 +19,7 @@ export class PlayerState extends Schema {
   @type('boolean') alive = true;
   @type('number') money = 400;
   @type('string') weapon: WeaponType = 'pistol';
+  @type(['string']) owned = new ArraySchema<string>('pistol');
   @type('number') ammo = 12;
   @type('number') reserveAmmo = 96;
   @type('number') grenades = 3;
@@ -90,6 +91,8 @@ export class DefenseState extends Schema {
   @type('number') health = 100;
   @type('number') maxHealth = 100;
   @type('number') rotation = 0;
+  /** What selling pays: the full price until the next wave starts. */
+  @type('number') refund = 0;
   cooldown = 0;
 }
 
@@ -103,7 +106,6 @@ export class GameState extends Schema {
   @type('string') waveLabel = 'Welle';
   @type('string') waveKind: WaveKind = 'normal';
   @type('number') enemiesRemaining = 0;
-  @type('number') nextWaveIn = 0;
   @type('string') statusText = 'Warte auf Spieler';
   @type('string') bossName = '';
   @type('number') bossHealth = 0;
