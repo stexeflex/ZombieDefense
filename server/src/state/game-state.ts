@@ -2,6 +2,7 @@ import { ArraySchema, MapSchema, Schema, type } from '@colyseus/schema';
 import type {
   DefenseType,
   GamePhase,
+  HazardKind,
   WaveKind,
   WeaponType,
   ZombieType,
@@ -24,6 +25,15 @@ export class PlayerState extends Schema {
   @type('number') reserveAmmo = 96;
   @type('number') grenades = 3;
   @type('number') grenadeCooldown = 0;
+  @type('number') dashCharges = 2;
+  @type('number') dashMax = 2;
+  /** Seconds left of the current dash — above zero means untouchable. */
+  @type('number') dashing = 0;
+  @type('number') dashCooldown = 0;
+  /** Discounted buys the starter perks still have left this run. */
+  @type('number') weaponDiscount = 0;
+  @type('number') barricadeDiscount = 0;
+  @type('number') turretDiscount = 0;
   @type('boolean') ready = false;
   @type('number') kills = 0;
   @type('number') reviveProgress = 0;
@@ -31,6 +41,8 @@ export class PlayerState extends Schema {
   @type('number') firing = 0;
   @type('number') hurt = 0;
   fireCooldown = 0;
+  dashDirX = 1;
+  dashDirY = 0;
 }
 
 export class ZombieState extends Schema {
@@ -44,11 +56,14 @@ export class ZombieState extends Schema {
   @type('number') burning = 0;
   @type('number') attacking = 0;
   @type('number') charging = 0;
+  /** Above zero while a telegraphed attack is winding up. */
+  @type('number') casting = 0;
   speed = 70;
   baseSpeed = 70;
   damage = 12;
   radius = 18;
   reward = 12;
+  armor = 0;
   attackCooldown = 0;
   stuckTimer = 0;
   bestDistance = Infinity;
@@ -56,9 +71,15 @@ export class ZombieState extends Schema {
   burnDps = 0;
   slowTimer = 0;
   slowFactor = 1;
-  chargeTimer = 4;
-  slamTimer = 5;
-  summonTimer = 8;
+  hasteTimer = 0;
+  hasteFactor = 1;
+  chargeSpeed = 0;
+  /** One countdown per timed ability of this zombie type. */
+  abilityTimers: number[] = [];
+  /** Minions this zombie may still call in, one entry per timed ability. */
+  abilityBudget: number[] = [];
+  /** Damage every player dealt, so the reward can be split fairly. */
+  damageBy = new Map<string, number>();
 }
 
 export class ProjectileState extends Schema {
@@ -96,6 +117,24 @@ export class DefenseState extends Schema {
   cooldown = 0;
 }
 
+/**
+ * Ground effects: red warning rings that go off when they run out, and the
+ * burning or toxic pools a boss leaves behind.
+ */
+export class HazardState extends Schema {
+  @type('string') id = '';
+  @type('string') kind: HazardKind = 'warning';
+  @type('number') x = 0;
+  @type('number') y = 0;
+  @type('number') r = 100;
+  @type('number') life = 1;
+  @type('number') maxLife = 1;
+  ownerId = '';
+  /** Burst damage for a warning, damage per second for a pool. */
+  damage = 0;
+  tick = 0;
+}
+
 export class GameState extends Schema {
   @type('string') phase: GamePhase = 'lobby';
   @type('string') lobbyCode = '';
@@ -114,4 +153,5 @@ export class GameState extends Schema {
   @type({ map: ZombieState }) zombies = new MapSchema<ZombieState>();
   @type({ map: ProjectileState }) projectiles = new MapSchema<ProjectileState>();
   @type({ map: DefenseState }) defenses = new MapSchema<DefenseState>();
+  @type({ map: HazardState }) hazards = new MapSchema<HazardState>();
 }

@@ -1,10 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { UPGRADE_MAX_LEVEL } from '../../../../shared/game-types';
+import { MAPS, WEAPON_ORDER, ZOMBIE_TYPES } from '../../../../shared/game-types';
 import {
+  PERK_DEFINITIONS,
   ProgressService,
   UPGRADE_DEFINITIONS,
+  type PerkKey,
   type UpgradeKey,
 } from '../../core/progress.service';
 
@@ -18,10 +20,14 @@ export class Home {
   private readonly router = inject(Router);
   readonly progress = inject(ProgressService);
   readonly upgradesOpen = signal(false);
+  readonly shopTab = signal<'levels' | 'perks'>('levels');
   readonly definitions = UPGRADE_DEFINITIONS;
-  readonly maxLevel = UPGRADE_MAX_LEVEL;
+  readonly perkDefinitions = PERK_DEFINITIONS;
   /** Eight pips, so every pip is a whole block of levels. */
   readonly pips = [0, 1, 2, 3, 4, 5, 6, 7];
+  readonly mapCount = MAPS.length;
+  readonly weaponCount = WEAPON_ORDER.length;
+  readonly zombieCount = ZOMBIE_TYPES.length;
 
   name = localStorage.getItem('zombie-defense-name') ?? '';
   lobbyCode = '';
@@ -57,12 +63,20 @@ export class Home {
     this.progress.buy(key);
   }
 
+  buyPerk(key: PerkKey) {
+    this.progress.buyPerk(key);
+  }
+
   level(key: UpgradeKey) {
     return this.progress.upgrades()[key];
   }
 
+  maxLevel(key: UpgradeKey) {
+    return this.progress.maxLevel(key);
+  }
+
   pipFilled(key: UpgradeKey, pip: number) {
-    return this.level(key) > (pip * this.maxLevel) / this.pips.length;
+    return this.level(key) > (pip * this.maxLevel(key)) / this.pips.length;
   }
 
   private validateName() {

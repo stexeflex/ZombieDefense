@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import {
+  DEFENSES,
   MAPS,
+  ZOMBIES,
+  ZOMBIE_TYPES,
   type DefenseType,
   type ObstacleKind,
   type WeaponType,
@@ -346,14 +349,35 @@ interface ZombieSkin {
 const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   normal: { skin: '#7fa356', cloth: '#3c4a35', accent: '#5b7a3c', eye: '#ffd166' },
   fast: { skin: '#c3cf63', cloth: '#4b4b2c', accent: '#8f9a3c', eye: '#ff8f5a' },
+  crawler: { skin: '#9ab86a', cloth: '#38402c', accent: '#6d8a3c', eye: '#ffe08a' },
   big: { skin: '#a5674f', cloth: '#4a3128', accent: '#7d4634', eye: '#ff6b6b' },
   exploder: { skin: '#8fbf5a', cloth: '#3e4a2a', accent: '#c4ff4f', eye: '#d8ff5a' },
+  armored: { skin: '#7a8390', cloth: '#2f353d', accent: '#aab6c2', eye: '#7fd8ff' },
+  spitter: { skin: '#6fae7a', cloth: '#2c4433', accent: '#9dff8a', eye: '#c6ff5a' },
+  screamer: { skin: '#b98fa8', cloth: '#4a2e3f', accent: '#ff9ed8', eye: '#ffe08a' },
   brute: { skin: '#8a5f7a', cloth: '#3a2635', accent: '#c05f8f', eye: '#ff5f9e' },
-  boss: { skin: '#9d3f4a', cloth: '#38181f', accent: '#ff4f6b', eye: '#ffd166' },
+  warden: { skin: '#6b7d8a', cloth: '#2b3540', accent: '#9fd0ff', eye: '#7fd8ff' },
+  stalker: { skin: '#a8a05a', cloth: '#40391f', accent: '#ffd166', eye: '#ff8f5a' },
+  mortar: { skin: '#7f6a4a', cloth: '#3a2f1e', accent: '#ffa04a', eye: '#ffd166' },
+  broodling: { skin: '#8f6f8a', cloth: '#3a2a38', accent: '#d08fc0', eye: '#ff8fd8' },
+  butcher: { skin: '#9d3f4a', cloth: '#38181f', accent: '#ff4f6b', eye: '#ffd166' },
+  brood: { skin: '#8a4a7d', cloth: '#331a30', accent: '#ff6fd8', eye: '#ffd166' },
+  warlord: { skin: '#8f7a3f', cloth: '#3a3018', accent: '#ffcc66', eye: '#fff0a8' },
+  artillery: { skin: '#7a5a3a', cloth: '#332616', accent: '#ff9a4a', eye: '#ffd166' },
+  vortex: { skin: '#3f7a8a', cloth: '#16303a', accent: '#4ce0d5', eye: '#b8fff6' },
+  slag: { skin: '#9d5230', cloth: '#3a1c0e', accent: '#ff8f4a', eye: '#ffe08a' },
+  render: { skin: '#6a4f9d', cloth: '#26183a', accent: '#b58cff', eye: '#e0d0ff' },
+  swarmqueen: { skin: '#5f8a3f', cloth: '#22331a', accent: '#9be36f', eye: '#e8ff9a' },
+  plague: { skin: '#4a8a5f', cloth: '#183322', accent: '#8dff6b', eye: '#d8ffb8' },
+  omega: { skin: '#8a2f6a', cloth: '#2e0f26', accent: '#ff5fd0', eye: '#fff0ff' },
 };
 
 function paintZombieBody(type: ZombieType, radius: number): Painter {
   const skin = ZOMBIE_SKINS[type];
+  const rank = ZOMBIES[type].rank;
+  const plated = rank === 'mini' || rank === 'boss' || type === 'armored';
+  const crowned = rank === 'boss';
+  const glowing = type === 'exploder' || type === 'spitter';
   return (ctx, w, h) => {
     const cx = w / 2;
     const cy = h / 2;
@@ -396,11 +420,11 @@ function paintZombieBody(type: ZombieType, radius: number): Painter {
     ctx.fillRect(-bodyW / 2, -bodyH / 2, bodyW, bodyH);
     ctx.restore();
 
-    if (type === 'exploder') {
-      circle(ctx, 0, 0, radius * 0.62, 'rgba(196, 255, 79, 0.35)', '#c4ff4f', 2);
+    if (glowing) {
+      circle(ctx, 0, 0, radius * 0.62, 'rgba(196, 255, 79, 0.35)', skin.accent, 2);
       circle(ctx, -radius * 0.1, -radius * 0.15, radius * 0.22, '#e4ff9a');
     }
-    if (type === 'brute' || type === 'boss') {
+    if (plated) {
       // armour plates
       ctx.fillStyle = '#2a1f26';
       ctx.fillRect(-bodyW * 0.18, -bodyH / 2 + 2, bodyW * 0.2, bodyH - 4);
@@ -437,7 +461,7 @@ function paintZombieBody(type: ZombieType, radius: number): Painter {
     ctx.lineTo(headX + radius * 0.5, radius * 0.18);
     ctx.stroke();
 
-    if (type === 'boss') {
+    if (crowned) {
       // crown of spikes
       ctx.fillStyle = '#e8d9b0';
       for (let index = -2; index <= 2; index += 1) {
@@ -591,6 +615,34 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     fillRounded(ctx, 22, 15, 22, 6, 3, '#59665a', '#141a12', 2);
     circle(ctx, 44, 9, 3, '#ff8f5a');
     circle(ctx, 44, 18, 3, '#ff8f5a');
+  },
+  flame: (ctx) => {
+    fillRounded(ctx, 0, 5, 20, 16, 6, '#7a3324', '#1d0f0b', 2);
+    fillRounded(ctx, 18, 9, 24, 8, 3, '#43504a', '#141d19', 2);
+    fillRounded(ctx, 40, 6, 12, 14, 5, '#8f5a2a', '#241407', 2);
+    circle(ctx, 50, 13, 4, '#ffb347');
+    circle(ctx, 8, 13, 3.5, '#ff7a3a');
+  },
+  tesla: (ctx) => {
+    fillRounded(ctx, 0, 8, 24, 10, 4, '#2b3a4a', '#101820', 2);
+    circle(ctx, 36, 13, 11, '#1b2b3a', '#5fa8ff', 2.5);
+    circle(ctx, 36, 13, 5, '#9fdcff');
+    ctx.strokeStyle = '#9fdcff';
+    ctx.lineWidth = 2;
+    for (let index = 0; index < 4; index += 1) {
+      const angle = (Math.PI / 2) * index + Math.PI / 4;
+      ctx.beginPath();
+      ctx.moveTo(36 + Math.cos(angle) * 7, 13 + Math.sin(angle) * 7);
+      ctx.lineTo(36 + Math.cos(angle) * 13, 13 + Math.sin(angle) * 13);
+      ctx.stroke();
+    }
+  },
+  laser: (ctx) => {
+    fillRounded(ctx, 0, 7, 26, 14, 5, '#2e2b3e', '#121019', 2);
+    fillRounded(ctx, 24, 10, 30, 8, 3, '#5d5478', '#121019', 2);
+    fillRounded(ctx, 6, 2, 14, 6, 2, '#4a4361');
+    circle(ctx, 52, 14, 4.5, '#ff8fd8');
+    circle(ctx, 12, 14, 3, '#ffb8ea');
   },
 };
 
@@ -859,8 +911,8 @@ export function createGameTextures(scene: Phaser.Scene) {
     make(scene, `weapon-${weapon}`, 72, 34, painter);
   }
 
-  for (const type of Object.keys(ZOMBIE_SKINS) as ZombieType[]) {
-    const radius = { normal: 18, fast: 14, big: 29, exploder: 20, brute: 40, boss: 58 }[type];
+  for (const type of ZOMBIE_TYPES) {
+    const radius = ZOMBIES[type].radius;
     make(scene, `zombie-${type}`, radius * 3.4, radius * 3.4, paintZombieBody(type, radius));
     make(
       scene,
@@ -876,12 +928,25 @@ export function createGameTextures(scene: Phaser.Scene) {
   make(scene, 'defense-stone', 60, 30, DEFENSE_PAINTERS.stone!);
   make(scene, 'defense-steel', 62, 28, DEFENSE_PAINTERS.steel!);
 
-  make(scene, 'turret-base-mg', 46, 46, paintTurretBase('#69f0ae', 46));
-  make(scene, 'turret-base-marksman', 46, 46, paintTurretBase('#8fffc1', 46));
-  make(scene, 'turret-base-launcher', 50, 50, paintTurretBase('#ff8f5a', 50));
-  make(scene, 'turret-gun-mg', 48, 24, TURRET_GUN_PAINTERS.mg!);
-  make(scene, 'turret-gun-marksman', 56, 20, TURRET_GUN_PAINTERS.marksman!);
-  make(scene, 'turret-gun-launcher', 48, 26, TURRET_GUN_PAINTERS.launcher!);
+  const TURRET_ACCENTS: Record<string, string> = {
+    mg: '#69f0ae',
+    flame: '#ff8f4a',
+    marksman: '#8fffc1',
+    tesla: '#9fdcff',
+    launcher: '#ff8f5a',
+    laser: '#ff8fd8',
+  };
+  for (const [type, painter] of Object.entries(TURRET_GUN_PAINTERS)) {
+    const config = DEFENSES[type as DefenseType];
+    make(
+      scene,
+      `turret-base-${type}`,
+      config.width,
+      config.height,
+      paintTurretBase(TURRET_ACCENTS[type] ?? '#69f0ae', config.width),
+    );
+    make(scene, `turret-gun-${type}`, 58, 26, painter!);
+  }
 
   for (const [kind, painter] of Object.entries(OBSTACLE_PAINTERS)) {
     const size = OBSTACLE_TEXTURE_SIZE[kind as ObstacleKind];
@@ -899,6 +964,24 @@ export function createGameTextures(scene: Phaser.Scene) {
   make(scene, 'fx-energy', 20, 20, paintSoftCircle('rgba(150, 220, 255, 1)'));
   make(scene, 'fx-shard', 12, 12, paintShard('#c8d0cc'));
   make(scene, 'fx-glow', 64, 64, paintSoftCircle('rgba(255, 200, 120, 1)'));
+  make(scene, 'fx-pool', 128, 128, paintPool());
+}
+
+/** Ground pool for lava and poison; the colour comes from the tint. */
+function paintPool(): Painter {
+  return (ctx, w, h) => {
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, w * 0.1, w / 2, h / 2, w / 2);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.95)');
+    gradient.addColorStop(0.55, 'rgba(255,255,255,0.55)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, w / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.5;
+    noise(ctx, w, h, 200, ['rgba(255,255,255,0.35)', 'rgba(0,0,0,0.25)'], 2, 6, 91);
+    ctx.globalAlpha = 1;
+  };
 }
 
 export function playerTextureIndex(color: string) {

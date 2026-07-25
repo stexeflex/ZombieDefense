@@ -1084,6 +1084,65 @@ kbd {
 
 /* --- HUD-Erweiterungen ------------------------------------------------ */
 
+.dash-block {
+  min-width: 110px;
+  padding: 10px 12px;
+  background: rgba(7, 13, 11, 0.87);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  display: grid;
+  align-content: center;
+  gap: 6px;
+}
+
+.dash-block.active {
+  border-color: rgba(159, 220, 255, 0.75);
+  background: rgba(24, 48, 66, 0.9);
+}
+
+.dash-block small {
+  color: var(--muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 0.54rem;
+}
+
+.dash-pips {
+  display: flex;
+  gap: 4px;
+}
+
+.dash-pips span {
+  width: 16px;
+  height: 6px;
+  background: rgba(159, 220, 255, 0.18);
+}
+
+.dash-pips span.filled {
+  background: #9fdcff;
+  box-shadow: 0 0 8px rgba(159, 220, 255, 0.6);
+}
+
+.dash-timer {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.55rem;
+}
+
+.dash-timer.ready {
+  color: #9fdcff;
+}
+
+.shop-item.deal {
+  border-color: rgba(255, 204, 102, 0.45);
+  background: rgba(255, 204, 102, 0.06);
+}
+
+.shop-item.deal > strong::after {
+  content: ' ▼';
+  font-size: 0.5rem;
+}
+
 .money-block {
   min-width: 110px;
   padding: 10px 12px;

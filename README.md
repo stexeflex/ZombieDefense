@@ -1,8 +1,8 @@
 # Zombie Defense
 
 Kooperatives 2D-Top-down-Spiel für 1–4 Freunde. Ein Spieler erstellt eine
-Lobby, teilt den Link und kämpft sich durch sieben Karten mit festen Wellen,
-Mini-Bossen und einem Endboss pro Karte.
+Lobby, teilt den Link und kämpft sich durch zehn Karten mit festen Wellen,
+Mini-Bossen und einem eigenen Endboss pro Karte.
 
 Der aktuelle Stand ist ein spielbarer Online-Prototyp. Er braucht keine
 Accounts und keine Datenbank.
@@ -16,39 +16,68 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 - Link-Lobbys mit fünfstelligem Code, 1–4 Spieler über Colyseus/WebSockets
 - autoritative Bewegung, Zombie-KI, Treffer und Wellen auf dem Server
-- sieben Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
-- jede Karte endet mit einem Endboss und schaltet die nächste Karte frei
-- feste Mini-Boss-Wellen mit dem „Zerstörer“ (Sturmangriff und Schockwelle)
-- sechs Zombiearten: Läufer, Renner, Koloss, Sprengling, Zerstörer, Fleischkönig
+- zehn Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
+- jede Karte endet mit ihrem **eigenen** Endboss und schaltet die nächste frei
+- Dash auf der Leertaste: zwei Ladungen, kurzer Cooldown, währenddessen
+  unverwundbar — sichtbar am blauen Ring
+- Kopfgeld wird **fair geteilt**: der Löwenanteil geht nach ausgeteiltem
+  Schaden, ein Rest an den ganzen Trupp — der letzte Schuss allein zählt nicht
+- Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
+- dreizehn Zombiearten plus zehn Bosse
 - zehn Waffen von der Pistole bis zur Laserkanone
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- vier Barrikaden (Holz, Stachel, Stein, Stahl) und drei Türme (MG,
-  Scharfschütze, Rakete)
+- vier Barrikaden (Holz, Stachel, Stein, Stahl) und sechs Türme (MG, Brand,
+  Scharfschütze, Blitz, Rakete, Laser)
 - Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
-- gerade Gebautes lässt sich zum vollen Preis wieder verkaufen
 - Munition, Reparieren und Verkaufen im Bau-Shop
 - die Bauphase hat keine Uhr: die nächste Welle startet erst, wenn alle bereit
   sind
 - am Wellenende wird der ganze Trupp geheilt und wieder aufgestellt
 - automatische Wiederbelebung gefallener Spieler durch kurzes Danebenstehen
-- Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte
+- Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
+  rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold und elf Upgrades mit je 40 Stufen über `localStorage`
+- permanentes Gold, sechzehn Stufen-Upgrades und neun einmalige Vorteile über
+  `localStorage`
 
 ### Karten
 
-| Karte | Wellen | Härte | Gold für den Endboss |
-|---|---|---|---|
-| Vorposten 07 | 10 | ×1 | 150 |
-| Industriehafen | 12 | ×1,45 | 320 |
-| Militärbasis Nord | 14 | ×2 | 600 |
-| Krater-Quarantäne | 16 | ×2,8 | 1000 |
-| Metro Sektor 9 | 17 | ×3,6 | 1500 |
-| Stahlwerk Kessel 3 | 18 | ×4,4 | 2100 |
-| Zitadelle Alpha | 20 | ×5,2 | 3000 |
+| Karte | Wellen | Härte | Endboss | Gold |
+|---|---|---|---|---|
+| Vorposten 07 | 10 | ×1 | Fleischkönig | 150 |
+| Industriehafen | 12 | ×1,45 | Brutmutter | 320 |
+| Militärbasis Nord | 14 | ×2 | Feldmarschall | 600 |
+| Krater-Quarantäne | 16 | ×2,8 | Artillerist | 1000 |
+| Metro Sektor 9 | 17 | ×3,6 | Sogfürst | 1500 |
+| Stahlwerk Kessel 3 | 18 | ×4,4 | Schlackenherr | 2100 |
+| Zitadelle Alpha | 20 | ×5,2 | Zerreißer | 3000 |
+| Nekropole | 22 | ×6 | Schwarmkönigin | 4200 |
+| Reaktorblock 4 | 24 | ×6,8 | Seuchenfürst | 5800 |
+| Abgrund-Kathedrale | 26 | ×7,6 | OMEGA | 9000 |
+
+### Bosse
+
+Jede Karte hat genau einen Endboss, und jeder kann etwas anderes:
+
+| Boss | Kann |
+|---|---|
+| Fleischkönig | Sturmangriff, Schockwelle, ruft Nachschub |
+| Brutmutter | zerfällt beim Sterben in Brutlinge, die selbst wieder zerfallen |
+| Feldmarschall | heilt sich und die ganze Horde, ruft Panzerträger |
+| Artillerist | Bombenhagel aus der Ferne, angekündigt mit roten Warnkreisen |
+| Sogfürst | saugt den Trupp zu sich und stößt ihn wieder weg |
+| Schlackenherr | hinterlässt brennende Lavapfützen |
+| Zerreißer | gewaltige Druckwelle, der rote Kreis ist die einzige Warnung |
+| Schwarmkönigin | endloser Nachschub, zerfällt beim Sterben |
+| Seuchenfürst | Giftpfützen und Heilschwaden für die Horde |
+| OMEGA | Druckwelle, Bombenhagel, Sog, Lava, Sturm — nur heilen kann es sich nicht |
+
+Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
+(gepanzert, ruft Verstärkung), Schlitzer (springt heran) und Mörserträger
+(Bomben mit Warnkreis).
 
 ### Waffen
 
@@ -64,6 +93,17 @@ Aufruf kann das Laden deshalb kurz dauern.
 | Raketenwerfer | 3300 | Sprengschaden im Umkreis |
 | Blitzstreuer | 3900 | Blitz springt auf vier weitere Gegner |
 | Laserkanone | 4800 | Dauerstrahl, durchschlägt sechs Gegner |
+
+### Türme
+
+| Turm | Preis | Besonderheit |
+|---|---|---|
+| MG-Turm | 700 | Dauerfeuer auf mittlere Distanz |
+| Brandturm | 1000 | kurze Reichweite, setzt ganze Gruppen in Brand |
+| Scharfschützenturm | 1500 | weite Reichweite, durchschlägt Reihen |
+| Blitzturm | 1900 | Blitz springt auf drei Nachbarn über |
+| Raketenturm | 2200 | Sprengraketen gegen Gruppen |
+| Laserturm | 3200 | Endgame: durchschlägt Reihen auf weite Distanz |
 
 ## Voraussetzungen
 
@@ -110,6 +150,7 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | Taste | Aktion |
 |---|---|
 | `WASD` oder Pfeiltasten | Bewegen |
+| `Leertaste` oder `Shift` | Dash — kurz unverwundbar |
 | Maus | Zielen |
 | Linke Maustaste | Schießen |
 | `R` | Nachladen; beim Platzieren Barrikade drehen |
@@ -118,6 +159,10 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | `F` | markierte Verteidigung reparieren (nur Bauphase) |
 | `V` | markierte Verteidigung verkaufen (nur Bauphase) |
 | Rechtsklick | ausgewählte Verteidigung abwählen |
+
+Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange
+er läuft, geht jeder Treffer daneben — der blaue Ring zeigt an, wann das gilt.
+Im permanenten Shop gibt es weitere Ladungen und eine schnellere Aufladung.
 
 In der Bauphase wird im Seitenmenü zwischen Waffen, Barrikaden und Türmen
 gewechselt, ein Bauteil ausgewählt und danach auf dem Spielfeld platziert.
@@ -136,22 +181,43 @@ stehen wieder auf. Zum Wiederbeleben mitten in der Welle genügt es, kurz neben
 einem gefallenen Mitspieler stehen zu bleiben. Sound und Musik lassen sich oben
 rechts abschalten.
 
+## Geld und Fortschritt
+
+Kopfgeld wird geteilt: 70 % gehen nach dem Schaden, den jeder an dem Zombie
+angerichtet hat, 30 % gleichmäßig an den ganzen Trupp. Wer Türme baut,
+verdient über deren Schaden mit. Der letzte Schuss bringt keinen Bonus mehr.
+
+Permanentes Gold gibt es am Ende jedes Runs. Im Shop auf der Startseite stehen
+zwei Arten von Käufen:
+
+- **Stufen-Upgrades** – Leben, Panzerung, Tempo, Waffenschaden, Nachladen,
+  Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
+  Wiederbelebung, Dash-Ladungen und Dash-Aufladung
+- **Einmalige Vorteile** – günstigere erste Waffe, erste Barrikaden und erster
+  Turm eines Runs, eine zusätzliche Dash-Ladung, ein Dash der Zombies
+  wegschleudert, doppelt so schnelles Wiederbeleben, günstigere Reparaturen,
+  eine Granate mehr und ein Aufbäumen, das einen tödlichen Treffer pro Welle
+  überlebt
+
+Upgrades, die direkt Geld oder Gold bringen, gibt es bewusst nicht.
+
 ## Projektstruktur
 
 ```text
 src/                 Angular-Oberfläche und Phaser-Spiel
-src/app/game/        Szene, Sprites und prozedurale Texturen
+src/app/game/        Szene, Effekte, Views und prozedurale Texturen
 src/app/core/        Verbindung, Fortschritt und Audio
-shared/              Karten, Waffen, Gegner und Wellenpläne
-server/src/          autoritativer Colyseus-Server
+shared/              Arena, Waffen, Verteidigungen, Zombies, Wellen, Karten
+server/src/game/     Spielsysteme: Spieler, Zombies, Fähigkeiten, Bau, Wellen
+server/src/rooms/    Colyseus-Raum als dünne Netzwerkschicht
 scripts/             lokale Hilfsskripte
 ```
 
 Der Browser sendet nur Eingaben und Kauf-/Bauabsichten. Der Server entscheidet
 über Positionen, Schüsse, Treffer, Explosionen, Zombie-Leben, Spielerleben,
-Wiederbelebung, Geld, Wellen, Barrikaden und Türme. Effekte wie Blut,
-Explosionen und Blitze schickt der Server als kompakte Ereignisliste mit dem
-Snapshot mit.
+Dash, Wiederbelebung, Geld, Wellen, Barrikaden, Türme und Bodeneffekte. Effekte
+wie Blut, Explosionen und Blitze schickt der Server als kompakte Ereignisliste
+mit dem Snapshot mit.
 
 Alle Bilder entstehen zur Laufzeit als Canvas-Texturen, alle Klänge über die
 Web-Audio-API. Das Spiel lädt deshalb keine externen Assets.
@@ -165,8 +231,8 @@ npm run build:all
 ```
 
 `npm run sim` startet einen Rauchtest ohne Browser: Ein Bot spielt jede Karte
-bis zum Endboss durch und prüft Waffen, Verteidigungen, Bosse und ob jede
-Welle wirklich endet.
+bis zum Endboss durch und prüft Waffen, Verteidigungen, Türme, Dash, die faire
+Geldverteilung, alle Boss-Fähigkeiten und ob jede Welle wirklich endet.
 
 Der fertige Browser-Build liegt danach unter
 `dist/zombie-defense/browser`. Der Server-Build liegt unter `server/build`.
@@ -180,5 +246,4 @@ Colyseus-WebSocket-Server über dieselbe öffentliche Adresse aus.
 ## Später sinnvoll
 
 - bessere Wegfindung um große Verteidigungsanlagen
-- eigene Zombiearten pro Karte
 - optionale Accounts und Datenbank für manipulationssicheren Fortschritt

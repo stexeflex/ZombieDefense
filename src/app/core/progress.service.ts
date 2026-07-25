@@ -1,13 +1,18 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
+  EMPTY_PERKS,
   EMPTY_UPGRADES,
   MAPS,
-  UPGRADE_MAX_LEVEL,
-  upgradeCost,
+  PERK_COST,
+  upgradeLevelCost,
+  upgradeMaxLevel,
+  type PermanentPerks,
   type PermanentUpgrades,
+  type PerkKey,
+  type UpgradeKey,
 } from '../../../shared/game-types';
 
-export type UpgradeKey = keyof PermanentUpgrades;
+export type { PerkKey, UpgradeKey };
 
 export interface UpgradeDefinition {
   key: UpgradeKey;
@@ -16,18 +21,23 @@ export interface UpgradeDefinition {
   icon: string;
 }
 
+export interface PerkDefinition {
+  key: PerkKey;
+  label: string;
+  description: string;
+  icon: string;
+}
+
 export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'maxHealth', label: 'Maximales Leben', description: '+2 % Leben', icon: '♥' },
-  {
-    key: 'armor',
-    label: 'Panzerung',
-    description: '−1 % Schaden (max. −35 %)',
-    icon: '⛨',
-  },
+  { key: 'armor', label: 'Panzerung', description: '−1 % Schaden (max. −35 %)', icon: '⛨' },
   { key: 'moveSpeed', label: 'Bewegung', description: '+2 % Tempo', icon: '➜' },
+  { key: 'dashCharges', label: 'Zusätzlicher Dash', description: '+1 Dash-Ladung', icon: '»' },
+  { key: 'dashRecharge', label: 'Dash-Aufladung', description: '+2 % schneller', icon: '◌' },
   { key: 'weaponDamage', label: 'Waffenschaden', description: '+2 % Schaden', icon: '✦' },
   { key: 'reloadSpeed', label: 'Nachladen', description: '+2 % schneller', icon: '↻' },
   { key: 'magazineSize', label: 'Magazingröße', description: '+2 % Kapazität', icon: '▥' },
+  { key: 'reserveAmmo', label: 'Munitionsvorrat', description: '+2 % Reserve', icon: '⛁' },
   { key: 'grenadeDamage', label: 'Granatenschaden', description: '+2 % Schaden', icon: '●' },
   { key: 'grenadeCooldown', label: 'Granaten-Cooldown', description: '+2 % schneller', icon: '◷' },
   {
@@ -38,11 +48,72 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   },
   { key: 'barricadeHealth', label: 'Barrikadenleben', description: '+2 % Leben', icon: '▰' },
   { key: 'turretDamage', label: 'Turmschaden', description: '+2 % Schaden', icon: '⌖' },
+  { key: 'turretRange', label: 'Turmreichweite', description: '+1 % Reichweite', icon: '◈' },
+  { key: 'reviveSpeed', label: 'Wiederbelebung', description: '+2 % schneller', icon: '✚' },
+];
+
+/** One-time buys that change a rule instead of a number. */
+export const PERK_DEFINITIONS: PerkDefinition[] = [
+  {
+    key: 'starterWeapon',
+    label: 'Waffenhändler',
+    description: 'Die erste gekaufte Waffe eines Runs kostet 40 % weniger.',
+    icon: '⚒',
+  },
+  {
+    key: 'starterBarricade',
+    label: 'Bausatz',
+    description: 'Die ersten vier Barrikaden eines Runs kosten 40 % weniger.',
+    icon: '▰',
+  },
+  {
+    key: 'starterTurret',
+    label: 'Erstausstattung',
+    description: 'Der erste Turm eines Runs kostet 40 % weniger.',
+    icon: '⌖',
+  },
+  {
+    key: 'extraDash',
+    label: 'Reserveschub',
+    description: 'Eine zusätzliche Dash-Ladung, zusätzlich zu den Stufen.',
+    icon: '»',
+  },
+  {
+    key: 'dashShock',
+    label: 'Stoßdash',
+    description: 'Der Dash schleudert Zombies weg und verletzt sie.',
+    icon: '✺',
+  },
+  {
+    key: 'fieldMedic',
+    label: 'Sanitäter',
+    description: 'Wiederbeleben geht doppelt so schnell, der Trupp steht mit 70 % Leben auf.',
+    icon: '✚',
+  },
+  {
+    key: 'engineer',
+    label: 'Techniker',
+    description: 'Reparaturen kosten 40 % weniger.',
+    icon: '⚙',
+  },
+  {
+    key: 'extraGrenade',
+    label: 'Zweiter Gürtel',
+    description: 'Eine Granate mehr im Gürtel.',
+    icon: '●',
+  },
+  {
+    key: 'lastStand',
+    label: 'Letztes Aufbäumen',
+    description: 'Einmal pro Welle überlebst du einen tödlichen Treffer mit 1 Leben.',
+    icon: '⛨',
+  },
 ];
 
 interface StoredProgress {
   gold: number;
   upgrades: PermanentUpgrades;
+  perks: PermanentPerks;
   rewardedRuns: string[];
   clearedMaps: string[];
 }
@@ -54,24 +125,44 @@ export class ProgressService {
 
   readonly gold = computed(() => this.progress().gold);
   readonly upgrades = computed(() => this.progress().upgrades);
+  readonly perks = computed(() => this.progress().perks);
   readonly clearedMaps = computed(() => this.progress().clearedMaps);
-  readonly maxLevel = UPGRADE_MAX_LEVEL;
+
+  maxLevel(key: UpgradeKey) {
+    return upgradeMaxLevel(key);
+  }
 
   cost(key: UpgradeKey) {
-    return upgradeCost(this.progress().upgrades[key]);
+    return upgradeLevelCost(key, this.progress().upgrades[key]);
   }
 
   buy(key: UpgradeKey) {
     const current = this.progress();
     const cost = this.cost(key);
-    if (current.gold < cost || current.upgrades[key] >= UPGRADE_MAX_LEVEL) return false;
+    if (current.gold < cost || current.upgrades[key] >= upgradeMaxLevel(key)) return false;
     this.save({
       ...current,
       gold: current.gold - cost,
-      upgrades: {
-        ...current.upgrades,
-        [key]: current.upgrades[key] + 1,
-      },
+      upgrades: { ...current.upgrades, [key]: current.upgrades[key] + 1 },
+    });
+    return true;
+  }
+
+  perkCost(key: PerkKey) {
+    return PERK_COST[key];
+  }
+
+  ownsPerk(key: PerkKey) {
+    return this.progress().perks[key];
+  }
+
+  buyPerk(key: PerkKey) {
+    const current = this.progress();
+    if (current.perks[key] || current.gold < PERK_COST[key]) return false;
+    this.save({
+      ...current,
+      gold: current.gold - PERK_COST[key],
+      perks: { ...current.perks, [key]: true },
     });
     return true;
   }
@@ -108,21 +199,34 @@ export class ProgressService {
       const stored = JSON.parse(
         localStorage.getItem(this.storageKey) ?? '{}',
       ) as Partial<StoredProgress>;
-      const saved = (stored.upgrades ?? {}) as Record<string, unknown>;
+      const savedUpgrades = (stored.upgrades ?? {}) as Record<string, unknown>;
+      const savedPerks = (stored.perks ?? {}) as Record<string, unknown>;
       return {
         gold: Math.max(0, Number(stored.gold) || 0),
-        // Only known upgrades survive, so a removed one leaves no leftovers.
+        // Only known entries survive, so a removed one leaves no leftovers.
         upgrades: Object.fromEntries(
           Object.keys(EMPTY_UPGRADES).map((key) => [
             key,
-            Math.min(UPGRADE_MAX_LEVEL, Math.max(0, Math.floor(Number(saved[key]) || 0))),
+            Math.min(
+              upgradeMaxLevel(key as UpgradeKey),
+              Math.max(0, Math.floor(Number(savedUpgrades[key]) || 0)),
+            ),
           ]),
         ) as unknown as PermanentUpgrades,
+        perks: Object.fromEntries(
+          Object.keys(EMPTY_PERKS).map((key) => [key, Boolean(savedPerks[key])]),
+        ) as unknown as PermanentPerks,
         rewardedRuns: Array.isArray(stored.rewardedRuns) ? stored.rewardedRuns.slice(-20) : [],
         clearedMaps: Array.isArray(stored.clearedMaps) ? stored.clearedMaps : [],
       };
     } catch {
-      return { gold: 0, upgrades: { ...EMPTY_UPGRADES }, rewardedRuns: [], clearedMaps: [] };
+      return {
+        gold: 0,
+        upgrades: { ...EMPTY_UPGRADES },
+        perks: { ...EMPTY_PERKS },
+        rewardedRuns: [],
+        clearedMaps: [],
+      };
     }
   }
 

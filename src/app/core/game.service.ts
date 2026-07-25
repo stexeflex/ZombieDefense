@@ -2,10 +2,13 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Client, type Room } from '@colyseus/sdk';
 import { Subject } from 'rxjs';
 import {
+  DASH_SPEED,
   DEFAULT_MAP_ID,
   DEFENSES,
+  ENGINEER_DISCOUNT,
   PLAYER_BASE_SPEED,
   WEAPONS,
+  discountedCost,
   findMap,
   repairCost,
   reserveCapacity,
@@ -59,9 +62,21 @@ export class GameService {
       label: DEFENSES[defense.type].label,
       health: Math.round(defense.health),
       maxHealth: defense.maxHealth,
-      repairCost: repairCost(defense),
+      repairCost: repairCost(defense, this.progress.perks().engineer ? ENGINEER_DISCOUNT : 0),
       sellRefund: defense.refund,
       fresh: defense.refund >= DEFENSES[defense.type].cost,
+    };
+  });
+
+  /** Dash charges, ready ones and the reload of the next one, for the HUD. */
+  readonly dash = computed(() => {
+    const player = this.player();
+    if (!player) return { charges: 0, max: 0, cooldown: 0, active: false };
+    return {
+      charges: player.dashCharges,
+      max: player.dashMax,
+      cooldown: player.dashCooldown,
+      active: player.dashing > 0,
     };
   });
 
@@ -80,8 +95,23 @@ export class GameService {
   /** Spare rounds are capped, so a full player cannot waste money on ammo. */
   readonly ammoFull = computed(() => {
     const player = this.player();
-    return player ? player.reserveAmmo >= reserveCapacity(player.weapon) : false;
+    if (!player) return false;
+    return player.reserveAmmo >= reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo);
   });
+
+  /** What a weapon costs this player right now, starter perk included. */
+  weaponPrice(weapon: WeaponType) {
+    return discountedCost(WEAPONS[weapon].cost, this.player()?.weaponDiscount ?? 0);
+  }
+
+  /** What a barricade or turret costs this player right now. */
+  defensePrice(type: DefenseType) {
+    const config = DEFENSES[type];
+    const player = this.player();
+    const left =
+      config.kind === 'barricade' ? (player?.barricadeDiscount ?? 0) : (player?.turretDiscount ?? 0);
+    return discountedCost(config.cost, left);
+  }
 
   async connect(lobbyCode: string, name: string, create: boolean) {
     if (this.connection() === 'connecting') return;
@@ -97,6 +127,7 @@ export class GameService {
         name: name.trim(),
         mapId: this.preferredMap(),
         upgrades: this.progress.upgrades(),
+        perks: this.progress.perks(),
       };
       this.room = create
         ? await this.client.create('zombie_defense', options)
@@ -200,7 +231,7 @@ export class GameService {
 
   rotateBuild() {
     const type = this.selectedBuild();
-    if (!type || type === 'mg' || type === 'marksman' || type === 'launcher') return;
+    if (!type || DEFENSES[type].kind !== 'barricade') return;
     this.placementRotation.update((rotation) => (rotation + Math.PI / 2) % Math.PI);
   }
 
@@ -293,6 +324,11 @@ export class GameService {
       this.audio.setTrack(snapshot.waveKind === 'boss' ? 'boss' : 'combat');
       if (snapshot.waveKind !== 'normal') this.audio.play('boss-roar', 0.8);
     }
+  }
+
+  /** Dashing is predicted locally so the burst of speed feels immediate. */
+  localDashSpeed() {
+    return this.localMoveSpeed() * DASH_SPEED;
   }
 
   private storedMap() {

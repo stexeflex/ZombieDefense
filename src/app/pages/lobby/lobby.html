@@ -99,6 +99,7 @@
                 <div class="map-stats">
                   <span>{{ map.waves.length }} Wellen</span>
                   <span>Härte ×{{ map.difficulty }}</span>
+                  <span>☠ {{ bossName(map.id) }}</span>
                   <span>◆ {{ map.reward }}</span>
                 </div>
               </button>
@@ -166,7 +167,11 @@
             <div class="hurt-vignette" aria-hidden="true"></div>
           }
 
-          <div class="wave-banner" [class.boss]="snapshot.waveKind === 'boss'" [class.mini]="snapshot.waveKind === 'mini'">
+          <div
+            class="wave-banner"
+            [class.boss]="snapshot.waveKind === 'boss'"
+            [class.mini]="snapshot.waveKind === 'mini' || snapshot.waveKind === 'swarm'"
+          >
             <span>
               {{
                 snapshot.phase === 'build'
@@ -177,7 +182,9 @@
                       ? 'ENDBOSS'
                       : snapshot.waveKind === 'mini'
                         ? 'Mini-Boss'
-                        : 'Welle'
+                        : snapshot.waveKind === 'swarm'
+                          ? 'SCHWARM'
+                          : 'Welle'
               }}
             </span>
             <strong>{{ snapshot.wave }}<em>/{{ snapshot.totalWaves }}</em></strong>
@@ -244,6 +251,19 @@
                 <span>{{ game.player()!.grenadeCooldown | number: '1.0-0' }} s</span>
               }
             </div>
+            <div class="dash-block" [class.active]="game.dash().active">
+              <small>Dash [Leertaste]</small>
+              <div class="dash-pips" aria-label="Dash-Ladungen">
+                @for (pip of dashPips(); track $index) {
+                  <span [class.filled]="pip"></span>
+                }
+              </div>
+              @if (game.dash().cooldown) {
+                <span class="dash-timer">{{ game.dash().cooldown | number: '1.1-1' }} s</span>
+              } @else {
+                <span class="dash-timer ready">bereit</span>
+              }
+            </div>
             <div class="money-block">
               <small>Konto</small>
               <strong>$ {{ game.player()?.money }}</strong>
@@ -252,6 +272,7 @@
 
           <div class="controls-hint">
             <span><kbd>WASD</kbd> Bewegen</span>
+            <span><kbd>Leertaste</kbd> Dash (unverwundbar)</span>
             <span><kbd>Maus</kbd> Zielen &amp; schießen</span>
             @if (snapshot.phase === 'build') {
               <span><kbd>R</kbd> Barrikade drehen</span>
@@ -378,8 +399,9 @@
                       class="shop-item"
                       type="button"
                       [class.selected]="game.player()?.weapon === weapon.type"
+                      [class.deal]="!owns(weapon.type) && weaponDeal(weapon.type)"
                       [disabled]="
-                        (!owns(weapon.type) && (game.player()?.money ?? 0) < weapon.cost) ||
+                        (!owns(weapon.type) && (game.player()?.money ?? 0) < weaponPrice(weapon.type)) ||
                         game.player()?.weapon === weapon.type
                       "
                       (click)="weaponAction(weapon.type)"
@@ -392,7 +414,7 @@
                             ? 'Aktiv'
                             : owns(weapon.type)
                               ? 'Wechseln'
-                              : '$ ' + weapon.cost
+                              : '$ ' + weaponPrice(weapon.type)
                         }}
                       </strong>
                     </button>
@@ -405,12 +427,13 @@
                       class="shop-item build-item"
                       type="button"
                       [class.selected]="game.selectedBuild() === defense.type"
-                      [disabled]="(game.player()?.money ?? 0) < defense.cost"
+                      [class.deal]="defenseDeal(defense.type)"
+                      [disabled]="(game.player()?.money ?? 0) < defensePrice(defense.type)"
                       (click)="selectBuild(defense.type)"
                     >
                       <span class="item-icon">{{ defense.short }}</span>
                       <span><b>{{ defense.label }}</b><small>{{ defense.health }} HP · {{ defense.description }}</small></span>
-                      <strong>$ {{ defense.cost }}</strong>
+                      <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
                   }
                 </div>
@@ -421,12 +444,13 @@
                       class="shop-item build-item"
                       type="button"
                       [class.selected]="game.selectedBuild() === defense.type"
-                      [disabled]="(game.player()?.money ?? 0) < defense.cost"
+                      [class.deal]="defenseDeal(defense.type)"
+                      [disabled]="(game.player()?.money ?? 0) < defensePrice(defense.type)"
                       (click)="selectBuild(defense.type)"
                     >
                       <span class="item-icon">{{ defense.short }}</span>
                       <span><b>{{ defense.label }}</b><small>{{ defense.description }}</small></span>
-                      <strong>$ {{ defense.cost }}</strong>
+                      <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
                   }
                 </div>

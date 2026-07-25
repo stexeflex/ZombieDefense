@@ -9,6 +9,7 @@ import {
   TURRET_ORDER,
   WEAPONS,
   WEAPON_ORDER,
+  ZOMBIES,
   findMap,
   type DefenseType,
   type WeaponType,
@@ -138,6 +139,38 @@ export class Lobby implements OnInit, OnDestroy {
   ammoCost() {
     const weapon = this.game.player()?.weapon ?? 'pistol';
     return Math.round(WEAPONS[weapon].ammoCost * this.activeMap().moneyScale);
+  }
+
+  /** One pip per dash charge; filled ones are ready to use. */
+  dashPips() {
+    const dash = this.game.dash();
+    return Array.from({ length: dash.max }, (_, index) => index < dash.charges);
+  }
+
+  /** Prices already include the discount a starter perk still has left. */
+  weaponPrice(weapon: WeaponType) {
+    return this.game.weaponPrice(weapon);
+  }
+
+  defensePrice(type: DefenseType) {
+    return this.game.defensePrice(type);
+  }
+
+  /** Two ids exist as both a weapon and a turret, so the checks stay separate. */
+  weaponDeal(weapon: WeaponType) {
+    return this.weaponPrice(weapon) < WEAPONS[weapon].cost;
+  }
+
+  defenseDeal(type: DefenseType) {
+    return this.defensePrice(type) < DEFENSES[type].cost;
+  }
+
+  bossName(mapId: string) {
+    return ZOMBIES[findMap(mapId).boss].label;
+  }
+
+  bossThreat(mapId: string) {
+    return ZOMBIES[findMap(mapId).boss].threat ?? '';
   }
 
   owns(weapon: WeaponType) {

@@ -408,11 +408,43 @@ footer {
   font-weight: 800;
 }
 
+.shop-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.shop-switch button {
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shop-switch button.active {
+  border-color: var(--acid);
+  color: var(--acid);
+  background: rgba(105, 240, 174, 0.08);
+}
+
 .upgrade-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   border-top: 1px solid var(--line);
   border-left: 1px solid var(--line);
+}
+
+.upgrade-item.owned {
+  background: rgba(105, 240, 174, 0.06);
+}
+
+.upgrade-item.owned .upgrade-buy b {
+  color: var(--acid);
 }
 
 .upgrade-item {

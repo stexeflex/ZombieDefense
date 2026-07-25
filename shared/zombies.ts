@@ -1,0 +1,521 @@
+export type ZombieType =
+  // trash
+  | 'normal'
+  | 'fast'
+  | 'crawler'
+  // elite
+  | 'big'
+  | 'exploder'
+  | 'armored'
+  | 'spitter'
+  | 'screamer'
+  // mini bosses
+  | 'brute'
+  | 'warden'
+  | 'stalker'
+  | 'mortar'
+  | 'broodling'
+  // one boss per map
+  | 'butcher'
+  | 'brood'
+  | 'warlord'
+  | 'artillery'
+  | 'vortex'
+  | 'slag'
+  | 'render'
+  | 'swarmqueen'
+  | 'plague'
+  | 'omega';
+
+export type ZombieRank = 'trash' | 'elite' | 'mini' | 'boss';
+
+/** How often a summoner may call in its full pack before it runs dry. */
+export const SUMMON_CYCLES = 5;
+
+export type HazardKind = 'warning' | 'lava' | 'poison' | 'pull';
+
+/**
+ * Everything a boss can do, as plain data. Each entry gets its own timer, so a
+ * boss is just a list of abilities instead of a pile of special cases.
+ */
+export type ZombieAbility =
+  /** Sprints at the squad for a moment. */
+  | { kind: 'charge'; every: number; speed: number; duration: number }
+  /** Area hit around the boss, optionally announced by a red ring first. */
+  | { kind: 'slam'; every: number; radius: number; damage: number; telegraph?: number }
+  /**
+   * Calls in more zombies. Every summoner has a lifetime budget of
+   * `count * SUMMON_CYCLES`, so no wave can ever be kept alive forever by an
+   * enemy that spawns faster than a squad can clear.
+   */
+  | { kind: 'summon'; every: number; count: number; type: ZombieType }
+  /** Breaks apart into smaller enemies when it dies. */
+  | { kind: 'split'; count: number; type: ZombieType }
+  /**
+   * Mends every zombie nearby by `amount` of their maximum health. A boss that
+   * also patches itself uses the much smaller `selfAmount`, otherwise its own
+   * huge health pool would outheal any squad.
+   */
+  | {
+      kind: 'heal';
+      every: number;
+      radius: number;
+      amount: number;
+      self: boolean;
+      selfAmount?: number;
+    }
+  /** Lobs telegraphed bombs at the squad from a distance. */
+  | {
+      kind: 'mortar';
+      every: number;
+      shots: number;
+      radius: number;
+      damage: number;
+      telegraph: number;
+      range: number;
+    }
+  /** Drags players in or shoves them away. */
+  | { kind: 'vortex'; every: number; radius: number; force: number; duration: number; push: boolean }
+  /** Leaves burning or toxic ground behind. */
+  | {
+      kind: 'puddle';
+      every: number;
+      hazard: 'lava' | 'poison';
+      radius: number;
+      dps: number;
+      life: number;
+      count: number;
+      spread: number;
+    }
+  /** Passive aura that speeds up nearby zombies. */
+  | { kind: 'haste'; radius: number; factor: number };
+
+export interface ZombieConfig {
+  label: string;
+  health: number;
+  speed: number;
+  damage: number;
+  radius: number;
+  reward: number;
+  rank: ZombieRank;
+  /** Fraction of incoming damage that bounces off, 0 for soft flesh. */
+  armor?: number;
+  explode?: { radius: number; damage: number };
+  abilities?: ZombieAbility[];
+  /** Short line shown on the map card and the boss bar. */
+  threat?: string;
+}
+
+export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
+  // ------------------------------------------------------------------ trash
+  normal: {
+    label: 'Läufer',
+    health: 62,
+    speed: 74,
+    damage: 12,
+    radius: 18,
+    reward: 12,
+    rank: 'trash',
+  },
+  fast: {
+    label: 'Renner',
+    health: 40,
+    speed: 132,
+    damage: 9,
+    radius: 14,
+    reward: 15,
+    rank: 'trash',
+  },
+  crawler: {
+    label: 'Kriecher',
+    health: 26,
+    speed: 172,
+    damage: 7,
+    radius: 11,
+    reward: 11,
+    rank: 'trash',
+  },
+
+  // ------------------------------------------------------------------ elite
+  big: {
+    label: 'Koloss',
+    health: 360,
+    speed: 46,
+    damage: 32,
+    radius: 29,
+    reward: 48,
+    rank: 'elite',
+  },
+  exploder: {
+    label: 'Sprengling',
+    health: 90,
+    speed: 96,
+    damage: 0,
+    radius: 20,
+    reward: 30,
+    rank: 'elite',
+    explode: { radius: 145, damage: 50 },
+  },
+  armored: {
+    label: 'Panzerträger',
+    health: 520,
+    speed: 52,
+    damage: 26,
+    radius: 26,
+    reward: 62,
+    rank: 'elite',
+    armor: 0.35,
+  },
+  spitter: {
+    label: 'Speier',
+    health: 150,
+    speed: 62,
+    damage: 10,
+    radius: 19,
+    reward: 44,
+    rank: 'elite',
+    abilities: [
+      {
+        kind: 'puddle',
+        every: 5.5,
+        hazard: 'poison',
+        radius: 74,
+        dps: 16,
+        life: 6,
+        count: 1,
+        spread: 260,
+      },
+    ],
+  },
+  screamer: {
+    label: 'Kreischer',
+    health: 210,
+    speed: 88,
+    damage: 14,
+    radius: 20,
+    reward: 52,
+    rank: 'elite',
+    abilities: [{ kind: 'haste', radius: 260, factor: 1.35 }],
+  },
+
+  // ------------------------------------------------------------- mini bosses
+  brute: {
+    label: 'Zerstörer',
+    health: 1900,
+    speed: 54,
+    damage: 44,
+    radius: 40,
+    reward: 260,
+    rank: 'mini',
+    abilities: [
+      { kind: 'charge', every: 6.5, speed: 245, duration: 1.5 },
+      { kind: 'slam', every: 9, radius: 165, damage: 26 },
+    ],
+  },
+  warden: {
+    label: 'Wächter',
+    health: 2600,
+    speed: 44,
+    damage: 40,
+    radius: 42,
+    reward: 330,
+    rank: 'mini',
+    armor: 0.3,
+    abilities: [
+      { kind: 'summon', every: 11, count: 2, type: 'armored' },
+      { kind: 'slam', every: 11, radius: 190, damage: 30, telegraph: 1 },
+    ],
+  },
+  stalker: {
+    label: 'Schlitzer',
+    health: 1500,
+    speed: 100,
+    damage: 38,
+    radius: 32,
+    reward: 290,
+    rank: 'mini',
+    abilities: [{ kind: 'charge', every: 4, speed: 360, duration: 1.1 }],
+  },
+  mortar: {
+    label: 'Mörserträger',
+    health: 1700,
+    speed: 40,
+    damage: 26,
+    radius: 38,
+    reward: 310,
+    rank: 'mini',
+    abilities: [
+      {
+        kind: 'mortar',
+        every: 6.5,
+        shots: 3,
+        radius: 105,
+        damage: 46,
+        telegraph: 1.2,
+        range: 900,
+      },
+    ],
+  },
+  broodling: {
+    label: 'Brutling',
+    health: 900,
+    speed: 84,
+    damage: 30,
+    radius: 28,
+    reward: 150,
+    rank: 'mini',
+    abilities: [
+      { kind: 'charge', every: 5, speed: 260, duration: 1 },
+      { kind: 'split', count: 4, type: 'crawler' },
+    ],
+  },
+
+  // ------------------------------------------------------------------ bosses
+  butcher: {
+    label: 'Fleischkönig',
+    health: 7200,
+    speed: 46,
+    damage: 68,
+    radius: 58,
+    reward: 900,
+    rank: 'boss',
+    threat: 'Sturmangriff und Schockwelle',
+    abilities: [
+      { kind: 'charge', every: 9, speed: 190, duration: 2 },
+      { kind: 'slam', every: 7, radius: 240, damage: 42 },
+      { kind: 'summon', every: 11, count: 4, type: 'normal' },
+    ],
+  },
+  brood: {
+    label: 'Brutmutter',
+    health: 7400,
+    speed: 50,
+    damage: 60,
+    radius: 56,
+    reward: 1100,
+    rank: 'boss',
+    threat: 'teilt sich beim Sterben',
+    abilities: [
+      { kind: 'summon', every: 7, count: 6, type: 'crawler' },
+      { kind: 'slam', every: 10, radius: 210, damage: 38 },
+      { kind: 'split', count: 2, type: 'broodling' },
+    ],
+  },
+  warlord: {
+    label: 'Feldmarschall',
+    health: 7600,
+    speed: 44,
+    damage: 66,
+    radius: 58,
+    reward: 1300,
+    rank: 'boss',
+    threat: 'heilt sich und die Horde',
+    armor: 0.2,
+    abilities: [
+      { kind: 'heal', every: 6, radius: 420, amount: 0.05, self: true, selfAmount: 0.008 },
+      { kind: 'summon', every: 9, count: 3, type: 'armored' },
+      { kind: 'charge', every: 11, speed: 200, duration: 1.8 },
+    ],
+  },
+  artillery: {
+    label: 'Artillerist',
+    health: 7800,
+    speed: 40,
+    damage: 58,
+    radius: 56,
+    reward: 1500,
+    rank: 'boss',
+    threat: 'Bombenhagel mit Warnkreisen',
+    abilities: [
+      {
+        kind: 'mortar',
+        every: 5,
+        shots: 5,
+        radius: 125,
+        damage: 62,
+        telegraph: 1.3,
+        range: 1300,
+      },
+      { kind: 'slam', every: 12, radius: 220, damage: 40, telegraph: 0.9 },
+      { kind: 'summon', every: 13, count: 5, type: 'exploder' },
+    ],
+  },
+  vortex: {
+    label: 'Sogfürst',
+    health: 8000,
+    speed: 46,
+    damage: 62,
+    radius: 58,
+    reward: 1700,
+    rank: 'boss',
+    threat: 'saugt an und stößt ab',
+    abilities: [
+      { kind: 'vortex', every: 8, radius: 760, force: 260, duration: 1.6, push: false },
+      { kind: 'vortex', every: 13, radius: 620, force: 620, duration: 0.5, push: true },
+      { kind: 'slam', every: 10, radius: 260, damage: 48, telegraph: 1 },
+      { kind: 'summon', every: 12, count: 5, type: 'fast' },
+    ],
+  },
+  slag: {
+    label: 'Schlackenherr',
+    health: 8200,
+    speed: 48,
+    damage: 70,
+    radius: 60,
+    reward: 1900,
+    rank: 'boss',
+    threat: 'hinterlässt Lavapfützen',
+    abilities: [
+      {
+        kind: 'puddle',
+        every: 4,
+        hazard: 'lava',
+        radius: 96,
+        dps: 34,
+        life: 9,
+        count: 2,
+        spread: 200,
+      },
+      { kind: 'charge', every: 8, speed: 230, duration: 1.7 },
+      { kind: 'slam', every: 11, radius: 240, damage: 46 },
+    ],
+  },
+  render: {
+    label: 'Zerreißer',
+    health: 8600,
+    speed: 50,
+    damage: 74,
+    radius: 62,
+    reward: 2200,
+    rank: 'boss',
+    threat: 'gewaltige Druckwelle',
+    armor: 0.15,
+    abilities: [
+      { kind: 'slam', every: 8, radius: 430, damage: 96, telegraph: 1.5 },
+      { kind: 'charge', every: 9, speed: 240, duration: 1.8 },
+      { kind: 'summon', every: 12, count: 4, type: 'screamer' },
+    ],
+  },
+  swarmqueen: {
+    label: 'Schwarmkönigin',
+    health: 9000,
+    speed: 44,
+    damage: 70,
+    radius: 62,
+    reward: 2600,
+    rank: 'boss',
+    threat: 'endloser Nachschub',
+    abilities: [
+      { kind: 'summon', every: 3.5, count: 8, type: 'crawler' },
+      { kind: 'summon', every: 9, count: 3, type: 'spitter' },
+      { kind: 'slam', every: 9, radius: 260, damage: 50, telegraph: 0.9 },
+      { kind: 'split', count: 3, type: 'broodling' },
+    ],
+  },
+  plague: {
+    label: 'Seuchenfürst',
+    health: 9600,
+    speed: 46,
+    damage: 72,
+    radius: 62,
+    reward: 3000,
+    rank: 'boss',
+    threat: 'Giftpfützen und Heilschwaden',
+    armor: 0.2,
+    abilities: [
+      {
+        kind: 'puddle',
+        every: 3.6,
+        hazard: 'poison',
+        radius: 110,
+        dps: 30,
+        life: 11,
+        count: 3,
+        spread: 420,
+      },
+      { kind: 'heal', every: 5, radius: 520, amount: 0.07, self: true, selfAmount: 0.006 },
+      { kind: 'summon', every: 8, count: 5, type: 'exploder' },
+      { kind: 'charge', every: 12, speed: 210, duration: 1.6 },
+    ],
+  },
+  omega: {
+    label: 'OMEGA',
+    health: 10500,
+    speed: 50,
+    damage: 84,
+    radius: 76,
+    reward: 4500,
+    rank: 'boss',
+    threat: 'alles auf einmal — nur keine Heilung',
+    armor: 0.2,
+    abilities: [
+      { kind: 'slam', every: 9, radius: 470, damage: 110, telegraph: 1.4 },
+      {
+        kind: 'mortar',
+        every: 6,
+        shots: 6,
+        radius: 130,
+        damage: 74,
+        telegraph: 1.2,
+        range: 1600,
+      },
+      { kind: 'vortex', every: 11, radius: 900, force: 300, duration: 1.5, push: false },
+      {
+        kind: 'puddle',
+        every: 5,
+        hazard: 'lava',
+        radius: 104,
+        dps: 40,
+        life: 10,
+        count: 2,
+        spread: 340,
+      },
+      { kind: 'charge', every: 10, speed: 250, duration: 1.9 },
+      { kind: 'summon', every: 12, count: 2, type: 'armored' },
+      { kind: 'split', count: 1, type: 'warden' },
+    ],
+  },
+};
+
+export const ZOMBIE_TYPES = Object.keys(ZOMBIES) as ZombieType[];
+
+export const MINI_BOSSES: ZombieType[] = ['brute', 'warden', 'stalker', 'mortar'];
+
+export const BOSSES: ZombieType[] = [
+  'butcher',
+  'brood',
+  'warlord',
+  'artillery',
+  'vortex',
+  'slag',
+  'render',
+  'swarmqueen',
+  'plague',
+  'omega',
+];
+
+export type AbilityOf<K extends ZombieAbility['kind']> = Extract<ZombieAbility, { kind: K }>;
+export type TimedAbility = Exclude<ZombieAbility, AbilityOf<'split'> | AbilityOf<'haste'>>;
+
+export function zombieAbilities(type: ZombieType): ZombieAbility[] {
+  return ZOMBIES[type].abilities ?? [];
+}
+
+/** Abilities that fire on a timer; `split` and `haste` work differently. */
+export function timedAbilities(type: ZombieType): TimedAbility[] {
+  return zombieAbilities(type).filter(
+    (ability): ability is TimedAbility => ability.kind !== 'split' && ability.kind !== 'haste',
+  );
+}
+
+export function splitAbility(type: ZombieType) {
+  return zombieAbilities(type).find(
+    (ability): ability is AbilityOf<'split'> => ability.kind === 'split',
+  );
+}
+
+export function hasteAura(type: ZombieType) {
+  return zombieAbilities(type).find(
+    (ability): ability is AbilityOf<'haste'> => ability.kind === 'haste',
+  );
+}

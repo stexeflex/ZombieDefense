@@ -17,15 +17,16 @@
       <p class="eyebrow"><span></span> Koop · 1–4 Spieler · Browser</p>
       <h1>Haltet die Linie.<br /><em>Zusammen.</em></h1>
       <p class="lede">
-        Sieben Karten, jede mit eigenem Endboss. Baut eure Verteidigung zwischen
-        den Wellen aus, rüstet vom Revolver bis zur Laserkanone auf und hebt
-        gefallene Freunde wieder auf. Keine Accounts. Kein Download.
+        Zehn Karten, jede mit ihrem eigenen Endboss. Baut eure Verteidigung
+        zwischen den Wellen aus, rüstet vom Revolver bis zur Laserkanone auf,
+        weicht mit dem Dash aus und hebt gefallene Freunde wieder auf. Keine
+        Accounts. Kein Download.
       </p>
 
       <div class="feature-row" aria-label="Spielmerkmale">
-        <span><b>7</b> Karten mit Endboss</span>
-        <span><b>10</b> Waffen</span>
-        <span><b>6</b> Zombiearten</span>
+        <span><b>{{ mapCount }}</b> Karten mit eigenem Endboss</span>
+        <span><b>{{ weaponCount }}</b> Waffen</span>
+        <span><b>{{ zombieCount }}</b> Zombiearten</span>
       </div>
     </div>
 
@@ -80,10 +81,10 @@
 
   <footer>
     <span>
-      WASD zum Bewegen · Maus zum Zielen · 1–9 für die Waffe · G für Granate ·
-      R zum Nachladen
+      WASD zum Bewegen · Maus zum Zielen · Leertaste zum Dashen · 1–9 für die
+      Waffe · G für Granate · R zum Nachladen
     </span>
-    <span>Version 0.2 · Kampagne</span>
+    <span>Version 0.3 · Kampagne</span>
   </footer>
 </main>
 
@@ -106,38 +107,81 @@
 
       <div class="wallet"><span>◆</span> {{ progress.gold() }} Gold verfügbar</div>
 
-      <div class="upgrade-grid">
-        @for (upgrade of definitions; track upgrade.key) {
-          <article class="upgrade-item">
-            <span class="upgrade-icon">{{ upgrade.icon }}</span>
-            <div class="upgrade-copy">
-              <h3>{{ upgrade.label }}</h3>
-              <p>{{ upgrade.description }} pro Stufe</p>
-              <div class="level-track" aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel }}">
-                @for (dot of pips; track dot) {
-                  <span [class.filled]="pipFilled(upgrade.key, dot)"></span>
-                }
-              </div>
-            </div>
-            <div class="upgrade-buy">
-              <b>Stufe {{ level(upgrade.key) }} / {{ maxLevel }}</b>
-              <button
-                type="button"
-                [disabled]="
-                  progress.gold() < progress.cost(upgrade.key) || level(upgrade.key) >= maxLevel
-                "
-                (click)="buyUpgrade(upgrade.key)"
-              >
-                @if (level(upgrade.key) >= maxLevel) {
-                  MAX
-                } @else {
-                  ◆ {{ progress.cost(upgrade.key) }}
-                }
-              </button>
-            </div>
-          </article>
-        }
+      <div class="shop-switch">
+        <button type="button" [class.active]="shopTab() === 'levels'" (click)="shopTab.set('levels')">
+          Stufen-Upgrades
+        </button>
+        <button type="button" [class.active]="shopTab() === 'perks'" (click)="shopTab.set('perks')">
+          Einmalige Vorteile
+        </button>
       </div>
+
+      @if (shopTab() === 'levels') {
+        <div class="upgrade-grid">
+          @for (upgrade of definitions; track upgrade.key) {
+            <article class="upgrade-item">
+              <span class="upgrade-icon">{{ upgrade.icon }}</span>
+              <div class="upgrade-copy">
+                <h3>{{ upgrade.label }}</h3>
+                <p>{{ upgrade.description }} pro Stufe</p>
+                <div
+                  class="level-track"
+                  aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
+                >
+                  @for (dot of pips; track dot) {
+                    <span [class.filled]="pipFilled(upgrade.key, dot)"></span>
+                  }
+                </div>
+              </div>
+              <div class="upgrade-buy">
+                <b>Stufe {{ level(upgrade.key) }} / {{ maxLevel(upgrade.key) }}</b>
+                <button
+                  type="button"
+                  [disabled]="
+                    progress.gold() < progress.cost(upgrade.key) ||
+                    level(upgrade.key) >= maxLevel(upgrade.key)
+                  "
+                  (click)="buyUpgrade(upgrade.key)"
+                >
+                  @if (level(upgrade.key) >= maxLevel(upgrade.key)) {
+                    MAX
+                  } @else {
+                    ◆ {{ progress.cost(upgrade.key) }}
+                  }
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="upgrade-grid">
+          @for (perk of perkDefinitions; track perk.key) {
+            <article class="upgrade-item" [class.owned]="progress.ownsPerk(perk.key)">
+              <span class="upgrade-icon">{{ perk.icon }}</span>
+              <div class="upgrade-copy">
+                <h3>{{ perk.label }}</h3>
+                <p>{{ perk.description }}</p>
+              </div>
+              <div class="upgrade-buy">
+                <b>{{ progress.ownsPerk(perk.key) ? 'Freigeschaltet' : 'Einmalig' }}</b>
+                <button
+                  type="button"
+                  [disabled]="
+                    progress.ownsPerk(perk.key) || progress.gold() < progress.perkCost(perk.key)
+                  "
+                  (click)="buyPerk(perk.key)"
+                >
+                  @if (progress.ownsPerk(perk.key)) {
+                    ✓
+                  } @else {
+                    ◆ {{ progress.perkCost(perk.key) }}
+                  }
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
     </section>
   </div>
 }
