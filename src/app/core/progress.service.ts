@@ -1,6 +1,8 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
   EMPTY_UPGRADES,
+  MAPS,
+  UPGRADE_MAX_LEVEL,
   type PermanentUpgrades,
 } from '../../../shared/game-types';
 
@@ -15,10 +17,12 @@ export interface UpgradeDefinition {
 
 export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'maxHealth', label: 'Maximales Leben', description: '+2 % Leben', icon: '♥' },
+  { key: 'armor', label: 'Panzerung', description: '−1 % Schaden', icon: '⛨' },
   { key: 'moveSpeed', label: 'Bewegung', description: '+2 % Tempo', icon: '➜' },
   { key: 'weaponDamage', label: 'Waffenschaden', description: '+2 % Schaden', icon: '✦' },
   { key: 'reloadSpeed', label: 'Nachladen', description: '+2 % schneller', icon: '↻' },
   { key: 'magazineSize', label: 'Magazingröße', description: '+2 % Kapazität', icon: '▥' },
+  { key: 'income', label: 'Beute', description: '+2 % Run-Geld', icon: '$' },
   { key: 'grenadeDamage', label: 'Granatenschaden', description: '+2 % Schaden', icon: '●' },
   { key: 'grenadeCooldown', label: 'Granaten-Cooldown', description: '+2 % schneller', icon: '◷' },
   { key: 'grenadeRadius', label: 'Explosionsradius', description: '+2 % Radius', icon: '◎' },
@@ -30,6 +34,7 @@ interface StoredProgress {
   gold: number;
   upgrades: PermanentUpgrades;
   rewardedRuns: string[];
+  clearedMaps: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -39,6 +44,7 @@ export class ProgressService {
 
   readonly gold = computed(() => this.progress().gold);
   readonly upgrades = computed(() => this.progress().upgrades);
+  readonly clearedMaps = computed(() => this.progress().clearedMaps);
 
   cost(key: UpgradeKey) {
     const level = this.progress().upgrades[key];
@@ -48,7 +54,7 @@ export class ProgressService {
   buy(key: UpgradeKey) {
     const current = this.progress();
     const cost = this.cost(key);
-    if (current.gold < cost || current.upgrades[key] >= 20) return false;
+    if (current.gold < cost || current.upgrades[key] >= UPGRADE_MAX_LEVEL) return false;
     this.save({
       ...current,
       gold: current.gold - cost,
@@ -60,20 +66,38 @@ export class ProgressService {
     return true;
   }
 
-  addRunReward(gold: number, runId: string) {
+  isCleared(mapId: string) {
+    return this.progress().clearedMaps.includes(mapId);
+  }
+
+  /** The first map is always open, every other map needs the previous one cleared. */
+  isUnlocked(mapId: string) {
+    const index = MAPS.findIndex((map) => map.id === mapId);
+    if (index <= 0) return true;
+    return this.isCleared(MAPS[index - 1].id);
+  }
+
+  addRunReward(gold: number, runId: string, mapId?: string, victory = false) {
     const current = this.progress();
     if (!runId || current.rewardedRuns.includes(runId)) return false;
+    const cleared =
+      victory && mapId && !current.clearedMaps.includes(mapId)
+        ? [...current.clearedMaps, mapId]
+        : current.clearedMaps;
     this.save({
       ...current,
       gold: current.gold + Math.max(0, Math.floor(gold)),
       rewardedRuns: [...current.rewardedRuns.slice(-19), runId],
+      clearedMaps: cleared,
     });
     return true;
   }
 
   private load(): StoredProgress {
     try {
-      const stored = JSON.parse(localStorage.getItem(this.storageKey) ?? '{}') as Partial<StoredProgress>;
+      const stored = JSON.parse(
+        localStorage.getItem(this.storageKey) ?? '{}',
+      ) as Partial<StoredProgress>;
       return {
         gold: Math.max(0, Number(stored.gold) || 0),
         upgrades: {
@@ -81,9 +105,10 @@ export class ProgressService {
           ...(stored.upgrades ?? {}),
         },
         rewardedRuns: Array.isArray(stored.rewardedRuns) ? stored.rewardedRuns.slice(-20) : [],
+        clearedMaps: Array.isArray(stored.clearedMaps) ? stored.clearedMaps : [],
       };
     } catch {
-      return { gold: 0, upgrades: { ...EMPTY_UPGRADES }, rewardedRuns: [] };
+      return { gold: 0, upgrades: { ...EMPTY_UPGRADES }, rewardedRuns: [], clearedMaps: [] };
     }
   }
 

@@ -11,17 +11,38 @@
       <span>{{ copied() ? 'Kopiert!' : 'Link kopieren' }}</span>
     </button>
 
-    <div class="server-state" [class.error]="game.connection() === 'error'">
-      <span></span>
-      {{
-        game.connection() === 'connected'
-          ? 'Verbunden'
-          : game.connection() === 'connecting'
-            ? 'Verbindung …'
-            : game.connection() === 'error'
-              ? 'Getrennt'
-              : 'Bereit'
-      }}
+    <div class="topbar-right">
+      <div class="audio-controls">
+        <button
+          type="button"
+          [class.off]="!audio.enabled()"
+          (click)="audio.toggleSound()"
+          [attr.aria-label]="audio.enabled() ? 'Sound aus' : 'Sound an'"
+        >
+          {{ audio.enabled() ? '🔊' : '🔇' }}
+        </button>
+        <button
+          type="button"
+          [class.off]="!audio.musicEnabled()"
+          (click)="audio.toggleMusic()"
+          [attr.aria-label]="audio.musicEnabled() ? 'Musik aus' : 'Musik an'"
+        >
+          ♪
+        </button>
+      </div>
+
+      <div class="server-state" [class.error]="game.connection() === 'error'">
+        <span></span>
+        {{
+          game.connection() === 'connected'
+            ? 'Verbunden'
+            : game.connection() === 'connecting'
+              ? 'Verbindung …'
+              : game.connection() === 'error'
+                ? 'Getrennt'
+                : 'Bereit'
+        }}
+      </div>
     </div>
   </header>
 
@@ -48,11 +69,44 @@
       <section class="lobby-stage">
         <div class="lobby-intro">
           <p class="eyebrow"><span></span> Einsatzbesprechung</p>
-          <h1>Stellt euer<br />Team zusammen.</h1>
+          <h1>Wählt euren<br />Sektor.</h1>
           <p>
-            Teile den Lobby-Link mit bis zu drei Freunden. Sobald alle da sind,
-            startet der Host den ersten Run.
+            Teile den Lobby-Link mit bis zu drei Freunden. Jede Karte endet mit
+            einem Endboss und schaltet die nächste, härtere Karte frei.
           </p>
+
+          <div class="map-picker" role="list">
+            @for (map of maps; track map.id) {
+              <button
+                class="map-card"
+                type="button"
+                role="listitem"
+                [class.active]="snapshot.mapId === map.id"
+                [class.locked]="mapLocked(map.id)"
+                [disabled]="!game.isHost() || mapLocked(map.id)"
+                (click)="selectMap(map.id)"
+              >
+                <header>
+                  <strong>{{ map.name }}</strong>
+                  @if (mapCleared(map.id)) {
+                    <span class="cleared">✓ geschafft</span>
+                  } @else if (mapLocked(map.id)) {
+                    <span class="locked-tag">🔒 gesperrt</span>
+                  }
+                </header>
+                <small>{{ map.subtitle }}</small>
+                <p>{{ map.description }}</p>
+                <div class="map-stats">
+                  <span>{{ map.waves.length }} Wellen</span>
+                  <span>Härte ×{{ map.difficulty }}</span>
+                  <span>◆ {{ map.reward }}</span>
+                </div>
+              </button>
+            }
+          </div>
+          @if (!game.isHost()) {
+            <p class="map-hint">Nur der Host kann die Karte wechseln.</p>
+          }
         </div>
 
         <section class="squad-panel">
@@ -96,7 +150,7 @@
           @if (game.isHost()) {
             <button class="start-button" type="button" (click)="start()">
               Run starten
-              <span>Welle 1 / 10</span>
+              <span>{{ activeMap().name }} · Welle 1 / {{ activeMap().waves.length }}</span>
             </button>
           } @else {
             <div class="waiting-host"><span></span> Warte, bis der Host den Run startet …</div>
@@ -108,15 +162,41 @@
         <div class="game-stage">
           <app-game-canvas />
 
-          <div class="wave-banner">
-            <span>{{ snapshot.phase === 'build' ? 'Bauphase' : snapshot.phase === 'gameover' ? 'Run beendet' : 'Welle' }}</span>
-            <strong>{{ snapshot.wave }}</strong>
+          @if ((game.player()?.hurt ?? 0) > 0) {
+            <div class="hurt-vignette" aria-hidden="true"></div>
+          }
+
+          <div class="wave-banner" [class.boss]="snapshot.waveKind === 'boss'" [class.mini]="snapshot.waveKind === 'mini'">
+            <span>
+              {{
+                snapshot.phase === 'build'
+                  ? 'Bauphase'
+                  : snapshot.phase === 'gameover'
+                    ? 'Run beendet'
+                    : snapshot.waveKind === 'boss'
+                      ? 'ENDBOSS'
+                      : snapshot.waveKind === 'mini'
+                        ? 'Mini-Boss'
+                        : 'Welle'
+              }}
+            </span>
+            <strong>{{ snapshot.wave }}<em>/{{ snapshot.totalWaves }}</em></strong>
             @if (snapshot.phase === 'combat') {
               <small>{{ snapshot.enemiesRemaining }} Gegner</small>
             } @else if (snapshot.phase === 'build') {
               <small>{{ seconds(snapshot.nextWaveIn) }}</small>
             }
           </div>
+
+          @if (boss(); as bossState) {
+            <div class="boss-bar">
+              <div class="boss-name">
+                <span>{{ bossState.name }}</span>
+                <b>{{ bossState.health | number: '1.0-0' }} / {{ bossState.maxHealth }}</b>
+              </div>
+              <div class="boss-track"><span [style.width.%]="bossState.percent"></span></div>
+            </div>
+          }
 
           <div class="player-hud">
             <div class="health-block">
@@ -133,8 +213,11 @@
               </div>
             </div>
             <div class="ammo-block">
-              <small>{{ weaponName(game.player()?.weapon) }}</small>
-              <strong>{{ game.player()?.ammo }}<span>/ {{ game.player()?.reserveAmmo }}</span></strong>
+              <small>{{ weaponShort(game.player()?.weapon) }} · {{ weaponName(game.player()?.weapon) }}</small>
+              <strong>
+                {{ game.player()?.ammo
+                }}<span>/ {{ game.player()?.weapon === 'pistol' ? '∞' : game.player()?.reserveAmmo }}</span>
+              </strong>
               @if (game.player()?.reloading) {
                 <em>Nachladen …</em>
               }
@@ -146,17 +229,21 @@
                 <span>{{ game.player()!.grenadeCooldown | number: '1.0-0' }} s</span>
               }
             </div>
+            <div class="money-block">
+              <small>Konto</small>
+              <strong>$ {{ game.player()?.money }}</strong>
+            </div>
           </div>
 
           <div class="controls-hint">
             <span><kbd>WASD</kbd> Bewegen</span>
-            <span><kbd>Maus</kbd> Zielen & schießen</span>
+            <span><kbd>Maus</kbd> Zielen &amp; schießen</span>
             @if (snapshot.phase === 'build') {
               <span><kbd>R</kbd> Barrikade drehen</span>
               <span><kbd>Rechtsklick</kbd> Auswahl abbrechen</span>
             } @else {
               <span><kbd>R</kbd> Nachladen</span>
-              <span><kbd>Nähe</kbd> Automatisch wiederbeleben</span>
+              <span><kbd>G</kbd> Granate</span>
             }
           </div>
 
@@ -172,12 +259,21 @@
             <div class="gameover-overlay">
               <section>
                 <p class="eyebrow">{{ game.lastReward()?.victory ? 'Sektor gesichert' : 'Trupp gefallen' }}</p>
-                <h2>{{ game.lastReward()?.victory ? 'Ihr habt überlebt.' : 'Die Linie ist gebrochen.' }}</h2>
+                <h2>
+                  {{
+                    game.lastReward()?.victory
+                      ? activeMap().name + ' ist befreit.'
+                      : 'Die Linie ist gebrochen.'
+                  }}
+                </h2>
                 <div class="run-stats">
-                  <span><b>{{ snapshot.wave }}</b> Welle erreicht</span>
+                  <span><b>{{ snapshot.wave }}</b> / {{ snapshot.totalWaves }} Wellen</span>
                   <span><b>{{ game.player()?.kills }}</b> Abschüsse</span>
                   <span><b>+{{ game.lastReward()?.gold ?? 0 }}</b> permanentes Gold</span>
                 </div>
+                @if (game.lastReward()?.victory) {
+                  <p class="unlock-note">Die nächste Karte ist jetzt freigeschaltet.</p>
+                }
                 <div class="gameover-actions">
                   @if (game.isHost()) {
                     <button class="primary-button" type="button" (click)="game.restartRun()">Neuer Run</button>
@@ -194,7 +290,7 @@
         <aside class="side-panel">
           <section class="squad-mini">
             <header>
-              <span>Truppstatus</span>
+              <span>{{ activeMap().name }}</span>
               <b>{{ players().length }} online</b>
             </header>
             @for (player of players(); track player.id) {
@@ -216,50 +312,95 @@
               <header>
                 <div>
                   <small>Versorgung</small>
-                  <h2>Shop & Bau</h2>
+                  <h2>Shop &amp; Bau</h2>
                 </div>
                 <strong>$ {{ game.player()?.money }}</strong>
               </header>
 
-              <h3>Waffen</h3>
-              @for (weapon of weapons; track weapon.type) {
-                <button
-                  class="shop-item"
-                  type="button"
-                  [disabled]="(game.player()?.money ?? 0) < weapon.cost || game.player()?.weapon === weapon.type"
-                  (click)="game.buyWeapon(weapon.type)"
-                >
-                  <span class="item-icon">{{ weapon.type === 'rifle' ? 'AR' : 'SG' }}</span>
-                  <span><b>{{ weapon.label }}</b><small>{{ weapon.magazine }} Schuss</small></span>
-                  <strong>{{ game.player()?.weapon === weapon.type ? 'Aktiv' : '$ ' + weapon.cost }}</strong>
+              <div class="shop-tabs">
+                <button type="button" [class.active]="shopTab() === 'weapons'" (click)="shopTab.set('weapons')">
+                  Waffen
                 </button>
-              }
-              <button class="shop-item" type="button" [disabled]="(game.player()?.money ?? 0) < 90" (click)="game.buyAmmo()">
-                <span class="item-icon">AM</span>
-                <span><b>Munition</b><small>Voller Vorrat</small></span>
-                <strong>$ 90</strong>
-              </button>
+                <button type="button" [class.active]="shopTab() === 'barricades'" (click)="shopTab.set('barricades')">
+                  Barrikaden
+                </button>
+                <button type="button" [class.active]="shopTab() === 'turrets'" (click)="shopTab.set('turrets')">
+                  Türme
+                </button>
+              </div>
 
-              <h3>Verteidigung</h3>
-              @for (defense of defenses; track defense.type) {
-                <button
-                  class="shop-item build-item"
-                  type="button"
-                  [class.selected]="game.selectedBuild() === defense.type"
-                  [disabled]="(game.player()?.money ?? 0) < defense.cost"
-                  (click)="selectBuild(defense.type)"
-                >
-                  <span class="item-icon">{{ defense.type === 'barricade' ? '▰' : '⌖' }}</span>
-                  <span><b>{{ defense.label }}</b><small>Auf Karte platzieren</small></span>
-                  <strong>$ {{ defense.cost }}</strong>
-                </button>
+              @if (shopTab() === 'weapons') {
+                <div class="shop-scroll">
+                  @for (weapon of weapons; track weapon.type) {
+                    <button
+                      class="shop-item"
+                      type="button"
+                      [disabled]="(game.player()?.money ?? 0) < weapon.cost || game.player()?.weapon === weapon.type"
+                      (click)="game.buyWeapon(weapon.type)"
+                    >
+                      <span class="item-icon">{{ weapon.short }}</span>
+                      <span><b>{{ weapon.label }}</b><small>{{ weapon.description }}</small></span>
+                      <strong>{{ game.player()?.weapon === weapon.type ? 'Aktiv' : '$ ' + weapon.cost }}</strong>
+                    </button>
+                  }
+                  <button
+                    class="shop-item"
+                    type="button"
+                    [disabled]="(game.player()?.money ?? 0) < ammoCost()"
+                    (click)="game.buyAmmo()"
+                  >
+                    <span class="item-icon">AM</span>
+                    <span><b>Munition</b><small>Voller Vorrat</small></span>
+                    <strong>$ {{ ammoCost() }}</strong>
+                  </button>
+                  <button
+                    class="shop-item"
+                    type="button"
+                    [disabled]="(game.player()?.money ?? 0) < healCost()"
+                    (click)="game.buyHeal()"
+                  >
+                    <span class="item-icon">✚</span>
+                    <span><b>Erste Hilfe</b><small>Leben komplett auffüllen</small></span>
+                    <strong>$ {{ healCost() }}</strong>
+                  </button>
+                </div>
+              } @else if (shopTab() === 'barricades') {
+                <div class="shop-scroll">
+                  @for (defense of barricades; track defense.type) {
+                    <button
+                      class="shop-item build-item"
+                      type="button"
+                      [class.selected]="game.selectedBuild() === defense.type"
+                      [disabled]="(game.player()?.money ?? 0) < defense.cost"
+                      (click)="selectBuild(defense.type)"
+                    >
+                      <span class="item-icon">{{ defense.short }}</span>
+                      <span><b>{{ defense.label }}</b><small>{{ defense.health }} HP · {{ defense.description }}</small></span>
+                      <strong>$ {{ defense.cost }}</strong>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <div class="shop-scroll">
+                  @for (defense of turrets; track defense.type) {
+                    <button
+                      class="shop-item build-item"
+                      type="button"
+                      [class.selected]="game.selectedBuild() === defense.type"
+                      [disabled]="(game.player()?.money ?? 0) < defense.cost"
+                      (click)="selectBuild(defense.type)"
+                    >
+                      <span class="item-icon">{{ defense.short }}</span>
+                      <span><b>{{ defense.label }}</b><small>{{ defense.description }}</small></span>
+                      <strong>$ {{ defense.cost }}</strong>
+                    </button>
+                  }
+                </div>
               }
 
               @if (game.selectedBuild()) {
                 <div class="placement-help">
-                  @if (game.selectedBuild() === 'barricade') {
-                    <span><kbd>R</kbd> Drehen</span>
-                  }
+                  <span><kbd>R</kbd> Drehen</span>
                   <span><kbd>Rechtsklick</kbd> Abbrechen</span>
                 </div>
               }
@@ -280,12 +421,15 @@
             </section>
           } @else {
             <section class="mission-info">
-              <small>Aktueller Auftrag</small>
-              <h2>Haltet den Ring</h2>
-              <p>Bleibt zusammen. Gefallene Freunde können innerhalb der Welle wiederbelebt werden.</p>
+              <small>{{ activeMap().subtitle }}</small>
+              <h2>{{ snapshot.statusText }}</h2>
+              <p>
+                Bleibt zusammen. Gefallene Freunde können innerhalb der Welle
+                wiederbelebt werden.
+              </p>
               <div>
                 <span>Wellenfortschritt</span>
-                <b>{{ snapshot.wave }} / 10</b>
+                <b>{{ snapshot.wave }} / {{ snapshot.totalWaves }}</b>
               </div>
             </section>
           }

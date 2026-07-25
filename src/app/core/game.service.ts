@@ -1,13 +1,18 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Client, type Room } from '@colyseus/sdk';
 import { Subject } from 'rxjs';
-import type {
-  DefenseType,
-  GameSnapshot,
-  PlayerInput,
-  WeaponType,
+import {
+  DEFAULT_MAP_ID,
+  PLAYER_BASE_SPEED,
+  findMap,
+  type DefenseType,
+  type FxEvent,
+  type GamePhase,
+  type GameSnapshot,
+  type PlayerInput,
+  type WeaponType,
 } from '../../../shared/game-types';
-import { PLAYER_BASE_SPEED } from '../../../shared/game-types';
+import { AudioService } from './audio.service';
 import { ProgressService } from './progress.service';
 
 type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error';
@@ -15,26 +20,29 @@ type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error';
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly progress = inject(ProgressService);
+  private readonly audio = inject(AudioService);
   private client?: Client;
   private room?: Room;
+  private lastPhase: GamePhase | null = null;
+  private lastWave = 0;
 
   readonly connection = signal<ConnectionState>('idle');
   readonly errorMessage = signal('');
   readonly snapshot = signal<GameSnapshot | null>(null);
   readonly sessionId = signal('');
-  readonly lastReward = signal<{ gold: number; victory: boolean } | null>(null);
+  readonly lastReward = signal<{ gold: number; victory: boolean; mapId: string } | null>(null);
   readonly selectedBuild = signal<DefenseType | null>(null);
   readonly placementRotation = signal(0);
-  readonly explosion$ = new Subject<{ x: number; y: number; radius: number }>();
+  readonly preferredMap = signal(this.storedMap());
+  readonly fx$ = new Subject<FxEvent[]>();
   readonly snapshot$ = new Subject<GameSnapshot>();
 
   readonly player = computed(() => {
     const state = this.snapshot();
     return state?.players[this.sessionId()] ?? null;
   });
-  readonly isHost = computed(
-    () => this.snapshot()?.hostSessionId === this.sessionId(),
-  );
+  readonly isHost = computed(() => this.snapshot()?.hostSessionId === this.sessionId());
+  readonly activeMap = computed(() => findMap(this.snapshot()?.mapId ?? this.preferredMap()));
 
   async connect(lobbyCode: string, name: string, create: boolean) {
     if (this.connection() === 'connecting') return;
@@ -48,6 +56,7 @@ export class GameService {
       const options = {
         lobbyCode: lobbyCode.toUpperCase(),
         name: name.trim(),
+        mapId: this.preferredMap(),
         upgrades: this.progress.upgrades(),
       };
       this.room = create
@@ -74,14 +83,18 @@ export class GameService {
       room.removeAllListeners();
       await room.leave(true).catch(() => undefined);
     }
+    this.audio.setTrack('none');
     this.snapshot.set(null);
     this.sessionId.set('');
     this.selectedBuild.set(null);
     this.placementRotation.set(0);
     this.connection.set('idle');
+    this.lastPhase = null;
+    this.lastWave = 0;
   }
 
   startRun() {
+    this.audio.unlock();
     this.room?.send('start');
   }
 
@@ -95,24 +108,41 @@ export class GameService {
   }
 
   setReady(ready: boolean) {
+    this.audio.play('ui');
     this.room?.send('ready', ready);
   }
 
+  selectMap(mapId: string) {
+    this.preferredMap.set(mapId);
+    localStorage.setItem('zombie-defense-map', mapId);
+    this.audio.play('ui');
+    this.room?.send('select_map', mapId);
+  }
+
   buyWeapon(weapon: WeaponType) {
+    this.audio.play('build');
     this.room?.send('buy_weapon', weapon);
   }
 
   buyAmmo() {
+    this.audio.play('reload');
     this.room?.send('buy_ammo');
+  }
+
+  buyHeal() {
+    this.audio.play('heal');
+    this.room?.send('buy_heal');
   }
 
   selectBuild(type: DefenseType | null) {
     if (type !== this.selectedBuild()) this.placementRotation.set(0);
     this.selectedBuild.set(type);
+    if (type) this.audio.play('ui');
   }
 
   rotateBuild() {
-    if (this.selectedBuild() !== 'barricade') return;
+    const type = this.selectedBuild();
+    if (!type || type === 'mg' || type === 'marksman' || type === 'launcher') return;
     this.placementRotation.update((rotation) => (rotation + Math.PI / 2) % Math.PI);
   }
 
@@ -121,7 +151,7 @@ export class GameService {
       type,
       x,
       y,
-      rotation: type === 'barricade' ? this.placementRotation() : 0,
+      rotation: this.placementRotation(),
     });
   }
 
@@ -130,10 +160,12 @@ export class GameService {
   }
 
   sellNearest() {
+    this.audio.play('ui');
     this.room?.send('sell');
   }
 
   repairNearest() {
+    this.audio.play('build');
     this.room?.send('repair');
   }
 
@@ -145,27 +177,60 @@ export class GameService {
     room.onMessage<GameSnapshot>('snapshot', (snapshot) => {
       this.snapshot.set(snapshot);
       this.snapshot$.next(snapshot);
+      if (snapshot.fx && snapshot.fx.length > 0) this.fx$.next(snapshot.fx);
+      this.reactToPhase(snapshot);
     });
-    room.onMessage<{ x: number; y: number; radius: number }>('explosion', (event) =>
-      this.explosion$.next(event),
-    );
-    room.onMessage<{ gold: number; runId: string; victory: boolean }>(
-      'permanent_reward',
-      (reward) => {
-        if (this.progress.addRunReward(reward.gold, reward.runId)) {
-          this.lastReward.set({ gold: reward.gold, victory: reward.victory });
-        }
-      },
-    );
+    room.onMessage<{
+      gold: number;
+      runId: string;
+      victory: boolean;
+      mapId: string;
+    }>('permanent_reward', (reward) => {
+      if (this.progress.addRunReward(reward.gold, reward.runId, reward.mapId, reward.victory)) {
+        this.lastReward.set({
+          gold: reward.gold,
+          victory: reward.victory,
+          mapId: reward.mapId,
+        });
+      }
+      this.audio.play(reward.victory ? 'victory' : 'gameover');
+    });
     room.onError((_code, message) => {
       this.errorMessage.set(message || 'Der Spielserver hat einen Fehler gemeldet.');
     });
     room.onLeave((code) => {
+      this.audio.setTrack('none');
       if (code !== 4000) {
         this.connection.set('error');
         this.errorMessage.set('Die Verbindung zur Lobby wurde getrennt.');
       }
     });
+  }
+
+  private reactToPhase(snapshot: GameSnapshot) {
+    if (snapshot.phase !== this.lastPhase) {
+      this.lastPhase = snapshot.phase;
+      if (snapshot.phase === 'combat') this.audio.play('wave', 0.9);
+      this.audio.setTrack(
+        snapshot.phase === 'combat'
+          ? snapshot.waveKind === 'boss'
+            ? 'boss'
+            : 'combat'
+          : snapshot.phase === 'build'
+            ? 'build'
+            : 'none',
+      );
+    }
+    if (snapshot.phase === 'combat' && snapshot.wave !== this.lastWave) {
+      this.lastWave = snapshot.wave;
+      this.audio.setTrack(snapshot.waveKind === 'boss' ? 'boss' : 'combat');
+      if (snapshot.waveKind !== 'normal') this.audio.play('boss-roar', 0.8);
+    }
+  }
+
+  private storedMap() {
+    if (typeof localStorage === 'undefined') return DEFAULT_MAP_ID;
+    return localStorage.getItem('zombie-defense-map') ?? DEFAULT_MAP_ID;
   }
 
   private serverEndpoint() {

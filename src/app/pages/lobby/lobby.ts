@@ -2,9 +2,23 @@ import { DecimalPipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DEFENSES, WEAPONS, type DefenseType, type WeaponType } from '../../../../shared/game-types';
+import {
+  BARRICADE_ORDER,
+  DEFENSES,
+  MAPS,
+  TURRET_ORDER,
+  WEAPONS,
+  WEAPON_ORDER,
+  findMap,
+  type DefenseType,
+  type WeaponType,
+} from '../../../../shared/game-types';
+import { AudioService } from '../../core/audio.service';
 import { GameService } from '../../core/game.service';
+import { ProgressService } from '../../core/progress.service';
 import { GameCanvas } from '../../game/game-canvas';
+
+type ShopTab = 'weapons' | 'barricades' | 'turrets';
 
 @Component({
   selector: 'app-lobby',
@@ -16,20 +30,34 @@ export class Lobby implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly game = inject(GameService);
+  readonly audio = inject(AudioService);
+  readonly progress = inject(ProgressService);
   readonly origin = location.origin;
 
   readonly needsName = signal(false);
   readonly copied = signal(false);
   readonly lobbyCode = signal('');
+  readonly shopTab = signal<ShopTab>('weapons');
   readonly players = computed(() => Object.values(this.game.snapshot()?.players ?? {}));
-  readonly weapons = [
-    { type: 'rifle' as WeaponType, ...WEAPONS.rifle },
-    { type: 'shotgun' as WeaponType, ...WEAPONS.shotgun },
-  ];
-  readonly defenses = [
-    { type: 'barricade' as DefenseType, ...DEFENSES.barricade },
-    { type: 'turret' as DefenseType, ...DEFENSES.turret },
-  ];
+  readonly maps = MAPS;
+  readonly weapons = WEAPON_ORDER.filter((type) => type !== 'pistol').map((type) => ({
+    type,
+    ...WEAPONS[type],
+  }));
+  readonly barricades = BARRICADE_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
+  readonly turrets = TURRET_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
+
+  readonly activeMap = computed(() => findMap(this.game.snapshot()?.mapId ?? this.game.preferredMap()));
+  readonly boss = computed(() => {
+    const snapshot = this.game.snapshot();
+    if (!snapshot || snapshot.bossMaxHealth <= 0) return null;
+    return {
+      name: snapshot.bossName,
+      percent: Math.max(0, (snapshot.bossHealth / snapshot.bossMaxHealth) * 100),
+      health: Math.round(snapshot.bossHealth),
+      maxHealth: snapshot.bossMaxHealth,
+    };
+  });
 
   name = localStorage.getItem('zombie-defense-name') ?? '';
 
@@ -58,6 +86,7 @@ export class Lobby implements OnInit, OnDestroy {
       return;
     }
     this.needsName.set(false);
+    this.audio.unlock();
     const createKey = `zombie-defense-create:${this.lobbyCode()}`;
     const create = sessionStorage.getItem(createKey) === '1';
     sessionStorage.removeItem(createKey);
@@ -87,6 +116,28 @@ export class Lobby implements OnInit, OnDestroy {
     this.game.selectBuild(this.game.selectedBuild() === type ? null : type);
   }
 
+  selectMap(mapId: string) {
+    if (!this.game.isHost() || !this.progress.isUnlocked(mapId)) return;
+    this.game.selectMap(mapId);
+  }
+
+  mapLocked(mapId: string) {
+    return !this.progress.isUnlocked(mapId);
+  }
+
+  mapCleared(mapId: string) {
+    return this.progress.isCleared(mapId);
+  }
+
+  ammoCost() {
+    const weapon = this.game.player()?.weapon ?? 'pistol';
+    return Math.round(WEAPONS[weapon].ammoCost * this.activeMap().moneyScale);
+  }
+
+  healCost() {
+    return Math.round(260 * this.activeMap().moneyScale);
+  }
+
   playerHealth(playerId: string) {
     const player = this.game.snapshot()?.players[playerId];
     return player ? Math.max(0, (player.health / player.maxHealth) * 100) : 0;
@@ -100,6 +151,10 @@ export class Lobby implements OnInit, OnDestroy {
 
   weaponName(type: WeaponType | undefined) {
     return type ? WEAPONS[type].label : '—';
+  }
+
+  weaponShort(type: WeaponType | undefined) {
+    return type ? WEAPONS[type].short : '—';
   }
 
   async leave() {
