@@ -350,6 +350,11 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       const blocking = this.blockingDefense(zombie, stepX, stepY);
 
       if (blocking) {
+        // An exploder deals no melee damage, it detonates on whatever stops it.
+        if (config.explode) {
+          exploding.push(zombie);
+          return;
+        }
         if (zombie.attackCooldown <= 0) {
           const defenseConfig = DEFENSES[blocking.type];
           const bonus = config.rank === 'boss' ? 3.4 : config.rank === 'mini' ? 2.2 : zombie.type === 'big' ? 1.6 : 1;
