@@ -3,7 +3,9 @@ import {
   BARRICADE_ORDER,
   BOSSES,
   DASH_BASE_CHARGES,
+  DASH_CUT_DAMAGE,
   DASH_SECONDS,
+  DASH_SHIELD_PER_HIT,
   DEFENSES,
   DEFENSE_REACH,
   EMPTY_PERKS,
@@ -15,6 +17,8 @@ import {
   REVIVE_RADIUS,
   REVIVE_SECONDS,
   SELL_REFUND,
+  SHIELD_DECAY,
+  SHIELD_SHARE,
   STARTER_DISCOUNT,
   TURRET_ORDER,
   UPGRADE_MAX_LEVEL,
@@ -150,8 +154,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists ten weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(10);
+  it('lists eleven weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(11);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -172,6 +176,16 @@ describe('weapon balance', () => {
     expect(WEAPONS.flamer.burn).toBeGreaterThan(0);
     expect(WEAPONS.laser.pierce).toBeGreaterThan(WEAPONS.rifle.pierce);
     expect(WEAPONS.flamer.range).toBeLessThan(WEAPONS.sniper.range);
+  });
+
+  it('lets the frost cannon brake instead of burn', () => {
+    expect(WEAPONS.cryo.slow).toBeGreaterThan(0);
+    expect(WEAPONS.cryo.slow).toBeLessThan(1);
+    expect(WEAPONS.cryo.slowSeconds!).toBeGreaterThan(1);
+    expect(WEAPONS.cryo.burn).toBeUndefined();
+    // It buys the slow with damage: the pure damage dealers still hit harder.
+    expect(dps('cryo')).toBeLessThan(dps('laser'));
+    expect(WEAPONS.cryo.pierce).toBeGreaterThan(0);
   });
 });
 
@@ -316,6 +330,18 @@ describe('permanent upgrades', () => {
   it('keeps the dash ladder short and expensive', () => {
     expect(upgradeMaxLevel('dashCharges')).toBeLessThan(UPGRADE_MAX_LEVEL);
     expect(upgradeMaxLevel('weaponDamage')).toBe(UPGRADE_MAX_LEVEL);
+  });
+
+  it('lets the dash grow into damage and a shield', () => {
+    expect(upgradeMaxLevel('dashDamage')).toBe(UPGRADE_MAX_LEVEL);
+    expect(upgradeMaxLevel('dashShield')).toBe(UPGRADE_MAX_LEVEL);
+    expect(DASH_CUT_DAMAGE).toBeGreaterThan(0);
+    expect(DASH_SHIELD_PER_HIT).toBeGreaterThan(0);
+    // The shield stays a slice of the own health and never sticks around.
+    expect(SHIELD_SHARE).toBeGreaterThan(0);
+    expect(SHIELD_SHARE).toBeLessThan(1);
+    expect(SHIELD_DECAY).toBeGreaterThan(0);
+    expect(PERK_COST.dashBlades).toBeGreaterThan(0);
   });
 
   it('caps armour so no build becomes untouchable', () => {

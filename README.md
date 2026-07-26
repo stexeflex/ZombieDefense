@@ -20,11 +20,14 @@ Aufruf kann das Laden deshalb kurz dauern.
 - jede Karte endet mit ihrem **eigenen** Endboss und schaltet die nächste frei
 - Dash auf der Leertaste: zwei Ladungen, kurzer Cooldown, währenddessen
   unverwundbar — sichtbar am blauen Ring
-- Kopfgeld wird **fair geteilt**: der Löwenanteil geht nach ausgeteiltem
-  Schaden, ein Rest an den ganzen Trupp — der letzte Schuss allein zählt nicht
+- mit dem Klingendash schneidet der Dash durch Gegner und lädt dabei ein Schild,
+  das Treffer schluckt und langsam wieder wegschmilzt
+- Kopfgeld wird **gleichmäßig geteilt**: jeder im Trupp bekommt denselben
+  Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
 - dreizehn Zombiearten plus zehn Bosse
-- zehn Waffen von der Pistole bis zur Laserkanone
+- elf Waffen von der Pistole bis zur Laserkanone, darunter die Frostkanone, die
+  ganze Reihen auf halbes Tempo bremst
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
 - vier Barrikaden (Holz, Stachel, Stein, Stahl) und sechs Türme (MG, Brand,
@@ -40,7 +43,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, sechzehn Stufen-Upgrades und acht einmalige Vorteile über
+- permanentes Gold, achtzehn Stufen-Upgrades und neun einmalige Vorteile über
   `localStorage`
 
 ### Karten
@@ -90,6 +93,7 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 | Scharfschützengewehr | 1700 | 215 Schaden, durchschlägt vier Gegner |
 | Maschinengewehr | 2300 | 100 Schuss Dauerfeuer |
 | Flammenwerfer | 2700 | kurze Reichweite, setzt Horden in Brand |
+| Frostkanone | 3000 | halbes Tempo für 2,4 s, durchschlägt zwei Gegner |
 | Raketenwerfer | 3300 | Sprengschaden im Umkreis |
 | Blitzstreuer | 3900 | Blitz springt auf vier weitere Gegner |
 | Laserkanone | 4800 | Dauerstrahl, durchschlägt sechs Gegner |
@@ -164,7 +168,16 @@ Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange
 er läuft, geht jeder Treffer daneben — der blaue Ring zeigt an, wann das gilt.
 Ein abgewehrter Schlag klingt hell und metallisch statt dumpf, so ist ein
 geglücktes Ausweichen auch ohne Blick auf den Ring zu hören. Im permanenten Shop
-gibt es weitere Ladungen und eine schnellere Aufladung.
+gibt es weitere Ladungen, eine schnellere Aufladung, mehr Dash-Schaden und ein
+stärkeres Dash-Schild.
+
+Mit dem einmaligen Vorteil **Klingendash** wird der Dash zur Waffe: Jeder Gegner,
+durch den man hindurchdasht, nimmt Schaden und lädt ein Schild. Geprüft wird die
+ganze zurückgelegte Strecke, ein Gegner also nie doppelt pro Dash. Das Schild
+fängt Treffer ab, bevor sie das Leben erreichen, hält höchstens 35 % des eigenen
+Lebens und schmilzt danach von selbst wieder weg — es lohnt sich also nur, wer
+weiter in die Horde dasht. Unter dem Leben zeigt ein blauer Balken, wie viel noch
+steht, auch über den Köpfen der Mitspieler.
 
 In der Bauphase wird im Seitenmenü zwischen Waffen, Barrikaden und Türmen
 gewechselt, ein Bauteil ausgewählt und danach auf dem Spielfeld platziert.
@@ -196,11 +209,12 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
 - **Stufen-Upgrades** – Leben, Panzerung, Tempo, Waffenschaden, Nachladen,
   Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
-  Wiederbelebung, Dash-Ladungen und Dash-Aufladung
+  Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schaden und Dash-Schild
 - **Einmalige Vorteile** – günstigere erste Waffe, erste Barrikaden und erster
-  Turm eines Runs, ein Dash der Zombies wegschleudert, doppelt so schnelles
-  Wiederbeleben, günstigere Reparaturen, eine Granate mehr und ein Aufbäumen,
-  das einen tödlichen Treffer pro Welle überlebt
+  Turm eines Runs, ein Dash der Zombies wegschleudert, ein Dash der durch Gegner
+  schneidet und Schild auflädt, doppelt so schnelles Wiederbeleben, günstigere
+  Reparaturen, eine Granate mehr und ein Aufbäumen, das einen tödlichen Treffer
+  pro Welle überlebt
 
 Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als
@@ -239,8 +253,9 @@ npm run build:all
 ```
 
 `npm run sim` startet einen Rauchtest ohne Browser: Ein Bot spielt jede Karte
-bis zum Endboss durch und prüft Waffen, Verteidigungen, Türme, Dash, die faire
-Geldverteilung, alle Boss-Fähigkeiten und ob jede Welle wirklich endet.
+bis zum Endboss durch und prüft Waffen, Verteidigungen, Türme, Dash samt
+Klingendash und Schild, den Frost der Frostkanone, die gleiche Geldverteilung,
+alle Boss-Fähigkeiten und ob jede Welle wirklich endet.
 
 Der fertige Browser-Build liegt danach unter
 `dist/zombie-defense/browser`. Der Server-Build liegt unter `server/build`.

@@ -5,6 +5,7 @@ import {
   DEFAULT_MAP_ID,
   EMPTY_PERKS,
   EMPTY_UPGRADES,
+  SHIELD_SHARE,
   START_MONEY,
   findMap,
   reserveCapacity,
@@ -41,6 +42,7 @@ const PLAYER_PRECISION: Record<string, number> = {
   y: 10,
   rotation: 1000,
   health: 1,
+  shield: 1,
   reviveProgress: 100,
   reloading: 100,
   grenadeCooldown: 10,
@@ -57,6 +59,7 @@ const ZOMBIE_PRECISION: Record<string, number> = {
   health: 1,
   maxHealth: 1,
   burning: 10,
+  chilled: 10,
   attacking: 100,
   charging: 100,
   casting: 100,
@@ -177,6 +180,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.y = spawn.y;
     player.maxHealth = Math.round(100 * (1 + upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
+    player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
     player.money = START_MONEY;
     player.ammo = this.playerSystem.magazineSize('pistol', upgrades);
     player.reserveAmmo = reserveCapacity('pistol', upgrades.reserveAmmo);
@@ -196,6 +200,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       dashRecharge: [],
       dashLock: 0,
       wasDashing: false,
+      dashHits: new Set(),
       stowed: new Map(),
       wasFiring: false,
       weaponDiscounts: 0,
@@ -234,6 +239,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     runtime.perks = this.cleanPerks(options.perks);
     player.maxHealth = Math.round(100 * (1 + runtime.upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
+    player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
+    player.shield = 0;
     player.ammo = this.playerSystem.magazineSize(player.weapon, runtime.upgrades);
     player.reserveAmmo = reserveCapacity(player.weapon, runtime.upgrades.reserveAmmo);
     player.dashMax = this.playerSystem.maxDashes(runtime.upgrades);

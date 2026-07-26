@@ -525,6 +525,34 @@
   transition: width 150ms;
 }
 
+/* Only visible while the dash keeps the shield charged. */
+.shield-track {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.shield-track i {
+  flex: 1;
+  height: 4px;
+  background: #16262f;
+}
+
+.shield-track i span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #4a9fd8, #9fdcff);
+  transition: width 150ms;
+}
+
+.shield-track b {
+  color: #9fdcff;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  white-space: nowrap;
+}
+
 .ammo-block,
 .grenade-block {
   min-width: 110px;
@@ -1488,6 +1516,11 @@ kbd {
   .lobby-code small,
   .lobby-code span,
   .controls-hint {
+    display: none;
+  }
+
+  /* The HUD blocks get very narrow here, so the bar keeps the whole width. */
+  .shield-track b {
     display: none;
   }
 

@@ -23,6 +23,7 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   sniper: 58,
   lmg: 52,
   flamer: 40,
+  cryo: 44,
   rocket: 50,
   tesla: 42,
   laser: 48,
@@ -315,6 +316,13 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     fillRounded(ctx, 16, 11, 30, 7, 3, '#43504a', '#141d19', 1.5);
     fillRounded(ctx, 44, 8, 14, 12, 4, '#8f5a2a', '#241407', 1.5);
     circle(ctx, 56, 14, 4, '#ffb347');
+  },
+  cryo: (ctx) => {
+    fillRounded(ctx, 0, 7, 16, 18, 5, '#2b4a5a', '#0e1c24', 2);
+    fillRounded(ctx, 14, 11, 28, 7, 3, '#3d4f57', '#121d22', 1.5);
+    fillRounded(ctx, 40, 8, 16, 12, 5, '#5f8fa8', '#122029', 1.5);
+    circle(ctx, 52, 14, 4, '#d8f7ff');
+    fillRounded(ctx, 18, 19, 8, 13, 2, '#243239');
   },
   rocket: (ctx) => {
     fillRounded(ctx, 2, 8, 56, 14, 6, '#3f4a3a', '#141a12', 2);

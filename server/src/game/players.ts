@@ -1,9 +1,11 @@
 import {
   ARENA,
   DASH_BASE_CHARGES,
+  DASH_CUT_DAMAGE,
   DASH_LOCK,
   DASH_RECHARGE,
   DASH_SECONDS,
+  DASH_SHIELD_PER_HIT,
   DASH_SHOCK_DAMAGE,
   DASH_SHOCK_RADIUS,
   DASH_SPEED,
@@ -12,6 +14,8 @@ import {
   PLAYER_RADIUS,
   REVIVE_RADIUS,
   REVIVE_SECONDS,
+  SHIELD_DECAY,
+  SHIELD_SHARE,
   WEAPONS,
   reserveCapacity,
   weaponLife,
@@ -63,6 +67,11 @@ export class PlayerSystem {
     player.hurt = Math.max(0, player.hurt - delta);
     player.dashing = Math.max(0, player.dashing - delta);
 
+    // A shield is momentum, not a second health bar: it melts away on its own,
+    // so it only pays off while the player keeps dashing into the horde.
+    player.shieldMax = this.shieldCap(player);
+    player.shield = Math.max(0, Math.min(player.shieldMax, player.shield - SHIELD_DECAY * delta));
+
     runtime.grenadeThrowLock = Math.max(0, runtime.grenadeThrowLock - delta);
     runtime.grenadeRecharge = runtime.grenadeRecharge
       .map((timer) => timer - delta)
@@ -97,6 +106,15 @@ export class PlayerSystem {
 
   private dashRechargeTime(upgrades: PermanentUpgrades) {
     return Math.max(1.2, DASH_RECHARGE / (1 + upgrades.dashRecharge * 0.02));
+  }
+
+  /** Both dash perks hit harder with the levelled upgrade behind them. */
+  private dashDamage(base: number, upgrades: PermanentUpgrades) {
+    return base * (1 + upgrades.dashDamage * 0.02);
+  }
+
+  private shieldCap(player: PlayerState) {
+    return Math.round(player.maxHealth * SHIELD_SHARE);
   }
 
   private tickDash(player: PlayerState, runtime: RuntimePlayer, delta: number) {
@@ -140,6 +158,7 @@ export class PlayerSystem {
     player.dashing = DASH_SECONDS;
     player.dashCharges -= 1;
     runtime.dashLock = DASH_LOCK;
+    runtime.dashHits.clear();
     runtime.dashRecharge.push(this.dashRechargeTime(runtime.upgrades));
     this.world.pushFx({
       k: 'dash',
@@ -155,12 +174,52 @@ export class PlayerSystem {
         if (Math.hypot(zombie.x - player.x, zombie.y - player.y) > DASH_SHOCK_RADIUS) return;
         victims.push([id, zombie]);
       });
+      const damage = this.dashDamage(DASH_SHOCK_DAMAGE, runtime.upgrades);
       for (const [id, zombie] of victims) {
         const angle = Math.atan2(zombie.y - player.y, zombie.x - player.x);
         zombie.x = this.world.clamp(zombie.x + Math.cos(angle) * 42, 12, ARENA.width - 12);
         zombie.y = this.world.clamp(zombie.y + Math.sin(angle) * 42, 12, ARENA.height - 12);
-        this.world.damageZombie(id, zombie, DASH_SHOCK_DAMAGE, player.id);
+        this.world.damageZombie(id, zombie, damage, player.id);
       }
+    }
+  }
+
+  /**
+   * Everything the blade dash runs through takes a cut and pays out a bit of
+   * shield. The whole travelled line is tested, not just where the player ends
+   * up: at more than three times the walking speed a dash would otherwise jump
+   * clean over a zombie between two ticks.
+   */
+  private cutThroughZombies(
+    player: PlayerState,
+    runtime: RuntimePlayer,
+    fromX: number,
+    fromY: number,
+  ) {
+    const victims: Array<[string, ZombieState]> = [];
+    this.world.state.zombies.forEach((zombie, id) => {
+      if (runtime.dashHits.has(id)) return;
+      const at = this.world.segmentCircleAt(
+        fromX,
+        fromY,
+        player.x,
+        player.y,
+        zombie.x,
+        zombie.y,
+        zombie.radius + PLAYER_RADIUS,
+      );
+      if (at !== undefined) victims.push([id, zombie]);
+    });
+    if (victims.length === 0) return;
+
+    const damage = this.dashDamage(DASH_CUT_DAMAGE, runtime.upgrades);
+    const shield = DASH_SHIELD_PER_HIT * (1 + runtime.upgrades.dashShield * 0.02);
+    for (const [id, zombie] of victims) {
+      runtime.dashHits.add(id);
+      player.shieldMax = this.shieldCap(player);
+      player.shield = Math.min(player.shieldMax, player.shield + shield);
+      this.world.pushFx({ k: 'shield', x: zombie.x, y: zombie.y });
+      this.world.damageZombie(id, zombie, damage, player.id);
     }
   }
 
@@ -175,11 +234,14 @@ export class PlayerSystem {
     dy /= length;
 
     let speed = PLAYER_BASE_SPEED * (1 + runtime.upgrades.moveSpeed * 0.02);
-    if (player.dashing > 0) {
+    const dashing = player.dashing > 0;
+    if (dashing) {
       dx = player.dashDirX;
       dy = player.dashDirY;
       speed *= DASH_SPEED;
     }
+    const fromX = player.x;
+    const fromY = player.y;
 
     // A boss pull or shove is added on top and fades away by itself.
     const pushed = Math.hypot(runtime.pushX, runtime.pushY);
@@ -206,6 +268,7 @@ export class PlayerSystem {
     );
     this.resolveObstacles(player);
     this.resolveDefenses(player);
+    if (dashing && runtime.perks.dashBlades) this.cutThroughZombies(player, runtime, fromX, fromY);
     player.rotation = Math.atan2(input.aimY - player.y, input.aimX - player.x);
   }
 
@@ -307,13 +370,22 @@ export class PlayerSystem {
         );
         projectile.pierce = config.pierce;
         projectile.life = weaponLife(config);
-        projectile.radius = player.weapon === 'rocket' ? 8 : player.weapon === 'flamer' ? 13 : 4;
+        projectile.radius =
+          player.weapon === 'rocket'
+            ? 8
+            : player.weapon === 'flamer'
+              ? 13
+              : player.weapon === 'cryo'
+                ? 10
+                : 4;
         projectile.splashRadius = config.splashRadius ?? 0;
         projectile.splashDamage = (config.splashDamage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
         projectile.chain = config.chain ?? 0;
         projectile.chainRange = config.chainRange ?? 0;
         projectile.burn = config.burn ?? 0;
         projectile.burnSeconds = config.burnSeconds ?? 0;
+        projectile.slow = config.slow ?? 0;
+        projectile.slowSeconds = config.slowSeconds ?? 0;
       }
       this.world.pushFx({
         k: 'muzzle',

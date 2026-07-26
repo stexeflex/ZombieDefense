@@ -38,7 +38,7 @@ export class ZombieSystem {
         this.world.damageZombie(id, zombie, zombie.burnDps * delta, zombie.lastAttacker);
         if (!this.world.state.zombies.has(id)) return;
       }
-      if (zombie.slowTimer > 0) zombie.slowTimer = Math.max(0, zombie.slowTimer - delta);
+      if (zombie.chilled > 0) zombie.chilled = Math.max(0, zombie.chilled - delta);
 
       this.abilities.tick(zombie, delta);
       if (!this.world.state.zombies.has(id)) return;
@@ -81,10 +81,7 @@ export class ZombieSystem {
             this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: 'spike' });
             if (!this.world.state.zombies.has(id)) return;
           }
-          if (defenseConfig.slow) {
-            zombie.slowTimer = 1.2;
-            zombie.slowFactor = 1 - defenseConfig.slow;
-          }
+          if (defenseConfig.slow) this.world.chillZombie(zombie, defenseConfig.slow, 1.2);
           if (blocking.health <= 0) {
             this.world.pushFx({ k: 'wreck', x: blocking.x, y: blocking.y, s: blocking.type });
             this.world.state.defenses.delete(blocking.id);
@@ -208,7 +205,7 @@ export class ZombieSystem {
       zombie.hasteTimer = Math.max(0, zombie.hasteTimer - delta);
       speed *= zombie.hasteFactor;
     }
-    if (zombie.slowTimer > 0) speed *= zombie.slowFactor;
+    if (zombie.chilled > 0) speed *= zombie.slowFactor;
     return speed;
   }
 

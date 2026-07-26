@@ -19,6 +19,8 @@ export interface PermanentUpgrades {
   armor: number;
   dashCharges: number;
   dashRecharge: number;
+  dashDamage: number;
+  dashShield: number;
   reviveSpeed: number;
 }
 
@@ -40,6 +42,8 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   armor: 0,
   dashCharges: 0,
   dashRecharge: 0,
+  dashDamage: 0,
+  dashShield: 0,
   reviveSpeed: 0,
 };
 
@@ -83,6 +87,8 @@ export interface PermanentPerks {
   starterTurret: boolean;
   /** The dash knocks zombies aside and hurts them. */
   dashShock: boolean;
+  /** Dashing through an enemy cuts it open and charges a shield. */
+  dashBlades: boolean;
   /** Reviving is twice as fast and gets the squad mate up with more health. */
   fieldMedic: boolean;
   /** Repairs cost far less. */
@@ -100,6 +106,7 @@ export const EMPTY_PERKS: PermanentPerks = {
   starterBarricade: false,
   starterTurret: false,
   dashShock: false,
+  dashBlades: false,
   fieldMedic: false,
   engineer: false,
   extraGrenade: false,
@@ -111,6 +118,7 @@ export const PERK_COST: Record<PerkKey, number> = {
   starterBarricade: 750,
   starterTurret: 1100,
   dashShock: 1400,
+  dashBlades: 1300,
   fieldMedic: 800,
   engineer: 700,
   extraGrenade: 1000,

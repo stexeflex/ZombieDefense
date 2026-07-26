@@ -80,6 +80,16 @@ export class GameService {
     };
   });
 
+  /** The dash shield: points left and how full it is, for the HUD bar. */
+  readonly shield = computed(() => {
+    const player = this.player();
+    if (!player || player.shield <= 0) return { value: 0, percent: 0 };
+    return {
+      value: Math.max(1, Math.round(player.shield)),
+      percent: player.shieldMax > 0 ? Math.min(100, (player.shield / player.shieldMax) * 100) : 0,
+    };
+  });
+
   /** The arsenal with its slot numbers, ready for the HUD and the shop. */
   readonly arsenal = computed(() => {
     const player = this.player();

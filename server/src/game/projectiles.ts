@@ -54,6 +54,9 @@ export class ProjectileSystem {
             projectile.ownerId,
           );
         }
+        if (projectile.slow > 0) {
+          this.world.chillZombie(zombie, projectile.slow, projectile.slowSeconds);
+        }
         this.world.damageZombie(zombieId, zombie, projectile.damage, projectile.ownerId);
 
         if (projectile.chain > 0) {

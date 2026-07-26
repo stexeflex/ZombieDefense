@@ -6,6 +6,7 @@ export type WeaponType =
   | 'sniper'
   | 'lmg'
   | 'flamer'
+  | 'cryo'
   | 'rocket'
   | 'tesla'
   | 'laser';
@@ -33,6 +34,9 @@ export interface WeaponConfig {
   chainRange?: number;
   burn?: number;
   burnSeconds?: number;
+  /** Share of speed a hit takes away, 0.5 leaves half the pace. */
+  slow?: number;
+  slowSeconds?: number;
   description: string;
 }
 
@@ -158,6 +162,25 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     burnSeconds: 2.6,
     description: 'Kurze Reichweite, setzt Horden in Brand',
   },
+  cryo: {
+    label: 'Frostkanone',
+    short: 'FK',
+    cost: 3000,
+    damage: 21,
+    fireDelay: 120,
+    magazine: 60,
+    reserve: 300,
+    reload: 2400,
+    speed: 700,
+    pellets: 1,
+    spread: 0.06,
+    pierce: 2,
+    range: 520,
+    ammoCost: 190,
+    slow: 0.5,
+    slowSeconds: 2.4,
+    description: 'Friert ganze Reihen auf halbes Tempo ein',
+  },
   rocket: {
     label: 'Raketenwerfer',
     short: 'RW',
@@ -223,6 +246,7 @@ export const WEAPON_ORDER: WeaponType[] = [
   'sniper',
   'lmg',
   'flamer',
+  'cryo',
   'rocket',
   'tesla',
   'laser',

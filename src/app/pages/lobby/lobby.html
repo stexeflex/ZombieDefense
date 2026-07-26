@@ -237,6 +237,12 @@
                   "
                 ></span>
               </div>
+              @if (game.shield().value > 0) {
+                <div class="shield-track" aria-label="Schild">
+                  <i><span [style.width.%]="game.shield().percent"></span></i>
+                  <b>⛨ {{ game.shield().value }}</b>
+                </div>
+              }
             </div>
             <div class="ammo-block">
               <small>{{ weaponShort(game.player()?.weapon) }} · {{ weaponName(game.player()?.weapon) }}</small>

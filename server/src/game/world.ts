@@ -42,6 +42,8 @@ export interface RuntimePlayer {
   dashRecharge: number[];
   dashLock: number;
   wasDashing: boolean;
+  /** Everything the running dash already cut, so nobody is hit twice. */
+  dashHits: Set<string>;
   /** Magazine and spare rounds of every weapon that is not in hand. */
   stowed: Map<WeaponType, AmmoStore>;
   wasFiring: boolean;
@@ -237,6 +239,16 @@ export class GameWorld {
     if (ownerId) zombie.lastAttacker = ownerId;
   }
 
+  /**
+   * Frost stacks by strength, not by count: the hardest slow wins and refreshes
+   * the timer, so emptying a magazine cannot freeze a horde in place forever.
+   */
+  chillZombie(zombie: ZombieState, slow: number, seconds: number) {
+    const factor = 1 - slow;
+    zombie.slowFactor = zombie.chilled > 0 ? Math.min(zombie.slowFactor, factor) : factor;
+    zombie.chilled = Math.max(zombie.chilled, seconds);
+  }
+
   damageZombie(id: string, zombie: ZombieState, amount: number, ownerId: string) {
     const dealt = Math.max(0, amount * (1 - zombie.armor));
     zombie.health -= dealt;
@@ -295,8 +307,15 @@ export class GameWorld {
     const runtime = this.runtime.get(player.id);
     const upgrades = runtime?.upgrades ?? EMPTY_UPGRADES;
     const reduction = 1 - armorReduction(upgrades.armor);
-    const next = player.health - amount * reduction;
+    let incoming = amount * reduction;
     player.hurt = 0.35;
+    // The dash shield takes the blow first, only the rest reaches the body.
+    if (player.shield > 0) {
+      const absorbed = Math.min(player.shield, incoming);
+      player.shield -= absorbed;
+      incoming -= absorbed;
+    }
+    const next = player.health - incoming;
     if (next <= 0 && runtime?.perks.lastStand && runtime.lastStandReady) {
       runtime.lastStandReady = false;
       player.health = 1;

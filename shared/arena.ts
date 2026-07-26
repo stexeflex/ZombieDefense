@@ -33,3 +33,11 @@ export const DASH_LOCK = 0.28;
 /** Radius and damage of the shockwave the dash perk adds. */
 export const DASH_SHOCK_RADIUS = 96;
 export const DASH_SHOCK_DAMAGE = 45;
+/** Damage every enemy takes that the blade dash runs through. */
+export const DASH_CUT_DAMAGE = 58;
+/** Shield one of those hits hands out, before the levelled upgrade. */
+export const DASH_SHIELD_PER_HIT = 10;
+/** A shield never replaces health, so it stays a slice of the own maximum. */
+export const SHIELD_SHARE = 0.35;
+/** Shield points that fade away per second when nothing refreshes them. */
+export const SHIELD_DECAY = 4;

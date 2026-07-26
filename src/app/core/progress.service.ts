@@ -34,6 +34,8 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'moveSpeed', label: 'Bewegung', description: '+2 % Tempo', icon: '➜' },
   { key: 'dashCharges', label: 'Zusätzlicher Dash', description: '+1 Dash-Ladung', icon: '»' },
   { key: 'dashRecharge', label: 'Dash-Aufladung', description: '+2 % schneller', icon: '◌' },
+  { key: 'dashDamage', label: 'Dash-Schaden', description: '+2 % Schaden im Dash', icon: '✧' },
+  { key: 'dashShield', label: 'Dash-Schild', description: '+2 % Schild pro Gegner', icon: '⬢' },
   { key: 'weaponDamage', label: 'Waffenschaden', description: '+2 % Schaden', icon: '✦' },
   { key: 'reloadSpeed', label: 'Nachladen', description: '+2 % schneller', icon: '↻' },
   { key: 'magazineSize', label: 'Magazingröße', description: '+2 % Kapazität', icon: '▥' },
@@ -77,6 +79,14 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     label: 'Stoßdash',
     description: 'Der Dash schleudert Zombies weg und verletzt sie.',
     icon: '✺',
+  },
+  {
+    key: 'dashBlades',
+    label: 'Klingendash',
+    description:
+      'Jeder Gegner, durch den du dashst, nimmt Schaden und lädt dein Schild. ' +
+      'Das Schild schluckt Treffer und schmilzt langsam wieder weg.',
+    icon: '⚔',
   },
   {
     key: 'fieldMedic',

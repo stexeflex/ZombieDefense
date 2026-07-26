@@ -581,6 +581,10 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0.5);
     const healthBg = this.add.rectangle(0, 34, 48, 6, 0x260e14, 0.92);
     const healthBar = this.add.rectangle(-24, 34, 48, 6, 0x69f0ae, 1).setOrigin(0, 0.5);
+    const shieldBar = this.add
+      .rectangle(-24, 40, 48, 3, 0x9fdcff, 1)
+      .setOrigin(0, 0.5)
+      .setVisible(false);
     const reviveBg = this.add
       .rectangle(0, 46, 54, 8, 0x04100b, 0.94)
       .setStrokeStyle(1, 0xe8f4ed, 0.28)
@@ -609,6 +613,7 @@ export class ArenaScene extends Phaser.Scene {
         label,
         healthBg,
         healthBar,
+        shieldBar,
         reviveBg,
         reviveBar,
         reviveText,
@@ -628,6 +633,7 @@ export class ArenaScene extends Phaser.Scene {
       legs: [legA, legB],
       label,
       healthBar,
+      shieldBar,
       reviveBackground: reviveBg,
       reviveBar,
       reviveText,
@@ -645,6 +651,12 @@ export class ArenaScene extends Phaser.Scene {
     const ratio = Math.max(0, player.health / player.maxHealth);
     view.healthBar.setDisplaySize(48 * ratio, 6);
     view.healthBar.setFillStyle(ratio < 0.3 ? 0xff5f71 : ratio < 0.6 ? 0xffcc66 : 0x69f0ae);
+    // Teammates show their shield too, so everyone can see who is diving in.
+    const shielded = player.shield > 0 && player.shieldMax > 0;
+    view.shieldBar.setVisible(shielded);
+    if (shielded) {
+      view.shieldBar.setDisplaySize(48 * Math.min(1, player.shield / player.shieldMax), 3);
+    }
     view.root.setAlpha(player.alive ? 1 : 0.6);
 
     if (view.weaponKey !== player.weapon) {
@@ -746,6 +758,7 @@ export class ArenaScene extends Phaser.Scene {
 
     if (zombie.casting > 0) view.body.setTint(0xffd166);
     else if (zombie.burning > 0) view.body.setTint(0xffab5c);
+    else if (zombie.chilled > 0) view.body.setTint(0x8fd4ff);
     else if (damaged) view.body.setTint(0xffdede);
     else view.body.clearTint();
 

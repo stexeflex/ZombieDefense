@@ -392,6 +392,136 @@ console.log('\n== Dash ==');
   check('Ladung lädt nach', player.dashCharges === 4, `(${player.dashCharges})`);
 }
 
+console.log('\n== Klingendash und Schild ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1', { perks: { dashBlades: true }, upgrades: { dashShield: 50 } });
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  makeInvincible(player);
+
+  // Zwei Gegner direkt in der Dash-Spur, der zweite weit genug weg, dass ihn
+  // nur die geprüfte Strecke erwischt.
+  const near = room.systems.world.spawnZombie('normal', { x: player.x + 45, y: player.y });
+  const far = room.systems.world.spawnZombie('normal', { x: player.x + 120, y: player.y });
+  near.health = 1e6;
+  far.health = 1e6;
+  const nearBefore = near.health;
+  const farBefore = far.health;
+
+  runtime.input = { ...IDLE, dash: true, right: true, aimX: player.x + 200, aimY: player.y };
+  room.update(50);
+  runtime.input = { ...IDLE, right: true, aimX: player.x + 200, aimY: player.y };
+  step(room, 4);
+
+  check('Dash schneidet den Gegner davor', near.health < nearBefore, `(${near.health})`);
+  check('Auch der weiter entfernte in der Spur wird getroffen', far.health < farBefore);
+  check('Jeder Gegner gibt Schild', player.shield > 0, `(${Math.round(player.shield)})`);
+  check(
+    'Die Stufe erhöht den Schild pro Gegner',
+    player.shield > 2 * 10,
+    `(${Math.round(player.shield)} statt 20)`,
+  );
+
+  // Das Schild fängt den Treffer ab, bevor er das Leben erreicht.
+  player.dashing = 0;
+  player.health = 500;
+  player.maxHealth = 500;
+  player.shield = 40;
+  room.systems.world.damagePlayer(player, 30);
+  check(
+    'Schild schluckt den Treffer',
+    player.health === 500 && Math.round(player.shield) === 10,
+    `(${player.health} HP, ${Math.round(player.shield)} Schild)`,
+  );
+  room.systems.world.damagePlayer(player, 30);
+  check(
+    'Nur der Rest geht ans Leben',
+    player.shield === 0 && player.health === 480,
+    `(${player.health} HP, ${player.shield} Schild)`,
+  );
+
+  // Ohne Gegner rührt nichts das Schild an, es muss von selbst leerlaufen.
+  room.state.zombies.clear();
+  player.shield = 40;
+  step(room, 220);
+  check('Schild schmilzt von selbst weg', player.shield === 0, `(${player.shield})`);
+  check(
+    'Schild bleibt ein Teil des eigenen Lebens',
+    player.shieldMax === Math.round(500 * 0.35),
+    `(${player.shieldMax})`,
+  );
+}
+{
+  // Ohne den Vorteil bleibt der Dash ein reines Ausweichmanöver.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  makeInvincible(player);
+
+  const target = room.systems.world.spawnZombie('normal', { x: player.x + 45, y: player.y });
+  target.health = 1e6;
+  const before = target.health;
+  runtime.input = { ...IDLE, dash: true, right: true, aimX: player.x + 200, aimY: player.y };
+  room.update(50);
+  step(room, 4);
+  check('Ohne Klingendash kein Schaden', target.health === before);
+  check('Ohne Klingendash kein Schild', player.shield === 0);
+}
+
+console.log('\n== Frostkanone bremst ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  makeInvincible(player);
+  player.x = 700;
+  player.y = 800;
+  player.weapon = 'cryo';
+  player.fireCooldown = 0;
+
+  const zombie = room.systems.world.spawnZombie('normal', { x: 900, y: 800 });
+  zombie.health = 1e6;
+  zombie.maxHealth = 1e6;
+  const walking = zombie.baseSpeed;
+  for (let tick = 0; tick < 12; tick += 1) {
+    zombie.x = 900;
+    zombie.y = 800;
+    player.ammo = 9999;
+    player.reserveAmmo = 9999;
+    player.reloading = 0;
+    runtime.input = { ...IDLE, shoot: true, aimX: zombie.x, aimY: zombie.y };
+    room.update(50);
+  }
+  check('Frost hält an', zombie.chilled > 0, `(${zombie.chilled.toFixed(1)} s)`);
+  check(
+    `Gegner läuft langsamer (${Math.round(zombie.speed)} statt ${Math.round(walking)})`,
+    zombie.speed < walking * 0.75,
+  );
+  check('Frost macht trotzdem Schaden', zombie.health < 1e6);
+
+  // Der Frost taut wieder auf, sonst stünde die Horde für immer still.
+  runtime.input = { ...IDLE };
+  step(room, Math.ceil((WEAPONS.cryo.slowSeconds * 1000) / 50) + 4);
+  check('Frost taut wieder auf', zombie.chilled === 0 && zombie.speed >= walking, `(${zombie.speed})`);
+
+  // Stacheldraht bremst schwächer, darf den stärkeren Frost nicht aufheben.
+  room.systems.world.chillZombie(zombie, 0.5, 2);
+  room.systems.world.chillZombie(zombie, 0.25, 2);
+  check('Der stärkere Frost bleibt', zombie.slowFactor === 0.5, `(${zombie.slowFactor})`);
+}
+
 console.log('\n== Treffer im Dash klingt anders ==');
 {
   const room = makeRoom('outpost');

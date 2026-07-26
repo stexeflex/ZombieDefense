@@ -1,4 +1,5 @@
 import {
+  SHIELD_SHARE,
   START_MONEY,
   reserveCapacity,
   sellValue,
@@ -62,6 +63,8 @@ export class WaveSystem {
       player.y = spawn.y;
       player.maxHealth = Math.round(100 * (1 + upgrades.maxHealth * 0.02));
       player.health = player.maxHealth;
+      player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
+      player.shield = 0;
       player.alive = true;
       player.money = START_MONEY;
       player.weapon = 'pistol';
@@ -87,6 +90,7 @@ export class WaveSystem {
         runtime.dashRecharge = [];
         runtime.dashLock = 0;
         runtime.wasDashing = false;
+        runtime.dashHits.clear();
         runtime.stowed.clear();
         runtime.wasFiring = false;
         runtime.pushX = 0;

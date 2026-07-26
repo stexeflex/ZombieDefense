@@ -17,6 +17,9 @@ export class PlayerState extends Schema {
   @type('number') rotation = 0;
   @type('number') health = 100;
   @type('number') maxHealth = 100;
+  /** Dash shield that soaks damage before health, and what fits at most. */
+  @type('number') shield = 0;
+  @type('number') shieldMax = 0;
   @type('boolean') alive = true;
   @type('number') money = 400;
   @type('string') weapon: WeaponType = 'pistol';
@@ -54,6 +57,8 @@ export class ZombieState extends Schema {
   @type('number') maxHealth = 50;
   @type('number') rotation = 0;
   @type('number') burning = 0;
+  /** Seconds left of a slow — the frost counterpart to `burning`. */
+  @type('number') chilled = 0;
   @type('number') attacking = 0;
   @type('number') charging = 0;
   /** Above zero while a telegraphed attack is winding up. */
@@ -69,7 +74,6 @@ export class ZombieState extends Schema {
   bestDistance = Infinity;
   lastAttacker = '';
   burnDps = 0;
-  slowTimer = 0;
   slowFactor = 1;
   hasteTimer = 0;
   hasteFactor = 1;
@@ -100,6 +104,8 @@ export class ProjectileState extends Schema {
   chainRange = 0;
   burn = 0;
   burnSeconds = 0;
+  slow = 0;
+  slowSeconds = 0;
   hitIds = new Set<string>();
 }
 

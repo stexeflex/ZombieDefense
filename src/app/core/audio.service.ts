@@ -6,6 +6,7 @@ export type SoundName =
   | 'shot-heavy'
   | 'shot-energy'
   | 'shot-flame'
+  | 'shot-frost'
   | 'shot-rocket'
   | 'shot-tesla'
   | 'explosion'
@@ -32,6 +33,7 @@ const WEAPON_SOUND: Record<WeaponType, SoundName> = {
   sniper: 'shot-heavy',
   lmg: 'shot-heavy',
   flamer: 'shot-flame',
+  cryo: 'shot-frost',
   rocket: 'shot-rocket',
   tesla: 'shot-tesla',
   laser: 'shot-energy',
@@ -106,6 +108,11 @@ export class AudioService {
         break;
       case 'shot-flame':
         this.burst(at, 0.2, 620, 0.22 * volume, 'lowpass');
+        break;
+      // A hiss that falls away, so frost sounds nothing like fire.
+      case 'shot-frost':
+        this.burst(at, 0.18, 2400, 0.24 * volume, 'highpass');
+        this.tone(at, 'sine', 1200, 480, 0.14, 0.1 * volume, 'bandpass', 1800);
         break;
       case 'shot-rocket':
         this.burst(at, 0.32, 700, 0.5 * volume, 'lowpass');

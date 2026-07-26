@@ -20,7 +20,9 @@ export type FxKind =
   | 'wreck'
   | 'boss'
   | 'heal'
-  | 'dash';
+  | 'dash'
+  /** A dash cut through an enemy and charged the shield. */
+  | 'shield';
 
 export interface FxEvent {
   k: FxKind;
@@ -46,6 +48,9 @@ export interface PlayerSnapshot {
   rotation: number;
   health: number;
   maxHealth: number;
+  /** Dash shield that soaks damage before health, and what fits at most. */
+  shield: number;
+  shieldMax: number;
   alive: boolean;
   money: number;
   weapon: WeaponType;
@@ -82,6 +87,8 @@ export interface ZombieSnapshot {
   maxHealth: number;
   rotation: number;
   burning: number;
+  /** Seconds left of a slow — the frost counterpart to `burning`. */
+  chilled: number;
   attacking: number;
   charging: number;
   /** Above zero while a boss is winding up a telegraphed attack. */

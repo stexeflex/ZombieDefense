@@ -22,6 +22,8 @@ export interface PlayerView extends BaseView {
   legs: Phaser.GameObjects.Image[];
   label: Phaser.GameObjects.Text;
   healthBar: Phaser.GameObjects.Rectangle;
+  /** Thin blue bar under the health, only up while a shield is charged. */
+  shieldBar: Phaser.GameObjects.Rectangle;
   reviveBackground: Phaser.GameObjects.Rectangle;
   reviveBar: Phaser.GameObjects.Rectangle;
   reviveText: Phaser.GameObjects.Text;
@@ -92,6 +94,7 @@ export const PROJECTILE_STYLE: Record<
   sniper: { texture: 'fx-spark', tint: 0xd8fbff, scaleX: 3.4, scaleY: 0.42 },
   lmg: { texture: 'fx-spark', tint: 0xfff0b8, scaleX: 2.1, scaleY: 0.45 },
   flamer: { texture: 'fx-flame', tint: 0xffa04a, scaleX: 1.5, scaleY: 1.5 },
+  cryo: { texture: 'fx-energy', tint: 0xaef0ff, scaleX: 1.3, scaleY: 1.1 },
   rocket: { texture: 'fx-glow', tint: 0xffb066, scaleX: 0.55, scaleY: 0.4 },
   tesla: { texture: 'fx-energy', tint: 0x9fdcff, scaleX: 1.4, scaleY: 1.1 },
   laser: { texture: 'fx-spark', tint: 0xff8fd8, scaleX: 4.2, scaleY: 0.6 },

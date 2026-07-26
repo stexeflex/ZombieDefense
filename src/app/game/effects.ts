@@ -170,6 +170,13 @@ export class EffectLayer {
       case 'dash':
         this.dashTrail(event);
         break;
+      // The dash cut an enemy open and took a piece of shield with it.
+      case 'shield':
+        this.burst('blood', 4, event.x, event.y);
+        this.burst('energy', 6, event.x, event.y);
+        this.shockwave(event.x, event.y, 42, 0x9fdcff);
+        this.audio.play('deflect', 0.45);
+        break;
     }
   }
 
@@ -221,7 +228,15 @@ export class EffectLayer {
     const y = event.y + Math.sin(angle) * extra;
     const flash = this.scene.add
       .image(x, y, 'fx-glow')
-      .setTint(weapon === 'laser' ? 0xff8fd8 : weapon === 'tesla' ? 0x9fdcff : 0xffd489)
+      .setTint(
+        weapon === 'laser'
+          ? 0xff8fd8
+          : weapon === 'tesla'
+            ? 0x9fdcff
+            : weapon === 'cryo'
+              ? 0xaef0ff
+              : 0xffd489,
+      )
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.42, 0.3)
       .setRotation(angle)
