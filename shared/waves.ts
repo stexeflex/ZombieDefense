@@ -103,6 +103,72 @@ function minisFor(plan: WavePlan, wave: number, index: number): ZombieType[] {
   return list;
 }
 
+// ------------------------------------------------------------------- endless
+
+/** The mix the endless mode sends once a map has run out of planned waves. */
+const ENDLESS_ROSTER: RosterEntry[] = [
+  { type: 'normal', from: 1, share: 3 },
+  { type: 'fast', from: 1, share: 3 },
+  { type: 'crawler', from: 1, share: 3.4 },
+  { type: 'exploder', from: 1, share: 1.6 },
+  { type: 'big', from: 1, share: 1.4 },
+  { type: 'armored', from: 1, share: 1.6 },
+  { type: 'spitter', from: 1, share: 1.2 },
+  { type: 'screamer', from: 1, share: 1 },
+];
+
+const ENDLESS_MINIS: ZombieType[] = ['brute', 'warden', 'stalker', 'mortar'];
+/** Bodies of the first generated wave and what each further one adds. */
+const ENDLESS_BASE = 26;
+const ENDLESS_STEP = 4;
+/**
+ * Ceiling on the horde size. Past it the pressure comes from enemies that scale
+ * with the wave number, not from ever longer mop-up work.
+ */
+const ENDLESS_CAP = 130;
+
+/**
+ * A wave the endless mode makes up on the spot: mini bosses every third wave, a
+ * swarm every fifth and the boss of the map every tenth. Everything is seeded
+ * from the wave number, so the same wave always looks the same.
+ */
+export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
+  const size = Math.min(ENDLESS_CAP, ENDLESS_BASE + (wave - 1) * ENDLESS_STEP);
+  const seed = 8801 + wave * 17;
+
+  if (wave % 10 === 0) {
+    const escort = Math.min(size * 0.8, 110);
+    return {
+      kind: 'boss',
+      label: 'BOSS',
+      zombies: [boss, ...shuffled(pack(horde(escort, ENDLESS_ROSTER, wave)), seed)],
+    };
+  }
+  if (wave % 5 === 0) {
+    return {
+      kind: 'swarm',
+      label: 'SCHWARM',
+      zombies: shuffled(pack(swarm(size, ENDLESS_ROSTER, wave)), seed),
+    };
+  }
+  if (wave % 3 === 0) {
+    const leaders = Array.from(
+      { length: Math.min(5, 1 + Math.floor(wave / 12)) },
+      (_, slot) => ENDLESS_MINIS[(wave + slot) % ENDLESS_MINIS.length],
+    );
+    return {
+      kind: 'mini',
+      label: 'Mini-Boss',
+      zombies: [...leaders, ...shuffled(pack(horde(size * 0.7, ENDLESS_ROSTER, wave)), seed)],
+    };
+  }
+  return {
+    kind: 'normal',
+    label: 'Welle',
+    zombies: shuffled(pack(horde(size, ENDLESS_ROSTER, wave)), seed),
+  };
+}
+
 export function buildWaves(plan: WavePlan): WaveDefinition[] {
   const waves: WaveDefinition[] = [];
   let miniIndex = 0;

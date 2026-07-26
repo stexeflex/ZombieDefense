@@ -41,6 +41,7 @@ export class GameService {
   readonly selectedBuild = signal<DefenseType | null>(null);
   readonly placementRotation = signal(0);
   readonly preferredMap = signal(this.storedMap());
+  readonly preferredEndless = signal(this.storedEndless());
   readonly focusedDefenseId = signal('');
   readonly fx$ = new Subject<FxEvent[]>();
   readonly snapshot$ = new Subject<GameSnapshot>();
@@ -136,6 +137,7 @@ export class GameService {
         lobbyCode: lobbyCode.toUpperCase(),
         name: name.trim(),
         mapId: this.preferredMap(),
+        endless: this.preferredEndless(),
         upgrades: this.progress.upgrades(),
         perks: this.progress.perks(),
       };
@@ -209,6 +211,14 @@ export class GameService {
     localStorage.setItem('zombie-defense-map', mapId);
     this.audio.play('ui');
     this.room?.send('select_map', mapId);
+  }
+
+  /** Campaign or endless — the same maps, only the end of the run changes. */
+  selectEndless(endless: boolean) {
+    this.preferredEndless.set(endless);
+    localStorage.setItem('zombie-defense-endless', endless ? '1' : '0');
+    this.audio.play('ui');
+    this.room?.send('select_mode', endless);
   }
 
   buyWeapon(weapon: WeaponType) {
@@ -358,6 +368,11 @@ export class GameService {
   private storedMap() {
     if (typeof localStorage === 'undefined') return DEFAULT_MAP_ID;
     return localStorage.getItem('zombie-defense-map') ?? DEFAULT_MAP_ID;
+  }
+
+  private storedEndless() {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem('zombie-defense-endless') === '1';
   }
 
   private serverEndpoint() {

@@ -18,8 +18,10 @@ Aufruf kann das Laden deshalb kurz dauern.
 - autoritative Bewegung, Zombie-KI, Treffer und Wellen auf dem Server
 - zehn Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
 - jede Karte endet mit ihrem **eigenen** Endboss und schaltet die nächste frei
-- Dash auf der Leertaste: zwei Ladungen, kurzer Cooldown, währenddessen
-  unverwundbar — sichtbar am blauen Ring
+- **Endlosmodus** auf jeder freigeschalteten Karte: nach der letzten geplanten
+  Welle geht es weiter, alle zehn Wellen kommt der Boss der Karte zurück
+- Dash auf der Leertaste: zwei Ladungen, kurzer Cooldown, schluckt 40 % des
+  Schadens — mit der Stufe *Dash-Schadensreduktion* bis zu 100 %
 - mit dem Klingendash schneidet der Dash durch Gegner und lädt dabei ein Schild,
   das Treffer schluckt und langsam wieder wegschmilzt
 - Kopfgeld wird **gleichmäßig geteilt**: jeder im Trupp bekommt denselben
@@ -43,7 +45,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, achtzehn Stufen-Upgrades und neun einmalige Vorteile über
+- permanentes Gold, neunzehn Stufen-Upgrades und neun besondere Vorteile über
   `localStorage`
 
 ### Karten
@@ -60,6 +62,16 @@ Aufruf kann das Laden deshalb kurz dauern.
 | Nekropole | 22 | ×6 | Schwarmkönigin | 4200 |
 | Reaktorblock 4 | 24 | ×6,8 | Seuchenfürst | 5800 |
 | Abgrund-Kathedrale | 26 | ×7,6 | OMEGA | 9000 |
+
+### Endlosmodus
+
+In der Lobby wählt der Host neben der Karte den Modus. **Endlos** spielt dieselbe
+Karte, hört aber nach ihrer letzten geplanten Welle nicht auf: Von da an baut der
+Server jede Welle selbst, mit Mini-Bossen in jeder dritten, einer Schwarmwelle in
+jeder fünften und dem Boss der Karte in jeder zehnten. Die Horde wächst weiter,
+Leben und Schaden der Gegner steigen mit der Wellennummer. Der Lohn richtet sich
+nach der erreichten Welle — freischalten lässt sich im Endlosmodus nichts, dafür
+bleibt die Kampagne da.
 
 ### Bosse
 
@@ -154,7 +166,7 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | Taste | Aktion |
 |---|---|
 | `WASD` oder Pfeiltasten | Bewegen |
-| `Leertaste` oder `Shift` | Dash — kurz unverwundbar |
+| `Leertaste` oder `Shift` | Dash — schluckt einen Großteil des Schadens |
 | Maus | Zielen |
 | Linke Maustaste | Schießen |
 | `R` | Nachladen; beim Platzieren Barrikade drehen |
@@ -164,14 +176,16 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | `V` | markierte Verteidigung verkaufen (nur Bauphase) |
 | Rechtsklick | ausgewählte Verteidigung abwählen |
 
-Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange
-er läuft, geht jeder Treffer daneben — der blaue Ring zeigt an, wann das gilt.
-Ein abgewehrter Schlag klingt hell und metallisch statt dumpf, so ist ein
-geglücktes Ausweichen auch ohne Blick auf den Ring zu hören. Im permanenten Shop
-gibt es weitere Ladungen, eine schnellere Aufladung, mehr Dash-Schaden und ein
-stärkeres Dash-Schild.
+Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange er
+läuft, schluckt er 40 % jedes Treffers — der blaue Ring zeigt an, wann das gilt.
+Das Stufen-Upgrade **Dash-Schadensreduktion** legt pro Stufe 10 % darauf und
+macht den Dash mit der sechsten Stufe wieder komplett unverwundbar; jede Stufe
+kostet entsprechend viel. Ein völlig abgewehrter Schlag klingt hell und
+metallisch statt dumpf, so ist ein geglücktes Ausweichen auch ohne Blick auf den
+Ring zu hören. Dazu gibt es im permanenten Shop weitere Ladungen und eine
+schnellere Aufladung.
 
-Mit dem einmaligen Vorteil **Klingendash** wird der Dash zur Waffe: Jeder Gegner,
+Mit dem besonderen Vorteil **Klingendash** wird der Dash zur Waffe: Jeder Gegner,
 durch den man hindurchdasht, nimmt Schaden und lädt ein Schild. Geprüft wird die
 ganze zurückgelegte Strecke, ein Gegner also nie doppelt pro Dash. Das Schild
 fängt Treffer ab, bevor sie das Leben erreichen, hält höchstens 35 % des eigenen
@@ -209,8 +223,9 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
 - **Stufen-Upgrades** – Leben, Panzerung, Tempo, Waffenschaden, Nachladen,
   Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
-  Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schaden und Dash-Schild
-- **Einmalige Vorteile** – günstigere erste Waffe, erste Barrikaden und erster
+  Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schadensreduktion,
+  Dash-Schaden und Dash-Schild
+- **Besondere Vorteile** – günstigere erste Waffe, erste Barrikaden und erster
   Turm eines Runs, ein Dash der Zombies wegschleudert, ein Dash der durch Gegner
   schneidet und Schild auflädt, doppelt so schnelles Wiederbeleben, günstigere
   Reparaturen, eine Granate mehr und ein Aufbäumen, das einen tödlichen Treffer
@@ -219,6 +234,10 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als
 gefüllten Balken — vierzig Striche wären nicht lesbar.
+
+Dash-Schaden und Dash-Schild bleiben gesperrt, solange der Vorteil fehlt, der sie
+überhaupt wirksam macht: Dash-Schaden braucht Stoßdash oder Klingendash,
+Dash-Schild den Klingendash. So kostet keine Stufe Gold, die nichts tut.
 
 Upgrades, die direkt Geld oder Gold bringen, gibt es bewusst nicht.
 
@@ -254,8 +273,9 @@ npm run build:all
 
 `npm run sim` startet einen Rauchtest ohne Browser: Ein Bot spielt jede Karte
 bis zum Endboss durch und prüft Waffen, Verteidigungen, Türme, Dash samt
-Klingendash und Schild, den Frost der Frostkanone, die gleiche Geldverteilung,
-alle Boss-Fähigkeiten und ob jede Welle wirklich endet.
+Schadensreduktion, Klingendash und Schild, den Frost der Frostkanone, den
+Endlosmodus, die gleiche Geldverteilung, alle Boss-Fähigkeiten und ob jede Welle
+wirklich endet.
 
 Der fertige Browser-Build liegt danach unter
 `dist/zombie-defense/browser`. Der Server-Build liegt unter `server/build`.

@@ -30,7 +30,7 @@ export class PlayerState extends Schema {
   @type('number') grenadeCooldown = 0;
   @type('number') dashCharges = 2;
   @type('number') dashMax = 2;
-  /** Seconds left of the current dash — above zero means untouchable. */
+  /** Seconds left of the current dash — above zero means damage is reduced. */
   @type('number') dashing = 0;
   @type('number') dashCooldown = 0;
   /** Discounted buys the starter perks still have left this run. */
@@ -146,7 +146,10 @@ export class GameState extends Schema {
   @type('string') lobbyCode = '';
   @type('string') hostSessionId = '';
   @type('string') mapId = 'outpost';
+  /** Endless run: the waves never stop and no map gets cleared. */
+  @type('boolean') endless = false;
   @type('number') wave = 0;
+  /** Waves the map has planned, or zero while an endless run is going. */
   @type('number') totalWaves = 10;
   @type('string') waveLabel = 'Welle';
   @type('string') waveKind: WaveKind = 'normal';

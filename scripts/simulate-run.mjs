@@ -16,6 +16,7 @@ const load = (path) => import(pathToFileURL(resolve(root, path)).href);
 const { ZombieRoom } = await load('server/build/server/src/rooms/zombie-room.js');
 const {
   BOSSES,
+  DASH_BASE_RESIST,
   DASH_SECONDS,
   DEFENSES,
   MAPS,
@@ -25,8 +26,10 @@ const {
   WEAPONS,
   WEAPON_ORDER,
   ZOMBIES,
+  dashReduction,
   reserveCapacity,
   sellRefund,
+  upgradeMaxLevel,
 } = await load('server/build/shared/game-types.js');
 
 const failures = [];
@@ -40,12 +43,12 @@ function check(name, condition, detail = '') {
   console.log(`  FEHLER ${name} ${detail}`);
 }
 
-function makeRoom(mapId) {
+function makeRoom(mapId, options = {}) {
   const room = new ZombieRoom();
   room.clients = [];
   room.broadcast = () => {};
   room.setSimulationInterval = () => {};
-  room.onCreate({ lobbyCode: 'SIM01', mapId });
+  room.onCreate({ lobbyCode: 'SIM01', mapId, ...options });
   return room;
 }
 
@@ -302,7 +305,7 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
   );
 }
 
-console.log('\n== Einmalige Vorteile ==');
+console.log('\n== Besondere Vorteile ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1', {
@@ -376,20 +379,59 @@ console.log('\n== Dash ==');
   check('Dash verbraucht eine Ladung', player.dashCharges === 3, `(${player.dashCharges})`);
   check('Dash läuft', player.dashing > 0);
 
+  player.maxHealth = 1000;
+  player.health = 1000;
   const healthBefore = player.health;
-  room.systems.world.damagePlayer(player, 5000);
-  check('Während des Dashes unverwundbar', player.health === healthBefore);
+  room.systems.world.damagePlayer(player, 100);
+  const through = healthBefore - player.health;
+  check(
+    `Dash schluckt ohne Stufe ${Math.round(DASH_BASE_RESIST * 100)} % des Schadens`,
+    Math.abs(through - 100 * (1 - DASH_BASE_RESIST)) < 0.01,
+    `(${through} statt ${100 * (1 - DASH_BASE_RESIST)})`,
+  );
 
   runtime.input = { ...IDLE, right: true, aimX: player.x + 200, aimY: player.y };
   step(room, Math.ceil((DASH_SECONDS * 1000) / 50) + 2);
   check('Dash endet von selbst', player.dashing === 0);
   check('Dash bringt Strecke', player.x - startX > 60, `(${Math.round(player.x - startX)} px)`);
 
-  room.systems.world.damagePlayer(player, 40);
-  check('Nach dem Dash trifft Schaden wieder', player.health < healthBefore);
+  const beforeFull = player.health;
+  room.systems.world.damagePlayer(player, 100);
+  check(
+    'Nach dem Dash trifft der volle Schaden',
+    Math.abs(beforeFull - player.health - 100) < 0.01,
+    `(${beforeFull - player.health})`,
+  );
 
   step(room, 100);
   check('Ladung lädt nach', player.dashCharges === 4, `(${player.dashCharges})`);
+}
+{
+  // Voll ausgebaut ist der Dash wieder das alte Ausweichmanöver.
+  const room = makeRoom('outpost');
+  const maxResist = upgradeMaxLevel('dashResist');
+  const player = join(room, 'p1', { upgrades: { dashResist: maxResist } });
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+
+  runtime.input = { ...IDLE, dash: true, right: true, aimX: player.x + 200, aimY: player.y };
+  room.update(50);
+  const before = player.health;
+  const landed = room.systems.world.damagePlayer(player, 5000);
+  check(
+    `Volle Stufe (${maxResist}) macht den Dash unverwundbar`,
+    player.dashing > 0 && player.health === before && landed === false,
+    `(${player.health}/${before})`,
+  );
+  check('Mehr als voll geht nicht', dashReduction(maxResist + 5) === 1);
+  check(
+    'Jede Stufe bringt deutlich mehr als ein Prozent-Upgrade',
+    dashReduction(1) - dashReduction(0) >= 0.05,
+    `(${((dashReduction(1) - dashReduction(0)) * 100).toFixed(0)} %)`,
+  );
 }
 
 console.log('\n== Klingendash und Schild ==');
@@ -525,7 +567,8 @@ console.log('\n== Frostkanone bremst ==');
 console.log('\n== Treffer im Dash klingt anders ==');
 {
   const room = makeRoom('outpost');
-  const player = join(room, 'p1');
+  const player = join(room, 'p1', { upgrades: { dashResist: upgradeMaxLevel('dashResist') } });
+  const runtime = room.systems.world.runtime.get('p1');
   room.systems.waves.startRun();
   room.systems.waves.spawnQueue = [];
   room.systems.waves.spawnDelay = 1e6;
@@ -545,10 +588,29 @@ console.log('\n== Treffer im Dash klingt anders ==');
   player.dashing = 1;
   const healthBefore = player.health;
   room.update(50);
-  check('Dash schluckt den Schlag', player.health === healthBefore);
+  check('Voll ausgebauter Dash schluckt den Schlag', player.health === healthBefore);
   check(
     'Abgewehrter Treffer meldet sich eigen',
     seen.some((event) => event.k === 'deflect') && !seen.some((event) => event.k === 'blood'),
+    `(${seen.map((event) => event.k).join(', ')})`,
+  );
+
+  // Ohne die Stufe ist der Dash keine Wand: der Rest kommt durch und blutet.
+  seen.length = 0;
+  runtime.upgrades.dashResist = 0;
+  zombie.attackCooldown = 0;
+  zombie.x = player.x;
+  zombie.y = player.y;
+  const partialBefore = player.health;
+  room.update(50);
+  check(
+    'Ohne Stufe kommt ein Teil durch',
+    player.health < partialBefore && player.health > partialBefore - zombie.damage,
+    `(${(partialBefore - player.health).toFixed(1)} von ${zombie.damage.toFixed(1)})`,
+  );
+  check(
+    'Der Rest zählt als Treffer',
+    seen.some((event) => event.k === 'blood') && !seen.some((event) => event.k === 'deflect'),
     `(${seen.map((event) => event.k).join(', ')})`,
   );
 
@@ -653,6 +715,85 @@ console.log('\n== Wellenende heilt den Trupp ==');
     'Bereit startet die nächste Welle',
     room.state.phase === 'combat' && room.state.wave === before + 1,
   );
+}
+
+console.log('\n== Endlosmodus ==');
+{
+  const map = MAPS[0];
+  const room = makeRoom(map.id, { endless: true });
+  const player = join(room, 'p1');
+  let reward = null;
+  room.broadcast = (type, payload) => {
+    if (type === 'permanent_reward') reward = payload;
+  };
+  check(
+    'Endlos kennt kein Wellenziel',
+    room.state.endless === true && room.state.totalWaves === 0,
+    `(${room.state.totalWaves})`,
+  );
+
+  room.systems.waves.startRun();
+  makeInvincible(player);
+  // Direkt vor die letzte geplante Welle setzen, statt alle zu spielen.
+  room.state.wave = map.waves.length;
+  room.state.zombies.clear();
+  room.systems.waves.spawnQueue = [];
+  room.systems.waves.finishWave();
+  check(
+    'Nach der letzten geplanten Welle geht es weiter',
+    room.state.phase === 'build' && reward === null,
+    `(${room.state.phase})`,
+  );
+
+  room.systems.waves.startNextWave();
+  check(
+    'Die erzeugte Welle läuft',
+    room.state.phase === 'combat' && room.state.wave === map.waves.length + 1,
+    `(Welle ${room.state.wave})`,
+  );
+  check(
+    'Sie schickt auch Gegner',
+    room.systems.waves.spawnQueue.length > 0,
+    `(${room.systems.waves.spawnQueue.length} in der Warteschlange)`,
+  );
+  check('Der Status sagt Endlos', room.state.statusText.includes('Endlos'), `(${room.state.statusText})`);
+
+  // Ein Endlos-Run schaltet nichts frei, egal wie weit er kommt.
+  player.health = 0;
+  player.alive = false;
+  room.systems.waves.checkDefeat();
+  check(
+    'Endlos zählt nie als Sieg',
+    reward !== null && reward.victory === false,
+    `(${reward && reward.victory})`,
+  );
+  check(
+    'Der Lohn richtet sich nach der erreichten Welle',
+    reward !== null && reward.gold > 0 && reward.wave === map.waves.length + 1,
+    `(${reward && reward.gold} Gold, Welle ${reward && reward.wave})`,
+  );
+}
+{
+  // Dieselbe Karte ohne Endlos endet weiterhin mit dem Sieg.
+  const map = MAPS[0];
+  const room = makeRoom(map.id);
+  const player = join(room, 'p1');
+  let reward = null;
+  room.broadcast = (type, payload) => {
+    if (type === 'permanent_reward') reward = payload;
+  };
+  room.systems.waves.startRun();
+  makeInvincible(player);
+  room.state.wave = map.waves.length;
+  room.state.zombies.clear();
+  room.systems.waves.spawnQueue = [];
+  room.systems.waves.finishWave();
+  check(
+    'Die Kampagne endet mit dem Sieg',
+    room.state.phase === 'gameover' && reward !== null && reward.victory === true,
+    `(${room.state.phase})`,
+  );
+  check('Und zählt die Wellen der Karte', room.state.totalWaves === map.waves.length);
 }
 
 console.log('\n== Arsenal ==');

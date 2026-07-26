@@ -27,7 +27,7 @@ export interface PlayerView extends BaseView {
   reviveBackground: Phaser.GameObjects.Rectangle;
   reviveBar: Phaser.GameObjects.Rectangle;
   reviveText: Phaser.GameObjects.Text;
-  /** Ring that shows the player is untouchable while dashing. */
+  /** Ring that shows the dash is running and swallowing damage. */
   dashRing: Phaser.GameObjects.Arc;
   dashPulse: number;
   walk: number;

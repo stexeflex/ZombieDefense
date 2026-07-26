@@ -31,6 +31,7 @@ interface JoinOptions {
   lobbyCode?: string;
   name?: string;
   mapId?: string;
+  endless?: boolean;
   upgrades?: Partial<PermanentUpgrades>;
   perks?: Partial<PermanentPerks>;
 }
@@ -93,6 +94,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   onCreate(options: JoinOptions) {
     const state = new GameState();
     state.lobbyCode = this.cleanCode(options.lobbyCode);
+    state.endless = Boolean(options.endless);
     this.setState(state);
 
     this.world = new GameWorld(state, findMap(options.mapId ?? DEFAULT_MAP_ID));
@@ -122,9 +124,14 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       runtime.input = this.cleanInput(input);
     });
     this.onMessage('select_map', (client, mapId: string) => {
-      if (client.sessionId !== this.state.hostSessionId) return;
-      if (this.state.phase !== 'lobby' && this.state.phase !== 'gameover') return;
+      if (!this.mayChangeSetup(client.sessionId)) return;
       this.applyMap(mapId);
+      this.broadcastSnapshot();
+    });
+    this.onMessage('select_mode', (client, endless: boolean) => {
+      if (!this.mayChangeSetup(client.sessionId)) return;
+      this.state.endless = Boolean(endless);
+      this.applyMap(this.state.mapId);
       this.broadcastSnapshot();
     });
     this.onMessage('start', (client) => {
@@ -252,12 +259,21 @@ export class ZombieRoom extends Room<{ state: GameState }> {
 
   // ---------------------------------------------------------------- map setup
 
+  /** Map and mode are the host's call, and only outside a running run. */
+  private mayChangeSetup(sessionId: string) {
+    if (sessionId !== this.state.hostSessionId) return false;
+    return this.state.phase === 'lobby' || this.state.phase === 'gameover';
+  }
+
   private applyMap(mapId: string) {
     this.world.map = findMap(mapId);
     this.state.mapId = this.world.map.id;
-    this.state.totalWaves = this.world.map.waves.length;
+    // An endless run has no total, so the client can show it as such.
+    this.state.totalWaves = this.state.endless ? 0 : this.world.map.waves.length;
     if (this.state.phase === 'lobby') {
-      this.state.statusText = `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
+      this.state.statusText = this.state.endless
+        ? `${this.world.map.name} · Endlos`
+        : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
     }
   }
 

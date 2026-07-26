@@ -30,6 +30,13 @@ export const DASH_SPEED = 3.6;
 export const DASH_RECHARGE = 3.4;
 /** Minimum gap between two dashes, so charges cannot be dumped at once. */
 export const DASH_LOCK = 0.28;
+/**
+ * A dash is a dodge, not a free pass: this share of a blow bounces off on its
+ * own, and only the levelled upgrade pushes it up to the full immunity.
+ */
+export const DASH_BASE_RESIST = 0.4;
+/** How much more of a hit every level of the dash resistance swallows. */
+export const DASH_RESIST_STEP = 0.1;
 /** Radius and damage of the shockwave the dash perk adds. */
 export const DASH_SHOCK_RADIUS = 96;
 export const DASH_SHOCK_DAMAGE = 45;

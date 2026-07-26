@@ -1,6 +1,7 @@
 import {
   SHIELD_SHARE,
   START_MONEY,
+  endlessWave,
   reserveCapacity,
   sellValue,
   type ZombieType,
@@ -102,16 +103,25 @@ export class WaveSystem {
     this.startNextWave();
   }
 
+  /**
+   * The planned waves of the map first, then waves the endless mode makes up on
+   * the spot. Nothing left means the campaign is beaten.
+   */
+  private waveFor(wave: number) {
+    const map = this.world.map;
+    if (wave <= map.waves.length) return map.waves[wave - 1];
+    return this.world.state.endless ? endlessWave(map.boss, wave) : undefined;
+  }
+
   startNextWave() {
     const state = this.world.state;
-    const map = this.world.map;
-    if (state.wave >= map.waves.length) {
+    const definition = this.waveFor(state.wave + 1);
+    if (!definition) {
       this.endRun(true);
       return;
     }
     state.phase = 'combat';
     state.wave += 1;
-    const definition = map.waves[state.wave - 1];
     this.spawnQueue = [...definition.zombies];
     this.spawnDelay = 0.3;
     state.waveKind = definition.kind;
@@ -132,21 +142,23 @@ export class WaveSystem {
   private waveStatus(kind: string) {
     const state = this.world.state;
     const map = this.world.map;
-    if (kind === 'boss') return `ENDBOSS · ${map.name}`;
+    if (kind === 'boss') return state.endless ? `BOSS · Welle ${state.wave}` : `ENDBOSS · ${map.name}`;
     if (kind === 'mini') return `Welle ${state.wave} · Mini-Boss`;
     if (kind === 'swarm') return `Welle ${state.wave} · SCHWARM`;
+    if (state.endless) return `Welle ${state.wave} · Endlos`;
     return `Welle ${state.wave} / ${map.waves.length}`;
   }
 
   finishWave() {
     const state = this.world.state;
     const map = this.world.map;
-    if (state.wave >= map.waves.length) {
+    if (!state.endless && state.wave >= map.waves.length) {
       this.endRun(true);
       return;
     }
-    const definition = map.waves[state.wave - 1];
-    const multiplier = definition.kind === 'mini' ? 2.1 : definition.kind === 'swarm' ? 1.5 : 1;
+    // The kind of the wave just cleared is what the state still holds, so no
+    // generated wave has to be built a second time just to price it.
+    const multiplier = state.waveKind === 'mini' ? 2.1 : state.waveKind === 'swarm' ? 1.5 : 1;
     const reward = Math.round((90 + state.wave * 42) * map.moneyScale * multiplier);
     state.phase = 'build';
     state.statusText = `Welle geschafft · +${reward} $ für alle`;
@@ -191,7 +203,9 @@ export class WaveSystem {
     state.phase = 'gameover';
     state.statusText = victory
       ? `${this.world.map.name} gesichert!`
-      : `Der Run auf ${this.world.map.name} ist vorbei`;
+      : state.endless
+        ? `Endlos-Run beendet · Welle ${state.wave}`
+        : `Der Run auf ${this.world.map.name} ist vorbei`;
     const gold = Math.round(
       (15 + state.wave * 12) * this.world.map.moneyScale + (victory ? this.world.map.reward : 0),
     );

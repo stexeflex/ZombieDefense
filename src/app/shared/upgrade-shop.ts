@@ -46,6 +46,15 @@ export class UpgradeShop {
     return this.progress.upgrades()[key];
   }
 
+  /** An upgrade whose perk is missing stays visible, but cannot be bought. */
+  unlocked(key: UpgradeKey) {
+    return this.progress.unlocked(key);
+  }
+
+  lockedBy(key: UpgradeKey) {
+    return this.progress.lockedBy(key);
+  }
+
   maxLevel(key: UpgradeKey) {
     return this.progress.maxLevel(key);
   }

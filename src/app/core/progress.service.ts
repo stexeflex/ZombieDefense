@@ -1,11 +1,14 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
+  DASH_RESIST_STEP,
   EMPTY_PERKS,
   EMPTY_UPGRADES,
   MAPS,
   PERK_COST,
+  UPGRADE_REQUIRES,
   upgradeLevelCost,
   upgradeMaxLevel,
+  upgradeUnlocked,
   type PermanentPerks,
   type PermanentUpgrades,
   type PerkKey,
@@ -36,6 +39,12 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'dashRecharge', label: 'Dash-Aufladung', description: '+2 % schneller', icon: '◌' },
   { key: 'dashDamage', label: 'Dash-Schaden', description: '+2 % Schaden im Dash', icon: '✧' },
   { key: 'dashShield', label: 'Dash-Schild', description: '+2 % Schild pro Gegner', icon: '⬢' },
+  {
+    key: 'dashResist',
+    label: 'Dash-Schadensreduktion',
+    description: `+${Math.round(DASH_RESIST_STEP * 100)} % weniger Schaden im Dash`,
+    icon: '◇',
+  },
   { key: 'weaponDamage', label: 'Waffenschaden', description: '+2 % Schaden', icon: '✦' },
   { key: 'reloadSpeed', label: 'Nachladen', description: '+2 % schneller', icon: '↻' },
   { key: 'magazineSize', label: 'Magazingröße', description: '+2 % Kapazität', icon: '▥' },
@@ -54,7 +63,7 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'reviveSpeed', label: 'Wiederbelebung', description: '+2 % schneller', icon: '✚' },
 ];
 
-/** One-time buys that change a rule instead of a number. */
+/** Special buys that change a rule instead of a number, each bought once. */
 export const PERK_DEFINITIONS: PerkDefinition[] = [
   {
     key: 'starterWeapon',
@@ -150,9 +159,23 @@ export class ProgressService {
     return upgradeLevelCost(key, this.progress().upgrades[key]);
   }
 
+  /** False while the perk this upgrade scales is still missing. */
+  unlocked(key: UpgradeKey) {
+    return upgradeUnlocked(key, this.progress().perks);
+  }
+
+  /** Names of the perks that would open a locked upgrade, for the shop card. */
+  lockedBy(key: UpgradeKey) {
+    if (this.unlocked(key)) return '';
+    return (UPGRADE_REQUIRES[key] ?? [])
+      .map((perk) => PERK_DEFINITIONS.find((entry) => entry.key === perk)?.label ?? perk)
+      .join(' oder ');
+  }
+
   buy(key: UpgradeKey) {
     const current = this.progress();
     const cost = this.cost(key);
+    if (!this.unlocked(key)) return false;
     if (current.gold < cost || current.upgrades[key] >= upgradeMaxLevel(key)) return false;
     this.save({
       ...current,

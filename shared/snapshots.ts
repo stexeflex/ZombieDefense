@@ -63,7 +63,7 @@ export interface PlayerSnapshot {
   /** Dash charges ready right now and the maximum this player can hold. */
   dashCharges: number;
   dashMax: number;
-  /** Seconds left of the current dash — above zero means untouchable. */
+  /** Seconds left of the current dash — above zero means damage is reduced. */
   dashing: number;
   dashCooldown: number;
   /** Discounted buys the starter perks still have left this run. */
@@ -134,7 +134,10 @@ export interface GameSnapshot {
   lobbyCode: string;
   hostSessionId: string;
   mapId: string;
+  /** Endless run: the waves never stop and no map gets cleared. */
+  endless: boolean;
   wave: number;
+  /** Waves the map has planned, or zero while an endless run is going. */
   totalWaves: number;
   waveLabel: string;
   waveKind: WaveKind;

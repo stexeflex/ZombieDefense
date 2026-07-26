@@ -10,6 +10,7 @@ import {
   WEAPONS,
   WEAPON_ORDER,
   ZOMBIES,
+  dashReduction,
   findMap,
   type DefenseType,
   type WeaponType,
@@ -52,6 +53,7 @@ export class Lobby implements OnInit, OnDestroy {
   readonly turrets = TURRET_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
 
   readonly activeMap = computed(() => findMap(this.game.snapshot()?.mapId ?? this.game.preferredMap()));
+  readonly endless = computed(() => this.game.snapshot()?.endless ?? this.game.preferredEndless());
   readonly boss = computed(() => {
     const snapshot = this.game.snapshot();
     if (!snapshot || snapshot.bossMaxHealth <= 0) return null;
@@ -123,6 +125,24 @@ export class Lobby implements OnInit, OnDestroy {
   selectMap(mapId: string) {
     if (!this.game.isHost() || !this.progress.isUnlocked(mapId)) return;
     this.game.selectMap(mapId);
+  }
+
+  selectMode(endless: boolean) {
+    if (!this.game.isHost() || this.endless() === endless) return;
+    this.game.selectEndless(endless);
+  }
+
+  /** An endless run has no last wave, so the counter shows infinity instead. */
+  totalLabel() {
+    const snapshot = this.game.snapshot();
+    if (!snapshot) return '—';
+    return snapshot.endless ? '∞' : String(snapshot.totalWaves);
+  }
+
+  /** What the dash currently swallows, so the HUD never oversells the dodge. */
+  dashHint() {
+    const percent = Math.round(dashReduction(this.progress.upgrades().dashResist) * 100);
+    return percent >= 100 ? 'Dash (unverwundbar)' : `Dash (−${percent} % Schaden)`;
   }
 
   mapLocked(mapId: string) {

@@ -7,6 +7,7 @@ import {
   SUMMON_CYCLES,
   ZOMBIES,
   armorReduction,
+  dashReduction,
   timedAbilities,
   type FxEvent,
   type GameMap,
@@ -302,11 +303,17 @@ export class GameWorld {
 
   /** Tells the caller whether the blow landed, so a dodge can look different. */
   damagePlayer(player: PlayerState, amount: number) {
-    // A dash is a real dodge: nothing lands while it runs.
-    if (player.dashing > 0 || !player.alive) return false;
+    if (!player.alive) return false;
     const runtime = this.runtime.get(player.id);
     const upgrades = runtime?.upgrades ?? EMPTY_UPGRADES;
-    const reduction = 1 - armorReduction(upgrades.armor);
+    let reduction = 1 - armorReduction(upgrades.armor);
+    // A dash swallows a good part of every blow, and the levelled upgrade pushes
+    // that up to the full immunity it used to hand out for nothing.
+    if (player.dashing > 0) {
+      const dodged = dashReduction(upgrades.dashResist);
+      if (dodged >= 1) return false;
+      reduction *= 1 - dodged;
+    }
     let incoming = amount * reduction;
     player.hurt = 0.35;
     // The dash shield takes the blow first, only the rest reaches the body.

@@ -85,9 +85,36 @@
           <p class="eyebrow"><span></span> Einsatzbesprechung</p>
           <h1>Wählt euren<br />Sektor.</h1>
           <p>
-            Teile den Lobby-Link mit bis zu drei Freunden. Jede Karte endet mit
-            einem Endboss und schaltet die nächste, härtere Karte frei.
+            @if (snapshot.endless) {
+              Endlosmodus: Nach der letzten geplanten Welle geht es weiter, bis
+              der Trupp fällt. Alle zehn Wellen kommt der Boss der Karte zurück
+              — freischalten lässt sich hier nichts.
+            } @else {
+              Teile den Lobby-Link mit bis zu drei Freunden. Jede Karte endet mit
+              einem Endboss und schaltet die nächste, härtere Karte frei.
+            }
           </p>
+
+          <div class="mode-switch" role="group" aria-label="Spielmodus">
+            <button
+              type="button"
+              [class.active]="!snapshot.endless"
+              [disabled]="!game.isHost()"
+              (click)="selectMode(false)"
+            >
+              Kampagne
+              <small>Bis zum Endboss</small>
+            </button>
+            <button
+              type="button"
+              [class.active]="snapshot.endless"
+              [disabled]="!game.isHost()"
+              (click)="selectMode(true)"
+            >
+              Endlos
+              <small>Welle für Welle ohne Ende</small>
+            </button>
+          </div>
 
           <div class="map-picker" role="list">
             @for (map of maps; track map.id) {
@@ -111,10 +138,12 @@
                 <small>{{ map.subtitle }}</small>
                 <p>{{ map.description }}</p>
                 <div class="map-stats">
-                  <span>{{ map.waves.length }} Wellen</span>
+                  <span>{{ snapshot.endless ? '∞' : map.waves.length }} Wellen</span>
                   <span>Härte ×{{ map.difficulty }}</span>
                   <span>☠ {{ bossName(map.id) }}</span>
-                  <span>◆ {{ map.reward }}</span>
+                  @if (!snapshot.endless) {
+                    <span>◆ {{ map.reward }}</span>
+                  }
                 </div>
               </button>
             }
@@ -170,7 +199,10 @@
           @if (game.isHost()) {
             <button class="start-button" type="button" (click)="start()">
               Run starten
-              <span>{{ activeMap().name }} · Welle 1 / {{ activeMap().waves.length }}</span>
+              <span>
+                {{ activeMap().name }} ·
+                {{ snapshot.endless ? 'Endlos' : 'Welle 1 / ' + activeMap().waves.length }}
+              </span>
             </button>
           } @else {
             <div class="waiting-host"><span></span> Warte, bis der Host den Run startet …</div>
@@ -206,7 +238,7 @@
                           : 'Welle'
               }}
             </span>
-            <strong>{{ snapshot.wave }}<em>/{{ snapshot.totalWaves }}</em></strong>
+            <strong>{{ snapshot.wave }}<em>/{{ totalLabel() }}</em></strong>
             @if (snapshot.phase === 'combat') {
               <small>{{ snapshot.enemiesRemaining }} Gegner</small>
             } @else if (snapshot.phase === 'build') {
@@ -297,7 +329,7 @@
 
           <div class="controls-hint">
             <span><kbd>WASD</kbd> Bewegen</span>
-            <span><kbd>Leertaste</kbd> Dash (unverwundbar)</span>
+            <span><kbd>Leertaste</kbd> {{ dashHint() }}</span>
             <span><kbd>Maus</kbd> Zielen &amp; schießen</span>
             @if (snapshot.phase === 'build') {
               <span><kbd>R</kbd> Barrikade drehen</span>
@@ -328,11 +360,13 @@
                   {{
                     game.lastReward()?.victory
                       ? activeMap().name + ' ist befreit.'
-                      : 'Die Linie ist gebrochen.'
+                      : snapshot.endless
+                        ? 'Welle ' + snapshot.wave + ' war zu viel.'
+                        : 'Die Linie ist gebrochen.'
                   }}
                 </h2>
                 <div class="run-stats">
-                  <span><b>{{ snapshot.wave }}</b> / {{ snapshot.totalWaves }} Wellen</span>
+                  <span><b>{{ snapshot.wave }}</b> / {{ totalLabel() }} Wellen</span>
                   <span><b>{{ game.player()?.kills }}</b> Abschüsse</span>
                   <span><b>+{{ game.lastReward()?.gold ?? 0 }}</b> permanentes Gold</span>
                 </div>
@@ -540,7 +574,7 @@
               </p>
               <div>
                 <span>Wellenfortschritt</span>
-                <b>{{ snapshot.wave }} / {{ snapshot.totalWaves }}</b>
+                <b>{{ snapshot.wave }} / {{ totalLabel() }}</b>
               </div>
             </section>
           }

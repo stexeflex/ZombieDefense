@@ -1,7 +1,9 @@
 /**
  * Permanent progress: levelled upgrades that get bought over and over, and
- * one-time perks that change a rule instead of a number.
+ * special perks that change a rule instead of a number.
  */
+
+import { DASH_BASE_RESIST, DASH_RESIST_STEP } from './arena.js';
 
 export interface PermanentUpgrades {
   maxHealth: number;
@@ -21,6 +23,7 @@ export interface PermanentUpgrades {
   dashRecharge: number;
   dashDamage: number;
   dashShield: number;
+  dashResist: number;
   reviveSpeed: number;
 }
 
@@ -44,6 +47,7 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   dashRecharge: 0,
   dashDamage: 0,
   dashShield: 0,
+  dashResist: 0,
   reviveSpeed: 0,
 };
 
@@ -56,11 +60,13 @@ export function upgradeCost(level: number) {
 }
 
 /**
- * A few upgrades hand out whole extra charges instead of percent, so they get
- * their own short ladder with a much steeper price.
+ * A few upgrades move in big steps instead of percent, so they get their own
+ * short ladder with a much steeper price: whole dash charges, and the dash
+ * resistance that ends in full immunity after six levels.
  */
 export const UPGRADE_LIMITS: Partial<Record<UpgradeKey, number>> = {
   dashCharges: 3,
+  dashResist: 6,
 };
 
 export function upgradeMaxLevel(key: UpgradeKey) {
@@ -68,12 +74,22 @@ export function upgradeMaxLevel(key: UpgradeKey) {
 }
 
 export function upgradeLevelCost(key: UpgradeKey, level: number) {
-  return key === 'dashCharges' ? 700 + level * 900 : upgradeCost(level);
+  if (key === 'dashCharges') return 700 + level * 900;
+  if (key === 'dashResist') return 500 + level * 550;
+  return upgradeCost(level);
 }
 
 /** Damage reduction from armour, capped so no build becomes untouchable. */
 export function armorReduction(level: number) {
   return Math.min(0.35, level * 0.01);
+}
+
+/**
+ * Share of a hit a dash swallows. The dodge always eats a good part of it, the
+ * levelled upgrade buys back the full immunity the dash used to have for free.
+ */
+export function dashReduction(level: number) {
+  return Math.min(1, DASH_BASE_RESIST + level * DASH_RESIST_STEP);
 }
 
 // ------------------------------------------------------------------- perks
@@ -124,6 +140,22 @@ export const PERK_COST: Record<PerkKey, number> = {
   extraGrenade: 1000,
   lastStand: 2200,
 };
+
+/**
+ * Levelled upgrades that scale a rule a perk brings in. Without that perk the
+ * level would do nothing at all, so the shop keeps them locked instead of
+ * taking gold for it.
+ */
+export const UPGRADE_REQUIRES: Partial<Record<UpgradeKey, PerkKey[]>> = {
+  dashDamage: ['dashShock', 'dashBlades'],
+  dashShield: ['dashBlades'],
+};
+
+/** One of the listed perks is enough — any of them makes the level count. */
+export function upgradeUnlocked(key: UpgradeKey, perks: PermanentPerks) {
+  const needed = UPGRADE_REQUIRES[key];
+  return !needed || needed.some((perk) => perks[perk]);
+}
 
 /** Discount the starter perks give on the first purchase of their category. */
 export const STARTER_DISCOUNT = 0.4;

@@ -3,7 +3,9 @@ import {
   BARRICADE_ORDER,
   BOSSES,
   DASH_BASE_CHARGES,
+  DASH_BASE_RESIST,
   DASH_CUT_DAMAGE,
+  DASH_RESIST_STEP,
   DASH_SECONDS,
   DASH_SHIELD_PER_HIT,
   DEFENSES,
@@ -29,9 +31,11 @@ import {
   ZOMBIE_TYPES,
   armorReduction,
   canPlaceDefense,
+  dashReduction,
   defenseFootprint,
   discountedCost,
   distanceToDefense,
+  endlessWave,
   repairCost,
   reserveCapacity,
   sellRefund,
@@ -40,7 +44,9 @@ import {
   splitAbility,
   timedAbilities,
   upgradeCost,
+  upgradeLevelCost,
   upgradeMaxLevel,
+  upgradeUnlocked,
   type MapObstacle,
   type PerkKey,
   type PlacedDefense,
@@ -86,6 +92,25 @@ describe('map campaign', () => {
     }
     const swarmWaves = MAPS.flatMap((map) => map.waves).filter((wave) => wave.kind === 'swarm');
     expect(swarmWaves.length).toBeGreaterThan(0);
+  });
+
+  it('keeps making waves for the endless mode', () => {
+    const boss = MAPS[0].boss;
+    // Every third wave brings mini bosses, every fifth a swarm, every tenth the
+    // boss of the map — and the horde keeps growing in between.
+    expect(endlessWave(boss, 11).kind).toBe('normal');
+    expect(endlessWave(boss, 12).kind).toBe('mini');
+    expect(MINI_BOSSES).toContain(endlessWave(boss, 12).zombies[0]);
+    expect(endlessWave(boss, 15).kind).toBe('swarm');
+    expect(endlessWave(boss, 20).kind).toBe('boss');
+    expect(endlessWave(boss, 20).zombies[0]).toBe(boss);
+    expect(endlessWave(boss, 30).zombies.length).toBeGreaterThan(
+      endlessWave(boss, 11).zombies.length,
+    );
+    // The same wave has to look the same every time it comes up.
+    expect(endlessWave(boss, 17).zombies).toEqual(endlessWave(boss, 17).zombies);
+    // A late wave stays a fight instead of an hour of mopping up.
+    expect(endlessWave(boss, 400).zombies.length).toBeLessThan(200);
   });
 
   it('keeps the spawn area free of obstacles', () => {
@@ -330,6 +355,47 @@ describe('permanent upgrades', () => {
   it('keeps the dash ladder short and expensive', () => {
     expect(upgradeMaxLevel('dashCharges')).toBeLessThan(UPGRADE_MAX_LEVEL);
     expect(upgradeMaxLevel('weaponDamage')).toBe(UPGRADE_MAX_LEVEL);
+  });
+
+  it('turns the dash from a dodge into full immunity, step by step', () => {
+    // Dashing alone is no longer a free pass, but it still eats a good part.
+    expect(dashReduction(0)).toBeCloseTo(DASH_BASE_RESIST);
+    expect(dashReduction(0)).toBeGreaterThan(0);
+    expect(dashReduction(0)).toBeLessThan(1);
+    // Every level is worth far more than a percent upgrade, and the last one
+    // buys back the old immunity.
+    expect(dashReduction(1) - dashReduction(0)).toBeCloseTo(DASH_RESIST_STEP);
+    expect(DASH_RESIST_STEP).toBeGreaterThan(0.05);
+    const max = upgradeMaxLevel('dashResist');
+    expect(max).toBeLessThan(UPGRADE_MAX_LEVEL);
+    expect(dashReduction(max - 1)).toBeLessThan(1);
+    expect(dashReduction(max)).toBe(1);
+    // A ladder that ends in immunity has to cost accordingly: every level is
+    // far pricier than a percent level, and the whole ladder beats any perk.
+    let ladder = 0;
+    for (let level = 0; level < max; level += 1) {
+      expect(upgradeLevelCost('dashResist', level)).toBeGreaterThan(upgradeCost(level) * 4);
+      if (level > 0) {
+        expect(upgradeLevelCost('dashResist', level)).toBeGreaterThan(
+          upgradeLevelCost('dashResist', level - 1),
+        );
+      }
+      ladder += upgradeLevelCost('dashResist', level);
+    }
+    expect(ladder).toBeGreaterThan(Math.max(...Object.values(PERK_COST)));
+  });
+
+  it('locks the dash upgrades that need a perk first', () => {
+    const none = { ...EMPTY_PERKS };
+    expect(upgradeUnlocked('dashShield', none)).toBe(false);
+    expect(upgradeUnlocked('dashDamage', none)).toBe(false);
+    // Both dash perks scale with the damage level, the shield only with blades.
+    expect(upgradeUnlocked('dashDamage', { ...none, dashShock: true })).toBe(true);
+    expect(upgradeUnlocked('dashShield', { ...none, dashShock: true })).toBe(false);
+    expect(upgradeUnlocked('dashShield', { ...none, dashBlades: true })).toBe(true);
+    // Everything without a perk behind it stays open from the start.
+    expect(upgradeUnlocked('dashResist', none)).toBe(true);
+    expect(upgradeUnlocked('weaponDamage', none)).toBe(true);
   });
 
   it('lets the dash grow into damage and a shield', () => {

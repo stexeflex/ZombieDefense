@@ -23,18 +23,22 @@
         Stufen-Upgrades
       </button>
       <button type="button" [class.active]="shopTab() === 'perks'" (click)="shopTab.set('perks')">
-        Einmalige Vorteile
+        Besondere Vorteile
       </button>
     </div>
 
     @if (shopTab() === 'levels') {
       <div class="upgrade-grid">
         @for (upgrade of definitions; track upgrade.key) {
-          <article class="upgrade-item">
+          <article class="upgrade-item" [class.locked]="!unlocked(upgrade.key)">
             <span class="upgrade-icon">{{ upgrade.icon }}</span>
             <div class="upgrade-copy">
               <h3>{{ upgrade.label }}</h3>
-              <p>{{ upgrade.description }} pro Stufe</p>
+              @if (lockedBy(upgrade.key); as perk) {
+                <p class="needs-perk">🔒 Braucht den Vorteil {{ perk }}</p>
+              } @else {
+                <p>{{ upgrade.description }} pro Stufe</p>
+              }
               @if (pips(upgrade.key); as steps) {
                 <div
                   class="level-track"
@@ -60,12 +64,15 @@
               <button
                 type="button"
                 [disabled]="
+                  !unlocked(upgrade.key) ||
                   progress.gold() < progress.cost(upgrade.key) ||
                   level(upgrade.key) >= maxLevel(upgrade.key)
                 "
                 (click)="buyUpgrade(upgrade.key)"
               >
-                @if (level(upgrade.key) >= maxLevel(upgrade.key)) {
+                @if (!unlocked(upgrade.key)) {
+                  🔒
+                } @else if (level(upgrade.key) >= maxLevel(upgrade.key)) {
                   MAX
                 } @else {
                   ◆ {{ progress.cost(upgrade.key) }}
