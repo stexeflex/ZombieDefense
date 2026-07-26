@@ -134,6 +134,9 @@ export class ZombieRoom extends Room<{ state: GameState }> {
         this.waves.startRun();
       }
     });
+    this.onMessage('loadout', (client, options: JoinOptions) => {
+      this.applyLoadout(client.sessionId, options);
+    });
     this.onMessage('ready', (client, ready: boolean) => {
       const player = this.state.players.get(client.sessionId);
       if (player && this.state.phase === 'build') player.ready = Boolean(ready);
@@ -216,6 +219,28 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     if (this.state.phase === 'combat') this.waves.checkDefeat();
     // Nothing counts down any more, so a leaver must not keep the rest waiting.
     if (this.state.phase === 'build' && this.world.everyoneReady()) this.waves.startNextWave();
+  }
+
+  /**
+   * Upgrades are bought outside the room, so the lobby can hand in a fresh set.
+   * Only before the run: mid-run this would be a free power spike.
+   */
+  private applyLoadout(sessionId: string, options: JoinOptions) {
+    if (this.state.phase !== 'lobby') return;
+    const player = this.state.players.get(sessionId);
+    const runtime = this.world.runtime.get(sessionId);
+    if (!player || !runtime) return;
+    runtime.upgrades = this.cleanUpgrades(options.upgrades);
+    runtime.perks = this.cleanPerks(options.perks);
+    player.maxHealth = Math.round(100 * (1 + runtime.upgrades.maxHealth * 0.02));
+    player.health = player.maxHealth;
+    player.ammo = this.playerSystem.magazineSize(player.weapon, runtime.upgrades);
+    player.reserveAmmo = reserveCapacity(player.weapon, runtime.upgrades.reserveAmmo);
+    player.dashMax = this.playerSystem.maxDashes(runtime.upgrades);
+    player.dashCharges = player.dashMax;
+    player.grenades = this.playerSystem.maxGrenades(runtime.perks);
+    this.build.resetDiscounts(sessionId);
+    this.broadcastSnapshot();
   }
 
   // ---------------------------------------------------------------- map setup

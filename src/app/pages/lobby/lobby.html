@@ -1,9 +1,15 @@
 <main class="mission-shell">
   <header class="mission-topbar">
-    <button class="brand-button" type="button" (click)="leave()" aria-label="Zur Startseite">
-      <span>ZD</span>
-      <b>ZOMBIE DEFENSE</b>
-    </button>
+    <div class="topbar-left">
+      <button class="back-button" type="button" (click)="leave()">
+        <span aria-hidden="true">←</span>
+        <b>Hauptmenü</b>
+      </button>
+      <button class="brand-button" type="button" (click)="leave()" aria-label="Zur Startseite">
+        <span>ZD</span>
+        <b>ZOMBIE DEFENSE</b>
+      </button>
+    </div>
 
     <button class="lobby-code" type="button" (click)="copyLink()">
       <small>Lobby</small>
@@ -12,6 +18,14 @@
     </button>
 
     <div class="topbar-right">
+      @if (game.snapshot()?.phase === 'lobby') {
+        <button class="gold-pill" type="button" (click)="upgradesOpen.set(true)">
+          <span aria-hidden="true">◆</span>
+          {{ progress.gold() }} Gold
+          <b>Upgrades</b>
+        </button>
+      }
+
       <div class="audio-controls">
         <button
           type="button"
@@ -147,6 +161,11 @@
             <span>{{ origin }}/lobby/{{ lobbyCode() }}</span>
             <button type="button" (click)="copyLink()">{{ copied() ? 'Kopiert' : 'Kopieren' }}</button>
           </div>
+
+          <button class="upgrade-entry" type="button" (click)="upgradesOpen.set(true)">
+            <span><b>◆ {{ progress.gold() }} Gold</b> ausgeben</span>
+            <small>Upgrades gelten sofort für diesen Run</small>
+          </button>
 
           @if (game.isHost()) {
             <button class="start-button" type="button" (click)="start()">
@@ -524,6 +543,10 @@
     }
   }
 </main>
+
+@if (upgradesOpen()) {
+  <app-upgrade-shop (bought)="game.syncLoadout()" (closed)="upgradesOpen.set(false)" />
+}
 
 @if (needsName()) {
   <div class="name-backdrop">

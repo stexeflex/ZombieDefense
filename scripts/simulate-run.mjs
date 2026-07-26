@@ -436,7 +436,7 @@ console.log('\n== Treffer im Dash klingt anders ==');
   );
 }
 
-console.log('\n== Geld wird geteilt ==');
+console.log('\n== Geld wird gleich geteilt ==');
 {
   const room = makeRoom('outpost');
   const shooter = join(room, 'p1');
@@ -458,14 +458,40 @@ console.log('\n== Geld wird geteilt ==');
   // p1 macht den ganzen Schaden, p2 steht nur daneben.
   room.systems.world.damageZombie(id, zombie, 1e6, 'p1');
 
-  check('Der Schütze bekommt den größten Teil', shooter.money > helper.money);
-  check('Der Mitspieler geht nicht leer aus', helper.money > 0, `(${helper.money} $)`);
+  check(
+    'Beide bekommen genau denselben Anteil',
+    shooter.money === helper.money && helper.money > 0,
+    `(${shooter.money} $ / ${helper.money} $)`,
+  );
   check(
     'Zusammen ergibt es die volle Prämie',
     Math.abs(shooter.money + helper.money - ZOMBIES.normal.reward) <= 2,
     `(${shooter.money} + ${helper.money} statt ${ZOMBIES.normal.reward})`,
   );
   check('Der Abschuss zählt für den Schützen', shooter.kills === 1 && helper.kills === 0);
+}
+
+console.log('\n== Upgrades aus der Lobby ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  check('Ohne Upgrades das Grundleben', player.maxHealth === 100, `(${player.maxHealth})`);
+
+  room.applyLoadout('p1', {
+    upgrades: { maxHealth: 10, dashCharges: 2 },
+    perks: { extraGrenade: true },
+  });
+  check(
+    'Kauf in der Lobby zählt sofort',
+    player.maxHealth === 120 && player.health === 120 && player.dashMax === 4,
+    `(${player.maxHealth} HP, ${player.dashMax} Dashes)`,
+  );
+  check('Der Vorteil kommt mit', player.grenades === 4, `(${player.grenades})`);
+
+  room.systems.waves.startRun();
+  check('Der Run übernimmt die Werte', player.maxHealth === 120 && player.dashMax === 4);
+  room.applyLoadout('p1', { upgrades: { maxHealth: 40 }, perks: {} });
+  check('Mitten im Run zählt kein Nachkauf', player.maxHealth === 120, `(${player.maxHealth})`);
 }
 
 console.log('\n== Wellenende heilt den Trupp ==');

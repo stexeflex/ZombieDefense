@@ -49,6 +49,8 @@ export class ArenaScene extends Phaser.Scene {
   private readonly projectiles = new Map<string, ProjectileView>();
   private readonly hazards = new Map<string, HazardView>();
   private readonly subscriptions = new Subscription();
+  /** Set once Phaser tore the scene down, see `detach()`. */
+  private detached = false;
   private effects!: EffectLayer;
 
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -111,6 +113,7 @@ export class ArenaScene extends Phaser.Scene {
 
     this.subscriptions.add(
       this.gameService.snapshot$.subscribe((snapshot) => {
+        if (this.detached) return;
         this.snapshot = snapshot;
         this.ensureWorld(snapshot.mapId);
         this.reconcile(snapshot);
@@ -118,6 +121,7 @@ export class ArenaScene extends Phaser.Scene {
     );
     this.subscriptions.add(
       this.gameService.fx$.subscribe((events) => {
+        if (this.detached) return;
         for (const event of events) this.effects.play(event);
       }),
     );
@@ -128,7 +132,20 @@ export class ArenaScene extends Phaser.Scene {
       this.snapshot = current;
       this.reconcile(current);
     }
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.subscriptions.unsubscribe());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.detach());
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => this.detach());
+  }
+
+  /**
+   * A scene that only stops emits SHUTDOWN, but the canvas goes away with the
+   * whole game and that path emits DESTROY. Listening to just one of them left
+   * the snapshot stream running against a scene whose factory Phaser had
+   * already emptied — the next player to join then crashed the view.
+   */
+  private detach() {
+    if (this.detached) return;
+    this.detached = true;
+    this.subscriptions.unsubscribe();
   }
 
   private bindInput() {

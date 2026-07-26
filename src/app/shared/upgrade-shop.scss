@@ -1,0 +1,209 @@
+:host {
+  display: contents;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(3, 6, 5, 0.82);
+  backdrop-filter: blur(10px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.upgrade-modal {
+  width: min(980px, 100%);
+  max-height: min(820px, 92dvh);
+  overflow: auto;
+  background: #0f1715;
+  border: 1px solid var(--line-bright);
+  box-shadow: 0 40px 100px #000;
+  padding: clamp(24px, 4vw, 42px);
+}
+
+.upgrade-modal header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.upgrade-modal h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  letter-spacing: -0.055em;
+}
+
+.eyebrow {
+  color: var(--acid);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.7rem;
+  font-weight: 900;
+  margin: 0 0 20px;
+}
+
+.close-button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line-bright);
+  background: transparent;
+  color: var(--text);
+  font-size: 1.5rem;
+}
+
+.wallet {
+  margin: 28px 0 18px;
+  padding: 12px 15px;
+  background: rgba(255, 204, 102, 0.07);
+  color: var(--gold);
+  border-left: 2px solid var(--gold);
+  font-weight: 800;
+}
+
+.shop-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.shop-switch button {
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shop-switch button.active {
+  border-color: var(--acid);
+  color: var(--acid);
+  background: rgba(105, 240, 174, 0.08);
+}
+
+.upgrade-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.upgrade-item.owned {
+  background: rgba(105, 240, 174, 0.06);
+}
+
+.upgrade-item.owned .upgrade-buy b {
+  color: var(--acid);
+}
+
+.upgrade-item {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 108px;
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.upgrade-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(105, 240, 174, 0.2);
+  background: rgba(105, 240, 174, 0.06);
+  color: var(--acid);
+  font-size: 1.3rem;
+}
+
+.upgrade-copy h3 {
+  font-size: 0.82rem;
+  margin: 0 0 5px;
+}
+
+.upgrade-copy p {
+  color: var(--muted-2);
+  font-size: 0.68rem;
+  margin: 0 0 10px;
+}
+
+/* Short ladders show one pip per level, so a pip always means a level. */
+.level-track {
+  display: flex;
+  gap: 4px;
+}
+
+.level-track span {
+  width: 22px;
+  height: 4px;
+  background: var(--line-bright);
+}
+
+.level-track span.filled {
+  background: var(--acid);
+}
+
+.level-track.maxed span.filled {
+  background: var(--gold);
+}
+
+/* Forty pips would be unreadable, so long ladders get a filled bar. */
+.level-bar {
+  width: min(100%, 160px);
+  height: 4px;
+  background: var(--line-bright);
+}
+
+.level-bar span {
+  display: block;
+  height: 100%;
+  background: var(--acid);
+  transition: width 160ms ease;
+}
+
+.level-bar.maxed span {
+  background: var(--gold);
+}
+
+.upgrade-buy {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.upgrade-buy b {
+  color: var(--muted);
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+
+.upgrade-buy button {
+  min-width: 74px;
+  border: 1px solid rgba(255, 204, 102, 0.25);
+  background: rgba(255, 204, 102, 0.07);
+  color: var(--gold);
+  padding: 8px 10px;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.upgrade-buy button:disabled {
+  opacity: 0.35;
+}
+
+@media (max-width: 650px) {
+  .upgrade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upgrade-modal {
+    padding: 22px;
+  }
+}

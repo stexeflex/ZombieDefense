@@ -186,12 +186,13 @@ rechts abschalten.
 
 ## Geld und Fortschritt
 
-Kopfgeld wird geteilt: 70 % gehen nach dem Schaden, den jeder an dem Zombie
-angerichtet hat, 30 % gleichmäßig an den ganzen Trupp. Wer Türme baut,
-verdient über deren Schaden mit. Der letzte Schuss bringt keinen Bonus mehr.
+Kopfgeld wird gleichmäßig geteilt: Jeder im Trupp bekommt denselben Anteil an
+jeder Prämie, egal ob er geschossen, gebaut oder wiederbelebt hat. Der Abschuss
+in der Statistik zählt für den, der dem Zombie am meisten Schaden zugefügt hat.
 
-Permanentes Gold gibt es am Ende jedes Runs. Im Shop auf der Startseite stehen
-zwei Arten von Käufen:
+Permanentes Gold gibt es am Ende jedes Runs. Der Shop steht auf der Startseite
+und in der Lobby offen, solange der Run noch nicht läuft — dort gekaufte
+Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
 - **Stufen-Upgrades** – Leben, Panzerung, Tempo, Waffenschaden, Nachladen,
   Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
@@ -213,6 +214,7 @@ Upgrades, die direkt Geld oder Gold bringen, gibt es bewusst nicht.
 src/                 Angular-Oberfläche und Phaser-Spiel
 src/app/game/        Szene, Effekte, Views und prozedurale Texturen
 src/app/core/        Verbindung, Fortschritt und Audio
+src/app/shared/      Bausteine für mehrere Seiten, etwa der Gold-Shop
 shared/              Arena, Waffen, Verteidigungen, Zombies, Wellen, Karten
 server/src/game/     Spielsysteme: Spieler, Zombies, Fähigkeiten, Bau, Wellen
 server/src/rooms/    Colyseus-Raum als dünne Netzwerkschicht

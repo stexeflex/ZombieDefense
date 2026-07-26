@@ -178,6 +178,17 @@ export class GameService {
     this.room?.send('input', input);
   }
 
+  /**
+   * The permanent upgrades travel with the join, so a purchase made while the
+   * squad waits in the lobby has to be sent again to count for this run.
+   */
+  syncLoadout() {
+    this.room?.send('loadout', {
+      upgrades: this.progress.upgrades(),
+      perks: this.progress.perks(),
+    });
+  }
+
   setReady(ready: boolean) {
     this.audio.play('ui');
     this.room?.send('ready', ready);

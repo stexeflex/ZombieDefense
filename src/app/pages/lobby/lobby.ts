@@ -18,12 +18,13 @@ import { AudioService } from '../../core/audio.service';
 import { GameService } from '../../core/game.service';
 import { ProgressService } from '../../core/progress.service';
 import { GameCanvas } from '../../game/game-canvas';
+import { UpgradeShop } from '../../shared/upgrade-shop';
 
 type ShopTab = 'weapons' | 'barricades' | 'turrets';
 
 @Component({
   selector: 'app-lobby',
-  imports: [FormsModule, DecimalPipe, GameCanvas],
+  imports: [FormsModule, DecimalPipe, GameCanvas, UpgradeShop],
   templateUrl: './lobby.html',
   styleUrl: './lobby.scss',
 })
@@ -39,6 +40,7 @@ export class Lobby implements OnInit, OnDestroy {
   readonly copied = signal(false);
   readonly lobbyCode = signal('');
   readonly shopTab = signal<ShopTab>('weapons');
+  readonly upgradesOpen = signal(false);
   readonly players = computed(() => Object.values(this.game.snapshot()?.players ?? {}));
   readonly readyCount = computed(() => this.players().filter((player) => player.ready).length);
   readonly maps = MAPS;
@@ -196,8 +198,12 @@ export class Lobby implements OnInit, OnDestroy {
     return type ? WEAPONS[type].short : '—';
   }
 
-  async leave() {
-    await this.game.disconnect();
+  /**
+   * The route change alone tears the lobby down and `ngOnDestroy` closes the
+   * room, so the button never waits for the server to confirm the leave — that
+   * wait made the first click look as if nothing had happened.
+   */
+  leave() {
     void this.router.navigateByUrl('/');
   }
 }

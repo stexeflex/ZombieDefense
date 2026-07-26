@@ -25,8 +25,40 @@
   z-index: 20;
 }
 
-.brand-button {
+.topbar-left {
   justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid var(--line-bright);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+}
+
+.back-button:hover {
+  border-color: var(--acid);
+  color: var(--acid);
+}
+
+.back-button span {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.back-button b {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.brand-button {
   border: 0;
   background: transparent;
   color: var(--text);
@@ -342,6 +374,30 @@
   padding: 8px 10px;
   font-size: 0.65rem;
   font-weight: 800;
+}
+
+/* Gold can still be spent while the squad gathers, so the shop sits here. */
+.upgrade-entry {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 13px;
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  border: 1px solid rgba(255, 204, 102, 0.24);
+  background: rgba(255, 204, 102, 0.06);
+  color: var(--gold);
+  font-size: 0.7rem;
+}
+
+.upgrade-entry:hover {
+  border-color: var(--gold);
+  background: rgba(255, 204, 102, 0.11);
+}
+
+.upgrade-entry small {
+  color: var(--muted);
+  font-size: 0.62rem;
 }
 
 .start-button {
@@ -953,6 +1009,26 @@ kbd {
   gap: 14px;
 }
 
+.gold-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 204, 102, 0.28);
+  background: rgba(255, 204, 102, 0.07);
+  color: var(--gold);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.gold-pill b {
+  color: var(--muted);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
 .audio-controls {
   display: flex;
   gap: 6px;
@@ -1407,6 +1483,8 @@ kbd {
   }
 
   .brand-button b,
+  .back-button b,
+  .gold-pill b,
   .lobby-code small,
   .lobby-code span,
   .controls-hint {

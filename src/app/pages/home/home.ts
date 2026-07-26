@@ -2,17 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MAPS, WEAPON_ORDER, ZOMBIE_TYPES } from '../../../../shared/game-types';
-import {
-  PERK_DEFINITIONS,
-  ProgressService,
-  UPGRADE_DEFINITIONS,
-  type PerkKey,
-  type UpgradeKey,
-} from '../../core/progress.service';
+import { ProgressService } from '../../core/progress.service';
+import { UpgradeShop } from '../../shared/upgrade-shop';
 
 @Component({
   selector: 'app-home',
-  imports: [FormsModule],
+  imports: [FormsModule, UpgradeShop],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -20,21 +15,6 @@ export class Home {
   private readonly router = inject(Router);
   readonly progress = inject(ProgressService);
   readonly upgradesOpen = signal(false);
-  readonly shopTab = signal<'levels' | 'perks'>('levels');
-  readonly definitions = UPGRADE_DEFINITIONS;
-  readonly perkDefinitions = PERK_DEFINITIONS;
-  /**
-   * A short ladder gets one pip per level, so a pip always means a level. Long
-   * ladders would need forty of them, there a filled bar is far easier to read.
-   */
-  private readonly pipSteps = new Map<UpgradeKey, number[]>(
-    UPGRADE_DEFINITIONS.filter((upgrade) => this.progress.maxLevel(upgrade.key) <= 10).map(
-      (upgrade) => [
-        upgrade.key,
-        Array.from({ length: this.progress.maxLevel(upgrade.key) }, (_, index) => index + 1),
-      ],
-    ),
-  );
   readonly mapCount = MAPS.length;
   readonly weaponCount = WEAPON_ORDER.length;
   readonly zombieCount = ZOMBIE_TYPES.length;
@@ -67,35 +47,6 @@ export class Home {
     }
     localStorage.setItem('zombie-defense-name', this.name.trim());
     void this.router.navigate(['/lobby', code]);
-  }
-
-  buyUpgrade(key: UpgradeKey) {
-    this.progress.buy(key);
-  }
-
-  buyPerk(key: PerkKey) {
-    this.progress.buyPerk(key);
-  }
-
-  level(key: UpgradeKey) {
-    return this.progress.upgrades()[key];
-  }
-
-  maxLevel(key: UpgradeKey) {
-    return this.progress.maxLevel(key);
-  }
-
-  /** The pips of a short ladder, or nothing when the bar is used instead. */
-  pips(key: UpgradeKey) {
-    return this.pipSteps.get(key);
-  }
-
-  fillPercent(key: UpgradeKey) {
-    return (this.level(key) / this.maxLevel(key)) * 100;
-  }
-
-  maxed(key: UpgradeKey) {
-    return this.level(key) >= this.maxLevel(key);
   }
 
   private validateName() {

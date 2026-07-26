@@ -1,0 +1,108 @@
+<div class="modal-backdrop" (click)="closed.emit()">
+  <section
+    class="upgrade-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="upgrade-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header>
+      <div>
+        <p class="eyebrow">Permanenter Fortschritt</p>
+        <h2 id="upgrade-title">Vorbereitung ist alles.</h2>
+      </div>
+      <button class="close-button" type="button" (click)="closed.emit()" aria-label="Schließen">
+        ×
+      </button>
+    </header>
+
+    <div class="wallet"><span>◆</span> {{ progress.gold() }} Gold verfügbar</div>
+
+    <div class="shop-switch">
+      <button type="button" [class.active]="shopTab() === 'levels'" (click)="shopTab.set('levels')">
+        Stufen-Upgrades
+      </button>
+      <button type="button" [class.active]="shopTab() === 'perks'" (click)="shopTab.set('perks')">
+        Einmalige Vorteile
+      </button>
+    </div>
+
+    @if (shopTab() === 'levels') {
+      <div class="upgrade-grid">
+        @for (upgrade of definitions; track upgrade.key) {
+          <article class="upgrade-item">
+            <span class="upgrade-icon">{{ upgrade.icon }}</span>
+            <div class="upgrade-copy">
+              <h3>{{ upgrade.label }}</h3>
+              <p>{{ upgrade.description }} pro Stufe</p>
+              @if (pips(upgrade.key); as steps) {
+                <div
+                  class="level-track"
+                  [class.maxed]="maxed(upgrade.key)"
+                  aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
+                >
+                  @for (step of steps; track step) {
+                    <span [class.filled]="level(upgrade.key) >= step"></span>
+                  }
+                </div>
+              } @else {
+                <div
+                  class="level-bar"
+                  [class.maxed]="maxed(upgrade.key)"
+                  aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
+                >
+                  <span [style.width.%]="fillPercent(upgrade.key)"></span>
+                </div>
+              }
+            </div>
+            <div class="upgrade-buy">
+              <b>Stufe {{ level(upgrade.key) }} / {{ maxLevel(upgrade.key) }}</b>
+              <button
+                type="button"
+                [disabled]="
+                  progress.gold() < progress.cost(upgrade.key) ||
+                  level(upgrade.key) >= maxLevel(upgrade.key)
+                "
+                (click)="buyUpgrade(upgrade.key)"
+              >
+                @if (level(upgrade.key) >= maxLevel(upgrade.key)) {
+                  MAX
+                } @else {
+                  ◆ {{ progress.cost(upgrade.key) }}
+                }
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="upgrade-grid">
+        @for (perk of perkDefinitions; track perk.key) {
+          <article class="upgrade-item" [class.owned]="progress.ownsPerk(perk.key)">
+            <span class="upgrade-icon">{{ perk.icon }}</span>
+            <div class="upgrade-copy">
+              <h3>{{ perk.label }}</h3>
+              <p>{{ perk.description }}</p>
+            </div>
+            <div class="upgrade-buy">
+              <b>{{ progress.ownsPerk(perk.key) ? 'Freigeschaltet' : 'Einmalig' }}</b>
+              <button
+                type="button"
+                [disabled]="
+                  progress.ownsPerk(perk.key) || progress.gold() < progress.perkCost(perk.key)
+                "
+                (click)="buyPerk(perk.key)"
+              >
+                @if (progress.ownsPerk(perk.key)) {
+                  ✓
+                } @else {
+                  ◆ {{ progress.perkCost(perk.key) }}
+                }
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>

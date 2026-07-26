@@ -55,8 +55,6 @@ export interface RuntimePlayer {
   pushY: number;
 }
 
-/** Share of a kill reward that is split evenly across the whole squad. */
-export const TEAM_SHARE = 0.3;
 const MAX_FX_PER_SNAPSHOT = 56;
 
 export const EMPTY_INPUT: PlayerInput = {
@@ -266,28 +264,20 @@ export class GameWorld {
   onZombieKilled?: (zombie: ZombieState) => void;
 
   /**
-   * The reward is shared out instead of going to whoever landed the last hit:
-   * most of it follows the damage each player dealt, the rest is split evenly
-   * so builders and medics still earn.
+   * The whole reward is split evenly, no matter who shot: someone who only
+   * builds barricades or patches up the squad earns exactly as much as the one
+   * behind the gun.
    */
   private payKill(zombie: ZombieState) {
     const players = [...this.state.players.values()];
     if (players.length === 0) return;
-    const reward = zombie.reward * this.map.moneyScale;
-    const evenShare = (reward * TEAM_SHARE) / players.length;
-
-    let total = 0;
-    for (const [id, amount] of zombie.damageBy) {
-      if (this.state.players.has(id)) total += amount;
-    }
-    const byDamage = reward - reward * TEAM_SHARE;
+    const share = Math.round((zombie.reward * this.map.moneyScale) / players.length);
 
     let bestId = '';
     let bestDamage = 0;
     for (const player of players) {
+      player.money += share;
       const dealt = zombie.damageBy.get(player.id) ?? 0;
-      const share = total > 0 ? (byDamage * dealt) / total : byDamage / players.length;
-      player.money += Math.round(evenShare + share);
       if (dealt > bestDamage) {
         bestDamage = dealt;
         bestId = player.id;
