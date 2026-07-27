@@ -40,7 +40,6 @@ export class GameService {
   private room?: Room;
   private lastPhase: GamePhase | null = null;
   private lastWave = 0;
-  private readonly settledRunIds = new Set<string>();
 
   readonly connection = signal<ConnectionState>('idle');
   readonly errorMessage = signal('');
@@ -265,13 +264,7 @@ export class GameService {
   async settleRunReward() {
     const room = this.room;
     const current = this.snapshot();
-    if (
-      !room ||
-      !current ||
-      current.phase === 'lobby' ||
-      !current.runId ||
-      this.settledRunIds.has(current.runId)
-    ) {
+    if (!room || !current || current.phase === 'lobby' || !current.runId) {
       return;
     }
 
@@ -303,16 +296,10 @@ export class GameService {
   /** Synchronous fallback used when a tab is closed without waiting for the server. */
   creditVisibleRunReward() {
     const current = this.snapshot();
-    if (
-      !current ||
-      current.phase === 'lobby' ||
-      !current.runId ||
-      this.settledRunIds.has(current.runId)
-    ) {
+    if (!current || current.phase === 'lobby' || !current.runId) {
       return;
     }
     this.progress.addRunReward(current.runGold, current.runId, current.mapId, current.runVictory);
-    this.settledRunIds.add(current.runId);
   }
 
   sendInput(input: PlayerInput) {
@@ -490,15 +477,20 @@ export class GameService {
       victory: boolean;
       mapId: string;
     }>('permanent_reward', (reward) => {
-      this.settledRunIds.add(reward.runId);
-      if (this.progress.addRunReward(reward.gold, reward.runId, reward.mapId, reward.victory)) {
-        this.lastReward.set({
-          gold: reward.gold,
-          victory: reward.victory,
-          mapId: reward.mapId,
-        });
-      }
-      this.audio.play(reward.victory ? 'victory' : 'gameover');
+      const credited = this.progress.addRunReward(
+        reward.gold,
+        reward.runId,
+        reward.mapId,
+        reward.victory,
+      );
+      // The result screen shows the run's full payout, while ProgressService
+      // only adds the part that was not already secured before a reconnect.
+      this.lastReward.set({
+        gold: reward.gold,
+        victory: reward.victory,
+        mapId: reward.mapId,
+      });
+      if (credited) this.audio.play(reward.victory ? 'victory' : 'gameover');
     });
     room.onError((_code, message) => {
       this.errorMessage.set(message || 'Der Spielserver hat einen Fehler gemeldet.');

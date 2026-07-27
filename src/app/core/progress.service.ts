@@ -81,7 +81,12 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     description: `+${Math.round(VEHICLE_ARMOR_STEP * 100)} % weniger Hüllenschaden (max. ${Math.round(VEHICLE_MAX_ARMOR_REDUCTION * 100)} %)`,
     icon: '⛨',
   },
-  { key: 'vehicleSpeed', label: 'Motorleistung', description: '+2 % Tempo', icon: '⚙' },
+  {
+    key: 'vehicleSpeed',
+    label: 'Motorleistung',
+    description: '+1 % Tempo (max. +40 %)',
+    icon: '⚙',
+  },
   {
     key: 'vehicleRam',
     label: 'Rammschaden',
@@ -168,6 +173,8 @@ interface StoredProgress {
   upgrades: PermanentUpgrades;
   perks: PermanentPerks;
   rewardedRuns: string[];
+  /** Highest payout already credited for each recent run, so a later result can pay the delta. */
+  rewardedRunPayouts: Record<string, number>;
   clearedMaps: string[];
 }
 
@@ -257,15 +264,33 @@ export class ProgressService {
 
   addRunReward(gold: number, runId: string, mapId?: string, victory = false) {
     const current = this.progress();
-    if (!runId || current.rewardedRuns.includes(runId)) return false;
-    const cleared =
-      victory && mapId && !current.clearedMaps.includes(mapId)
-        ? [...current.clearedMaps, mapId]
-        : current.clearedMaps;
+    if (!runId) return false;
+    const knownRun = current.rewardedRuns.includes(runId);
+    const recordedPayout = current.rewardedRunPayouts[runId];
+    // Old saves only know that a run was paid, not how much. They stay closed
+    // so an update cannot accidentally pay an already completed run twice.
+    if (knownRun && recordedPayout === undefined) return false;
+    const payout = Math.max(0, Math.floor(Number(gold) || 0));
+    const previousPayout = Math.max(0, recordedPayout ?? 0);
+    const extraGold = Math.max(0, payout - previousPayout);
+    const newlyCleared = Boolean(victory && mapId && !current.clearedMaps.includes(mapId));
+    if (knownRun && extraGold === 0 && !newlyCleared) return false;
+
+    const cleared = newlyCleared && mapId ? [...current.clearedMaps, mapId] : current.clearedMaps;
+    const rewardedRuns = [...current.rewardedRuns.filter((id) => id !== runId).slice(-19), runId];
+    const rewardedRunPayouts = Object.fromEntries(
+      rewardedRuns
+        .filter((id) => id === runId || current.rewardedRunPayouts[id] !== undefined)
+        .map((id) => [
+          id,
+          id === runId ? Math.max(previousPayout, payout) : current.rewardedRunPayouts[id],
+        ]),
+    );
     this.save({
       ...current,
-      gold: current.gold + Math.max(0, Math.floor(gold)),
-      rewardedRuns: [...current.rewardedRuns.slice(-19), runId],
+      gold: current.gold + extraGold,
+      rewardedRuns,
+      rewardedRunPayouts,
       clearedMaps: cleared,
     });
     return true;
@@ -297,6 +322,13 @@ export class ProgressService {
       ) as Partial<StoredProgress>;
       const savedUpgrades = (stored.upgrades ?? {}) as Record<string, unknown>;
       const savedPerks = (stored.perks ?? {}) as Record<string, unknown>;
+      const rewardedRuns = Array.isArray(stored.rewardedRuns)
+        ? stored.rewardedRuns.filter((id): id is string => typeof id === 'string').slice(-20)
+        : [];
+      const storedPayouts =
+        stored.rewardedRunPayouts && typeof stored.rewardedRunPayouts === 'object'
+          ? stored.rewardedRunPayouts
+          : {};
       return {
         gold: Math.max(0, Number(stored.gold) || 0),
         // Only known entries survive, so a removed one leaves no leftovers.
@@ -312,7 +344,13 @@ export class ProgressService {
         perks: Object.fromEntries(
           Object.keys(EMPTY_PERKS).map((key) => [key, Boolean(savedPerks[key])]),
         ) as unknown as PermanentPerks,
-        rewardedRuns: Array.isArray(stored.rewardedRuns) ? stored.rewardedRuns.slice(-20) : [],
+        rewardedRuns,
+        rewardedRunPayouts: Object.fromEntries(
+          rewardedRuns.flatMap((id) => {
+            const payout = Number(storedPayouts[id]);
+            return Number.isFinite(payout) ? [[id, Math.max(0, Math.floor(payout))]] : [];
+          }),
+        ),
         clearedMaps: Array.isArray(stored.clearedMaps) ? stored.clearedMaps : [],
       };
     } catch {
@@ -321,6 +359,7 @@ export class ProgressService {
         upgrades: { ...EMPTY_UPGRADES },
         perks: { ...EMPTY_PERKS },
         rewardedRuns: [],
+        rewardedRunPayouts: {},
         clearedMaps: [],
       };
     }

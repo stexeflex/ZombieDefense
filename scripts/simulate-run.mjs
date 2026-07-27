@@ -940,6 +940,21 @@ console.log('\n== Neue Barrikaden ==');
     wire.health < wireHealth,
     `(${Math.round(wireHealth - wire.health)} Haltbarkeit)`,
   );
+
+  room.state.zombies.clear();
+  for (let index = 0; index < 16; index += 1) {
+    const trampler = room.systems.world.spawnZombie('normal', {
+      x: wire.x + ((index % 4) - 1.5) * 6,
+      y: wire.y + (Math.floor(index / 4) - 1.5) * 4,
+    });
+    trampler.health = 1000;
+    trampler.maxHealth = 1000;
+  }
+  step(room, 25);
+  check(
+    'Eine dichte Horde zertrampelt den Stacheldraht schnell',
+    !room.state.defenses.has(wire.id),
+  );
 }
 
 console.log('\n== Freie Ecken und sichere Zombie-Einstiege ==');

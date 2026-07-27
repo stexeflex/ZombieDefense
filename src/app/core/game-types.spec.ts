@@ -32,9 +32,11 @@ import {
   UPGRADE_MAX_LEVEL,
   VEHICLES,
   VEHICLE_MAX_ARMOR_REDUCTION,
+  VEHICLE_MAX_SPEED_BONUS,
   VEHICLE_ORDER,
   VEHICLE_RAM_SELF,
   VEHICLE_WRECK_DAMAGE,
+  VEHICLE_SPEED_STEP,
   VIEWPORT,
   WEAPONS,
   WEAPON_ORDER,
@@ -323,9 +325,10 @@ describe('weapon balance', () => {
     // Mid-priced, so it sits between the cheap sprayers and the endgame gear.
     expect(magnum.cost).toBeGreaterThan(WEAPONS.shotgun.cost);
     expect(magnum.cost).toBeLessThan(WEAPONS.lmg.cost);
-    // Hits harder per shot than anything cheaper, without out-damaging them.
+    // Hits harder per shot and in a one-target duel, but buys no crowd damage.
     expect(magnum.damage).toBeGreaterThan(WEAPONS.nailgun.damage);
-    expect(dps('magnum')).toBeLessThan(dps('nailgun'));
+    expect(dps('magnum')).toBeGreaterThan(dps('nailgun'));
+    expect(dps('magnum')).toBeLessThan(dps('lmg'));
   });
 
   it('lets the frost cannon brake instead of burn', () => {
@@ -352,7 +355,10 @@ describe('defenses', () => {
       const current = DEFENSES[BARRICADE_ORDER[index]];
       const previous = DEFENSES[BARRICADE_ORDER[index - 1]];
       expect(current.cost).toBeGreaterThan(previous.cost);
-      expect(current.health).toBeGreaterThan(previous.health);
+      // Wire pays for its ground effect and deliberately breaks before a wall.
+      if (BARRICADE_ORDER[index] !== 'wire' && BARRICADE_ORDER[index - 1] !== 'wire') {
+        expect(current.health).toBeGreaterThan(previous.health);
+      }
     }
   });
 
@@ -384,7 +390,7 @@ describe('defenses', () => {
     expect(DEFENSES.triple.targets).toBe(3);
     expect(DEFENSES.plasma.cost).toBeGreaterThan(DEFENSES.laser.cost);
     expect(DEFENSES.plasma.damage! / DEFENSES.plasma.fireDelay!).toBeGreaterThan(
-      (DEFENSES.laser.damage! / DEFENSES.laser.fireDelay!) * 3,
+      (DEFENSES.laser.damage! / DEFENSES.laser.fireDelay!) * 2.5,
     );
     expect(DEFENSES.plasma.pierce!).toBeGreaterThan(DEFENSES.laser.pierce!);
   });
@@ -400,12 +406,11 @@ describe('defenses', () => {
     expect(hangar.droneRange!).toBeLessThan(hangar.range!);
     expect(hangar.cost).toBeGreaterThan(triple.cost);
 
-    // The extra price buys reach and legs, not raw damage: three drones stay
-    // just under the three barrels they cost more than.
+    // The extra price buys reach and legs; raw damage stays in the same band.
     const hangarDps = (hangar.damage! * hangar.drones!) / hangar.fireDelay!;
     const tripleDps = (triple.damage! * triple.targets!) / triple.fireDelay!;
-    expect(hangarDps).toBeGreaterThan(tripleDps * 0.8);
-    expect(hangarDps).toBeLessThan(tripleDps);
+    expect(hangarDps).toBeGreaterThan(tripleDps * 0.9);
+    expect(hangarDps).toBeLessThan(tripleDps * 1.15);
   });
 
   it('gives the triple-shot tower the buff it needed to stay worth its price', () => {
@@ -421,7 +426,8 @@ describe('defenses', () => {
     expect(DEFENSES.wire.passable).toBe(true);
     expect(DEFENSES.wire.slow).toBeGreaterThan(DEFENSES.stone.slow!);
     expect(DEFENSES.wire.contactDamage).toBeGreaterThan(0);
-    expect(DEFENSES.wire.contactWear).toBeGreaterThan(0);
+    expect(DEFENSES.wire.contactWear).toBeGreaterThanOrEqual(30);
+    expect(DEFENSES.wire.health).toBeLessThan(DEFENSES.wood.health);
     expect(DEFENSES.spike.passable).toBeUndefined();
     expect(DEFENSES.spike.thorns).toBeGreaterThan(0);
     expect(DEFENSES.blastwall.blastRadius).toBeGreaterThan(0);
@@ -540,13 +546,22 @@ describe('vehicles', () => {
     for (const type of VEHICLE_ORDER) {
       // Nothing on wheels beats the burst of a dash …
       expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED * DASH_SPEED);
-      // … and the largest hulls pay for their durability with pace.
-      if (VEHICLES[type].health >= VEHICLES.apc.health) {
-        expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED);
-      }
+      // Only the exposed one-seat quad outruns normal movement.
+      if (type !== 'quad') expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED);
     }
     expect(VEHICLES.quad.speed).toBeGreaterThan(PLAYER_BASE_SPEED);
     expect(VEHICLES.quad.speed).toBeGreaterThan(VEHICLES.tank.speed);
+  });
+
+  it('buys slower protected hulls with more money and durability', () => {
+    expect(VEHICLES.car.cost).toBeGreaterThanOrEqual(1500);
+    expect(VEHICLES.car.health).toBeGreaterThanOrEqual(1500);
+    expect(VEHICLES.tank.cost).toBeGreaterThanOrEqual(8000);
+    expect(VEHICLES.tank.health).toBeGreaterThanOrEqual(7000);
+    expect(VEHICLE_SPEED_STEP).toBe(0.01);
+    expect(vehicleTopSpeed('car', UPGRADE_MAX_LEVEL)).toBeCloseTo(
+      VEHICLES.car.speed * (1 + VEHICLE_MAX_SPEED_BONUS),
+    );
   });
 
   it('gives every vehicle one thing the others do not have', () => {

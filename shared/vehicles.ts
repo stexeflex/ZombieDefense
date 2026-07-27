@@ -59,28 +59,28 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
   quad: {
     label: 'Quad',
     short: '🏍',
-    cost: 700,
-    health: 520,
+    cost: 850,
+    health: 800,
     width: 54,
     height: 34,
     seats: 1,
-    speed: 340,
+    speed: 250,
     grip: 7.5,
     turn: 7,
     ram: 38,
-    boost: 190,
+    boost: 140,
     perk: 'Nitro auf der Dash-Taste',
     description: 'Wendiger Einsitzer, dünnes Blech, dafür schnell wieder aus der Gefahr',
   },
   car: {
     label: 'Geländewagen',
     short: '🚙',
-    cost: 1200,
-    health: 980,
+    cost: 1500,
+    health: 1600,
     width: 86,
     height: 44,
     seats: 2,
-    speed: 300,
+    speed: 190,
     grip: 5.2,
     turn: 4.6,
     ram: 68,
@@ -90,12 +90,12 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
   van: {
     label: 'Mannschaftswagen',
     short: '🚐',
-    cost: 1900,
-    health: 1400,
+    cost: 2300,
+    health: 2400,
     width: 100,
     height: 50,
     seats: 4,
-    speed: 250,
+    speed: 165,
     grip: 3.8,
     turn: 3.4,
     ram: 52,
@@ -106,12 +106,12 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
   pickup: {
     label: 'Kampf-Pickup',
     short: '🛻',
-    cost: 2400,
-    health: 1120,
+    cost: 2900,
+    health: 1900,
     width: 92,
     height: 44,
     seats: 2,
-    speed: 285,
+    speed: 185,
     grip: 4.8,
     turn: 4.2,
     ram: 74,
@@ -122,12 +122,12 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
   workshop: {
     label: 'Werkstattwagen',
     short: '🚚',
-    cost: 3000,
-    health: 1600,
+    cost: 3700,
+    health: 2800,
     width: 104,
     height: 52,
     seats: 3,
-    speed: 235,
+    speed: 150,
     grip: 3.4,
     turn: 3,
     ram: 48,
@@ -141,12 +141,12 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
   apc: {
     label: 'Schützenpanzer',
     short: '🚛',
-    cost: 4200,
-    health: 2900,
+    cost: 5200,
+    health: 5000,
     width: 108,
     height: 54,
     seats: 4,
-    speed: 195,
+    speed: 130,
     grip: 3,
     turn: 2.6,
     ram: 105,
@@ -157,12 +157,12 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
   tank: {
     label: 'Kampfpanzer',
     short: '🛡',
-    cost: 6800,
-    health: 4400,
+    cost: 8200,
+    health: 7600,
     width: 118,
     height: 60,
     seats: 2,
-    speed: 170,
+    speed: 105,
     grip: 2.4,
     turn: 1.9,
     ram: 165,
@@ -196,6 +196,9 @@ export const VEHICLE_REACH = 104;
 export const VEHICLE_ARMOR_STEP = 0.01;
 /** Hüllenschutz stays capped so even an upgraded vehicle still wears down. */
 export const VEHICLE_MAX_ARMOR_REDUCTION = 0.35;
+/** Motor upgrades help positioning without turning a protected hull into an escape tool again. */
+export const VEHICLE_SPEED_STEP = 0.01;
+export const VEHICLE_MAX_SPEED_BONUS = 0.4;
 /** Seconds before the same zombie can be run over again. */
 export const VEHICLE_RAM_COOLDOWN = 0.45;
 /** Share of the ram damage the hull takes itself — driving through wears it out. */
@@ -212,7 +215,11 @@ export function vehicleMaxHealth(type: VehicleType, healthLevel = 0) {
 }
 
 export function vehicleTopSpeed(type: VehicleType, speedLevel = 0) {
-  return VEHICLES[type].speed * (1 + speedLevel * 0.02);
+  const bonus = Math.min(
+    VEHICLE_MAX_SPEED_BONUS,
+    Math.max(0, Math.floor(speedLevel)) * VEHICLE_SPEED_STEP,
+  );
+  return VEHICLES[type].speed * (1 + bonus);
 }
 
 export function vehicleRamDamage(type: VehicleType, ramLevel = 0) {

@@ -35,10 +35,11 @@ Aufruf kann das Laden deshalb kurz dauern.
 - sechs Barrikaden und dreizehn Türme vom günstigen MG bis zur Plasma-Bastion,
   inklusive Drohnenhangar mit drei fliegenden Jagddrohnen
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
-  mehrere Spieler; die Hülle macht Insassen unverwundbar, dafür geht der Dash
-  verloren
+  mehrere Spieler; langsamere, deutlich robustere Hüllen machen Insassen
+  unverwundbar, dafür geht der Dash verloren
 - Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein;
-  Stacheldraht ist eine durchquerbare Bodenfalle, die bremst und Schaden macht
+  Stacheldraht ist eine durchquerbare Bodenfalle, die bremst, Schaden macht und
+  unter einer dichten Horde schnell zertrampelt wird
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
 - Munition, Reparieren und Verkaufen im Bau-Shop
@@ -146,24 +147,26 @@ Fahrzeuge werden wie Bauten in der Bauphase gekauft und abgestellt. Mit `E`
 steigt man ein und wieder aus; wer zuerst einsteigt, fährt. Alle an Bord zielen
 und schießen weiter mit ihrer eigenen Waffe.
 
-| Fahrzeug         | Preis | Plätze | Leben | Besonderheit                            |
-| ---------------- | ----- | ------ | ----- | --------------------------------------- |
-| Quad             | 700   | 1      | 520   | schnellstes Fahrzeug, Nitro auf `Space` |
-| Geländewagen     | 1200  | 2      | 980   | Allrounder mit gutem Tempo              |
-| Mannschaftswagen | 1900  | 4      | 1400  | heilt die Besatzung während der Fahrt   |
-| Kampf-Pickup     | 2400  | 2      | 1120  | MG feuert selbstständig                 |
-| Werkstattwagen   | 3000  | 3      | 1600  | repariert Bauten, liefert Munition      |
-| Schützenpanzer   | 4200  | 4      | 2900  | Bordkanone, langsamer als zu Fuß        |
-| Kampfpanzer      | 6800  | 2      | 4400  | Sprengkanone, walzt alles nieder        |
+| Fahrzeug         | Preis | Plätze | Leben | Besonderheit                          |
+| ---------------- | ----- | ------ | ----- | ------------------------------------- |
+| Quad             | 850   | 1      | 800   | einziges schnelles Fahrzeug, Nitro    |
+| Geländewagen     | 1500  | 2      | 1600  | robuster Allrounder                   |
+| Mannschaftswagen | 2300  | 4      | 2400  | heilt die Besatzung während der Fahrt |
+| Kampf-Pickup     | 2900  | 2      | 1900  | MG feuert selbstständig               |
+| Werkstattwagen   | 3700  | 3      | 2800  | repariert Bauten, liefert Munition    |
+| Schützenpanzer   | 5200  | 4      | 5000  | langsame Festung mit Bordkanone       |
+| Kampfpanzer      | 8200  | 2      | 7600  | schwerste Hülle und Sprengkanone      |
 
 Solange das Fahrzeug noch steht, sind alle Insassen vollständig
 unverwundbar. Das bisherige Upgrade _Innenraumschutz_ heißt deshalb jetzt
 _Hüllenpanzerung_ und reduziert den Schaden am Fahrzeug selbst. Bezahlt wird
 der sichere Innenraum mit dem Dash: Am Steuer gibt es kein Ausweichen mehr,
-nur das Quad macht aus der Ladung ein Nitro. Zombies gehen auf die Hülle los,
-Überfahren kostet auch die Karosserie Leben, und repariert wird erst wieder in
-der nächsten Bauphase. Geht die Hülle hoch, fliegen alle heraus und nehmen
-Wrackschaden.
+nur das Quad ist schneller als ein Überlebender zu Fuß und macht aus der Ladung
+ein Nitro. Die anderen Fahrzeuge sind bewusst langsame, teure Lebenspuffer.
+Zombies gehen auf die Hülle los, Überfahren kostet auch die Karosserie Leben,
+und repariert wird erst wieder in der nächsten Bauphase. Geht die Hülle hoch,
+fliegen alle heraus und nehmen Wrackschaden. Das Motor-Upgrade endet bei
+40 Prozent zusätzlichem Fahrzeugtempo.
 
 ## Voraussetzungen
 

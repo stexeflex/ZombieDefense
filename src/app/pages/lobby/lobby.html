@@ -441,11 +441,15 @@
             <div class="gameover-overlay">
               <section>
                 <p class="eyebrow">
-                  {{ game.lastReward()?.victory ? 'Sektor gesichert' : 'Trupp gefallen' }}
+                  {{
+                    (game.lastReward()?.victory ?? snapshot.runVictory)
+                      ? 'Sektor gesichert'
+                      : 'Trupp gefallen'
+                  }}
                 </p>
                 <h2>
                   {{
-                    game.lastReward()?.victory
+                    (game.lastReward()?.victory ?? snapshot.runVictory)
                       ? activeMap().name + ' ist befreit.'
                       : snapshot.endless
                         ? 'Welle ' + snapshot.wave + ' war zu viel.'
@@ -460,10 +464,11 @@
                     ><b>{{ game.player()?.kills }}</b> Abschüsse</span
                   >
                   <span
-                    ><b>+{{ game.lastReward()?.gold ?? 0 }}</b> permanentes Gold</span
+                    ><b>+{{ game.lastReward()?.gold ?? snapshot.runGold }}</b> permanentes
+                    Gold</span
                   >
                 </div>
-                @if (game.lastReward()?.victory) {
+                @if (game.lastReward()?.victory ?? snapshot.runVictory) {
                   @if (nextMapName()) {
                     <p class="unlock-note">{{ nextMapName() }} ist jetzt freigeschaltet.</p>
                   } @else {
