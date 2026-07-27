@@ -6,13 +6,19 @@ import {
   MAX_ACTIVE_ZOMBIES,
   PLAYER_RADIUS,
   SUMMON_CYCLES,
+  VEHICLES,
+  VEHICLE_MELEE_BLEED,
+  VEHICLE_WRECK_DAMAGE,
   ZOMBIES,
   armorReduction,
+  circleOverlapsVehicle,
   dashReduction,
   endlessDamageScale,
   endlessHealthScale,
   endlessSpeedScale,
   timedAbilities,
+  vehicleProtection,
+  vehicleSellValue,
   type FxEvent,
   type GameMap,
   type HazardKind,
@@ -29,6 +35,7 @@ import {
   HazardState,
   PlayerState,
   ProjectileState,
+  VehicleState,
   ZombieState,
 } from '../state/game-state.js';
 
@@ -58,6 +65,7 @@ export interface RuntimePlayer {
   weaponDiscounts: number;
   barricadeDiscounts: number;
   turretDiscounts: number;
+  vehicleDiscounts: number;
   lastStandReady: boolean;
   /** Knock-back or pull a boss applied, decays on its own. */
   pushX: number;
@@ -293,6 +301,9 @@ export class GameWorld {
     for (const defense of this.state.defenses.values()) {
       if (this.circleOverlapsDefense(entryX, entryY, radius + 18, defense)) return false;
     }
+    for (const vehicle of this.state.vehicles.values()) {
+      if (circleOverlapsVehicle(entryX, entryY, radius + 18, vehicle)) return false;
+    }
     if (!avoidPlayers) return true;
     return this.livingPlayers().every(
       (player) => Math.hypot(player.x - entryX, player.y - entryY) >= radius + PLAYER_RADIUS + 180,
@@ -374,6 +385,10 @@ export class GameWorld {
     const runtime = this.runtime.get(player.id);
     const upgrades = runtime?.upgrades ?? EMPTY_UPGRADES;
     let reduction = 1 - armorReduction(upgrades.armor);
+    // Sitting behind steel is the whole point of a vehicle: most of a blow
+    // stays in the hull instead of reaching the crew.
+    const vehicle = this.vehicleOf(player.id);
+    if (vehicle) reduction *= 1 - vehicleProtection(vehicle.type, upgrades.vehicleArmor);
     // A dash swallows a good part of every blow, and the levelled upgrade pushes
     // that up to the full immunity it used to hand out for nothing.
     if (player.dashing > 0) {
@@ -400,6 +415,8 @@ export class GameWorld {
     if (player.health <= 0) {
       player.alive = false;
       player.reviveProgress = 0;
+      // Nobody can be picked up out of a seat, so a downed driver rolls out.
+      this.leaveVehicle(player);
       this.pushFx({ k: 'blood', x: player.x, y: player.y, r: 40, s: 'down' });
     }
     return true;
@@ -415,6 +432,108 @@ export class GameWorld {
       if (defense.health <= 0) broken.push(defense);
     });
     for (const defense of broken) this.destroyDefense(defense);
+
+    const hulls: VehicleState[] = [];
+    this.state.vehicles.forEach((vehicle) => {
+      const distance = Math.hypot(vehicle.x - x, vehicle.y - y);
+      if (distance > radius) return;
+      hulls.push(vehicle);
+    });
+    for (const vehicle of hulls) {
+      const distance = Math.hypot(vehicle.x - x, vehicle.y - y);
+      this.damageVehicle(vehicle, damage * Math.max(0.3, 1 - distance / radius));
+    }
+  }
+
+  // ----------------------------------------------------------------- vehicles
+
+  vehicleOf(sessionId: string) {
+    const player = this.state.players.get(sessionId);
+    if (!player || !player.vehicleId) return undefined;
+    return this.state.vehicles.get(player.vehicleId);
+  }
+
+  damageVehicle(vehicle: VehicleState, amount: number) {
+    if (amount <= 0 || !this.state.vehicles.has(vehicle.id)) return;
+    vehicle.health -= amount;
+    vehicle.refund = vehicleSellValue(vehicle.type, vehicle.health, vehicle.maxHealth);
+    this.pushFx({ k: 'structure', x: vehicle.x, y: vehicle.y, s: vehicle.type });
+    if (vehicle.health <= 0) this.wreckVehicle(vehicle);
+  }
+
+  /** The hull is gone: it takes the crew's health with it and drops them off. */
+  wreckVehicle(vehicle: VehicleState) {
+    if (!this.state.vehicles.has(vehicle.id)) return;
+    const crew = [...vehicle.crew];
+    // Empty the seats before anything else: the wreck must not keep firing its
+    // gun or handing out first aid for the rest of the tick.
+    vehicle.crew.clear();
+    this.state.vehicles.delete(vehicle.id);
+    this.pushFx({ k: 'explosion', x: vehicle.x, y: vehicle.y, r: 120, s: vehicle.type });
+    this.pushFx({ k: 'wreck', x: vehicle.x, y: vehicle.y, s: vehicle.type });
+    for (const id of crew) {
+      const passenger = this.state.players.get(id);
+      if (!passenger) continue;
+      passenger.vehicleId = '';
+      this.dropOffPlayer(passenger, vehicle);
+      this.damagePlayer(passenger, VEHICLE_WRECK_DAMAGE * this.endlessDamageMultiplier());
+    }
+  }
+
+  /** Takes a player out of their seat and puts them down beside the hull. */
+  leaveVehicle(player: PlayerState) {
+    const vehicle = this.vehicleOf(player.id);
+    player.vehicleId = '';
+    if (!vehicle) return;
+    const index = vehicle.crew.indexOf(player.id);
+    if (index >= 0) vehicle.crew.splice(index, 1);
+    this.dropOffPlayer(player, vehicle);
+    this.pushFx({ k: 'engine', x: vehicle.x, y: vehicle.y, s: vehicle.type });
+  }
+
+  /** Puts a player back on their feet beside the hull, on a spot they can stand on. */
+  dropOffPlayer(player: PlayerState, vehicle: VehicleState) {
+    const config = VEHICLES[vehicle.type];
+    const distance = config.height / 2 + PLAYER_RADIUS + 8;
+    for (let step = 0; step < 8; step += 1) {
+      const angle = vehicle.rotation + Math.PI / 2 + (step * Math.PI) / 4;
+      const x = this.clamp(
+        vehicle.x + Math.cos(angle) * distance,
+        ARENA.padding,
+        ARENA.width - ARENA.padding,
+      );
+      const y = this.clamp(
+        vehicle.y + Math.sin(angle) * distance,
+        ARENA.padding,
+        ARENA.height - ARENA.padding,
+      );
+      if (!this.canStand(x, y, PLAYER_RADIUS)) continue;
+      player.x = x;
+      player.y = y;
+      return;
+    }
+    player.x = vehicle.x;
+    player.y = vehicle.y;
+  }
+
+  /**
+   * A blow against the hull: most of it stays in the steel, the rest rattles
+   * through to everyone on board.
+   */
+  hullMelee(vehicle: VehicleState, damage: number) {
+    for (const id of vehicle.crew) {
+      const passenger = this.state.players.get(id);
+      if (!passenger) continue;
+      this.damagePlayer(passenger, damage * VEHICLE_MELEE_BLEED);
+    }
+    this.damageVehicle(vehicle, damage);
+  }
+
+  blockingVehicle(x: number, y: number, radius: number) {
+    for (const vehicle of this.state.vehicles.values()) {
+      if (circleOverlapsVehicle(x, y, radius, vehicle)) return vehicle;
+    }
+    return undefined;
   }
 
   /** Enemy damage breaks a structure and triggers any last-resort effect it has. */

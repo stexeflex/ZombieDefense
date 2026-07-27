@@ -1380,6 +1380,19 @@ kbd {
   align-content: center;
 }
 
+/* Rides on the grenade block, only the width and the accent differ. */
+.vehicle-block {
+  min-width: 190px;
+  border-color: rgba(255, 204, 102, 0.35);
+}
+
+.vehicle-block em,
+.vehicle-perk {
+  color: var(--acid);
+  font-size: 0.54rem;
+  font-style: normal;
+}
+
 .money-block small {
   color: var(--muted-2);
   text-transform: uppercase;
@@ -1548,7 +1561,7 @@ kbd {
 .shop-tabs {
   margin: 16px 0 12px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
 }
 

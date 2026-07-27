@@ -20,6 +20,11 @@ export interface PermanentUpgrades {
   barricadeHealth: number;
   turretDamage: number;
   turretRange: number;
+  vehicleHealth: number;
+  vehicleArmor: number;
+  vehicleSpeed: number;
+  vehicleRam: number;
+  vehicleGun: number;
   armor: number;
   dashCharges: number;
   dashRecharge: number;
@@ -46,6 +51,11 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   barricadeHealth: 0,
   turretDamage: 0,
   turretRange: 0,
+  vehicleHealth: 0,
+  vehicleArmor: 0,
+  vehicleSpeed: 0,
+  vehicleRam: 0,
+  vehicleGun: 0,
   armor: 0,
   dashCharges: 0,
   dashRecharge: 0,
@@ -118,6 +128,8 @@ export interface PermanentPerks {
   starterBarricade: boolean;
   /** The first turret of a run costs a lot less. */
   starterTurret: boolean;
+  /** The first vehicle of a run costs a lot less. */
+  motorPool: boolean;
   /** The dash knocks zombies aside and hurts them. */
   dashShock: boolean;
   /** Dashing through an enemy cuts it open and charges a shield. */
@@ -138,6 +150,7 @@ export const EMPTY_PERKS: PermanentPerks = {
   starterWeapon: false,
   starterBarricade: false,
   starterTurret: false,
+  motorPool: false,
   dashShock: false,
   dashBlades: false,
   fieldMedic: false,
@@ -150,6 +163,7 @@ export const PERK_COST: Record<PerkKey, number> = {
   starterWeapon: 900,
   starterBarricade: 750,
   starterTurret: 1100,
+  motorPool: 1500,
   dashShock: 1400,
   dashBlades: 1300,
   fieldMedic: 800,

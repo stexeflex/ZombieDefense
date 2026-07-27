@@ -3,7 +3,9 @@ import {
   DEFENSES,
   PLAYER_RADIUS,
   ZOMBIES,
+  circleOverlapsVehicle,
   hasteAura,
+  pushOutOfVehicle,
   type ZombieType,
 } from '../../../shared/game-types.js';
 import type { ZombieState } from '../state/game-state.js';
@@ -55,8 +57,25 @@ export class ZombieSystem {
       const stepX = Math.cos(angle) * zombie.speed * delta;
       const stepY = Math.sin(angle) * zombie.speed * delta;
       const blocking = this.world.blockingDefense(zombie, stepX, stepY);
+      const hull = blocking
+        ? undefined
+        : this.world.blockingVehicle(zombie.x + stepX, zombie.y + stepY, zombie.radius);
 
-      if (blocking) {
+      if (hull) {
+        // A hull is worked on exactly like a barricade — it is the wall the
+        // squad drives around in.
+        if (config.explode) {
+          exploding.push(zombie);
+          return;
+        }
+        if (zombie.attackCooldown <= 0) {
+          zombie.attackCooldown = this.attackDelay(zombie.type, 0.85);
+          zombie.attacking = 0.3;
+          this.world.hullMelee(hull, zombie.damage * this.structureBonus(zombie));
+        }
+        zombie.stuckTimer = 0;
+        zombie.bestDistance = distance;
+      } else if (blocking) {
         // An exploder deals no melee damage, it detonates on whatever stops it.
         if (config.explode) {
           exploding.push(zombie);
@@ -64,15 +83,7 @@ export class ZombieSystem {
         }
         if (zombie.attackCooldown <= 0) {
           const defenseConfig = DEFENSES[blocking.type];
-          const bonus =
-            config.rank === 'boss'
-              ? 3.4
-              : config.rank === 'mini'
-                ? 2.2
-                : zombie.type === 'big' || zombie.type === 'armored'
-                  ? 1.6
-                  : 1;
-          blocking.health -= zombie.damage * bonus;
+          blocking.health -= zombie.damage * this.structureBonus(zombie);
           zombie.attackCooldown = this.attackDelay(zombie.type, 0.85);
           zombie.attacking = 0.3;
           this.world.pushFx({ k: 'structure', x: blocking.x, y: blocking.y, s: blocking.type });
@@ -113,6 +124,11 @@ export class ZombieSystem {
         if (zombie.attackCooldown <= 0) {
           zombie.attackCooldown = this.attackDelay(zombie.type, 1);
           zombie.attacking = 0.3;
+          const crewed = this.world.vehicleOf(target.id);
+          if (crewed) {
+            this.world.hullMelee(crewed, zombie.damage * this.structureBonus(zombie));
+            return;
+          }
           // A swing that runs into a dash gets its own cue instead of blood.
           const landed = this.world.damagePlayer(target, zombie.damage);
           this.world.pushFx(
@@ -127,7 +143,24 @@ export class ZombieSystem {
     for (const zombie of exploding) this.detonate(zombie);
     this.separate();
     this.pushOffPlayers();
+    this.pushOffVehicles();
     this.freeFromObstacles();
+  }
+
+  /**
+   * A hull is solid, and it moves: without this a driving vehicle would carry
+   * the horde along inside itself instead of shoving it aside.
+   */
+  private pushOffVehicles() {
+    if (this.world.state.vehicles.size === 0) return;
+    this.world.state.zombies.forEach((zombie) => {
+      this.world.state.vehicles.forEach((vehicle) => {
+        if (!circleOverlapsVehicle(zombie.x, zombie.y, zombie.radius, vehicle)) return;
+        const freed = pushOutOfVehicle(zombie.x, zombie.y, zombie.radius, vehicle);
+        zombie.x = this.world.clamp(freed.x, 12, ARENA.width - 12);
+        zombie.y = this.world.clamp(freed.y, 12, ARENA.height - 12);
+      });
+    });
   }
 
   /**
@@ -194,6 +227,14 @@ export class ZombieSystem {
 
   private attackDelay(type: ZombieType, base: number) {
     return type === 'fast' || type === 'crawler' ? base * 0.7 : base;
+  }
+
+  /** Heavies tear through barricades and vehicle hulls far faster than trash. */
+  private structureBonus(zombie: ZombieState) {
+    const rank = ZOMBIES[zombie.type].rank;
+    if (rank === 'boss') return 3.4;
+    if (rank === 'mini') return 2.2;
+    return zombie.type === 'big' || zombie.type === 'armored' ? 1.6 : 1;
   }
 
   private currentSpeed(zombie: ZombieState, delta: number) {

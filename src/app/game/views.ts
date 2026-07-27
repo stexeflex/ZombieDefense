@@ -1,5 +1,11 @@
 import type Phaser from 'phaser';
-import type { DefenseType, HazardKind, WeaponType, ZombieType } from '../../../shared/game-types';
+import type {
+  DefenseType,
+  HazardKind,
+  VehicleType,
+  WeaponType,
+  ZombieType,
+} from '../../../shared/game-types';
 
 export type ViewRoot = Phaser.GameObjects.GameObject & {
   x: number;
@@ -56,6 +62,26 @@ export interface DefenseView extends BaseView {
   gun?: Phaser.GameObjects.Image;
   healthBar: Phaser.GameObjects.Rectangle;
   type: DefenseType;
+}
+
+export interface VehicleView extends BaseView {
+  root: Phaser.GameObjects.Container;
+  body: Phaser.GameObjects.Image;
+  gun?: Phaser.GameObjects.Image;
+  healthBar: Phaser.GameObjects.Rectangle;
+  crewLabel: Phaser.GameObjects.Text;
+  type: VehicleType;
+  /** Own heading, so a parked hull does not snap around on every snapshot. */
+  rotation: number;
+  targetRotation: number;
+  gunAngle: number;
+  /** Session id behind the wheel, empty while nobody is on board. */
+  driverId: string;
+  /** Local motion of the hull this player is driving, see `driveLocalVehicle`. */
+  vx: number;
+  vy: number;
+  boost: number;
+  smoke: number;
 }
 
 export interface ProjectileView extends BaseView {
@@ -115,6 +141,9 @@ export const PROJECTILE_STYLE: Record<
   turret_drone: { texture: 'fx-energy', tint: 0x4ce0d5, scaleX: 1.8, scaleY: 0.48 },
   turret_laser: { texture: 'fx-spark', tint: 0xff8fd8, scaleX: 3.8, scaleY: 0.55 },
   turret_plasma: { texture: 'fx-energy', tint: 0x7eeaff, scaleX: 4.6, scaleY: 0.68 },
+  vehicle_pickup: { texture: 'fx-spark', tint: 0xffe89a, scaleX: 1.8, scaleY: 0.44 },
+  vehicle_apc: { texture: 'fx-spark', tint: 0xd8fbff, scaleX: 2.6, scaleY: 0.5 },
+  vehicle_tank: { texture: 'fx-glow', tint: 0xffb066, scaleX: 0.6, scaleY: 0.45 },
 };
 
 /** Pool colours; warnings are drawn in red no matter what fires them. */

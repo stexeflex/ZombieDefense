@@ -6,18 +6,25 @@ import {
   PLACE_RANGE,
   REPAIR_COST_PER_HP,
   STARTER_BARRICADE_COUNT,
+  VEHICLES,
+  VEHICLE_REACH,
   WEAPONS,
   ammoRefillCost,
   canPlaceDefense,
+  canPlaceVehicle,
   discountedCost,
   distanceToDefense,
+  distanceToVehicle,
   reserveCapacity,
   sellValue,
+  vehicleMaxHealth,
+  vehicleSellValue,
   weaponSellValue,
   type DefenseType,
+  type VehicleType,
   type WeaponType,
 } from '../../../shared/game-types.js';
-import { DefenseState } from '../state/game-state.js';
+import { DefenseState, VehicleState } from '../state/game-state.js';
 import type { PlayerSystem } from './players.js';
 import type { GameWorld, RuntimePlayer } from './world.js';
 
@@ -36,16 +43,23 @@ export class BuildSystem {
     runtime.weaponDiscounts = runtime.perks.starterWeapon ? 1 : 0;
     runtime.barricadeDiscounts = runtime.perks.starterBarricade ? STARTER_BARRICADE_COUNT : 0;
     runtime.turretDiscounts = runtime.perks.starterTurret ? 1 : 0;
+    runtime.vehicleDiscounts = runtime.perks.motorPool ? 1 : 0;
     this.syncDiscounts(player, runtime);
   }
 
   private syncDiscounts(
-    player: { weaponDiscount: number; barricadeDiscount: number; turretDiscount: number },
+    player: {
+      weaponDiscount: number;
+      barricadeDiscount: number;
+      turretDiscount: number;
+      vehicleDiscount: number;
+    },
     runtime: RuntimePlayer,
   ) {
     player.weaponDiscount = runtime.weaponDiscounts;
     player.barricadeDiscount = runtime.barricadeDiscounts;
     player.turretDiscount = runtime.turretDiscounts;
+    player.vehicleDiscount = runtime.vehicleDiscounts;
   }
 
   // -------------------------------------------------------------------- shop
@@ -167,6 +181,8 @@ export class BuildSystem {
     const runtime = this.world.runtime.get(sessionId);
     const type = payload.type;
     if (!player || !runtime || this.world.state.phase !== 'build') return;
+    // Nobody builds from the driver's seat.
+    if (player.vehicleId) return;
     if (!type || !(type in DEFENSES)) return;
     const config = DEFENSES[type];
     const barricade = config.kind === 'barricade';
@@ -189,6 +205,9 @@ export class BuildSystem {
     ) {
       return;
     }
+    for (const vehicle of this.world.state.vehicles.values()) {
+      if (distanceToVehicle(x, y, vehicle) < Math.max(config.width, config.height) / 2) return;
+    }
 
     const defense = new DefenseState();
     defense.id = this.world.nextId('d');
@@ -207,6 +226,107 @@ export class BuildSystem {
     this.syncDiscounts(player, runtime);
     this.world.state.defenses.set(defense.id, defense);
     this.world.pushFx({ k: 'structure', x, y, s: type });
+  }
+
+  // ---------------------------------------------------------------- vehicles
+
+  /**
+   * A vehicle is bought by parking it, exactly like a structure. It is worth a
+   * lot of money, so it has to be earned before the squad rolls out in it.
+   */
+  placeVehicle(
+    sessionId: string,
+    payload: { type?: VehicleType; x?: number; y?: number; rotation?: number },
+  ) {
+    const player = this.world.state.players.get(sessionId);
+    const runtime = this.world.runtime.get(sessionId);
+    const type = payload.type;
+    if (!player || !runtime || this.world.state.phase !== 'build' || player.vehicleId) return;
+    if (!type || !(type in VEHICLES)) return;
+    const config = VEHICLES[type];
+    const price = discountedCost(config.cost, runtime.vehicleDiscounts);
+
+    const x = this.world.clamp(Number(payload.x) || player.x, 90, ARENA.width - 90);
+    const y = this.world.clamp(Number(payload.y) || player.y, 90, ARENA.height - 90);
+    const rotation =
+      (Math.round((Number(payload.rotation) || 0) / (Math.PI / 2)) * (Math.PI / 2)) % Math.PI;
+    if (player.money < price) return;
+    if (Math.hypot(player.x - x, player.y - y) > PLACE_RANGE) return;
+    if (
+      !canPlaceVehicle(
+        { type, x, y, rotation },
+        this.world.state.defenses.values(),
+        this.world.state.vehicles.values(),
+        this.world.map.obstacles,
+      )
+    ) {
+      return;
+    }
+
+    const vehicle = new VehicleState();
+    vehicle.id = this.world.nextId('v');
+    vehicle.ownerId = sessionId;
+    vehicle.type = type;
+    vehicle.x = x;
+    vehicle.y = y;
+    vehicle.rotation = rotation;
+    vehicle.maxHealth = vehicleMaxHealth(type, runtime.upgrades.vehicleHealth);
+    vehicle.health = vehicle.maxHealth;
+    vehicle.refund = vehicleSellValue(type, vehicle.health, vehicle.maxHealth);
+    player.money -= price;
+    if (runtime.vehicleDiscounts > 0) runtime.vehicleDiscounts -= 1;
+    this.syncDiscounts(player, runtime);
+    this.world.state.vehicles.set(vehicle.id, vehicle);
+    this.world.pushFx({ k: 'engine', x, y, s: type });
+  }
+
+  private focusedVehicle(sessionId: string, id?: string) {
+    const player = this.world.state.players.get(sessionId);
+    if (!player || this.world.state.phase !== 'build' || player.vehicleId) return undefined;
+    if (id) {
+      const picked = this.world.state.vehicles.get(id);
+      if (!picked) return undefined;
+      return distanceToVehicle(player.x, player.y, picked) <= VEHICLE_REACH + 40
+        ? picked
+        : undefined;
+    }
+    let best: VehicleState | undefined;
+    let bestDistance = VEHICLE_REACH;
+    this.world.state.vehicles.forEach((vehicle) => {
+      const distance = distanceToVehicle(player.x, player.y, vehicle);
+      if (distance > bestDistance) return;
+      bestDistance = distance;
+      best = vehicle;
+    });
+    return best;
+  }
+
+  private sellVehicle(sessionId: string, id?: string) {
+    const player = this.world.state.players.get(sessionId);
+    const target = this.focusedVehicle(sessionId, id);
+    if (!player || !target) return false;
+    // Selling with the squad on board would drop everyone into the horde.
+    if (target.crew.length > 0) return false;
+    player.money += vehicleSellValue(target.type, target.health, target.maxHealth);
+    this.world.state.vehicles.delete(target.id);
+    this.world.pushFx({ k: 'wreck', x: target.x, y: target.y, s: target.type });
+    return true;
+  }
+
+  private repairVehicle(sessionId: string, id?: string) {
+    const player = this.world.state.players.get(sessionId);
+    const target = this.focusedVehicle(sessionId, id);
+    if (!player || !target) return false;
+    const rate =
+      REPAIR_COST_PER_HP * (this.world.perksOf(sessionId).engineer ? 1 - ENGINEER_DISCOUNT : 1);
+    const missing = target.maxHealth - target.health;
+    const repair = Math.min(missing, Math.floor(player.money / rate));
+    if (repair <= 0) return false;
+    player.money -= Math.ceil(repair * rate);
+    target.health += repair;
+    target.refund = vehicleSellValue(target.type, target.health, target.maxHealth);
+    this.world.pushFx({ k: 'structure', x: target.x, y: target.y, s: target.type });
+    return true;
   }
 
   /**
@@ -236,10 +356,14 @@ export class BuildSystem {
     return best;
   }
 
+  /** One key sells whatever is highlighted, structure or parked vehicle. */
   sellDefense(sessionId: string, id?: string) {
     const player = this.world.state.players.get(sessionId);
     const target = this.focusedDefense(sessionId, id);
-    if (!player || !target) return;
+    if (!player || !target) {
+      this.sellVehicle(sessionId, id);
+      return;
+    }
     // Exactly the price the client shows on the highlighted structure.
     const refund = sellValue(target.type, target.health, target.maxHealth);
     player.money += refund;
@@ -250,7 +374,10 @@ export class BuildSystem {
   repairDefense(sessionId: string, id?: string) {
     const player = this.world.state.players.get(sessionId);
     const target = this.focusedDefense(sessionId, id);
-    if (!player || !target) return;
+    if (!player || !target) {
+      this.repairVehicle(sessionId, id);
+      return;
+    }
     const rate =
       REPAIR_COST_PER_HP * (this.world.perksOf(sessionId).engineer ? 1 - ENGINEER_DISCOUNT : 1);
     const missing = target.maxHealth - target.health;

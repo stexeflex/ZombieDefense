@@ -11,11 +11,13 @@ import {
   sellValue,
   startingMoney,
   upgradeMaxLevel,
+  vehicleSellValue,
   type DefenseType,
   type PermanentPerks,
   type PermanentUpgrades,
   type PlayerInput,
   type UpgradeKey,
+  type VehicleType,
   type WeaponType,
 } from '../../../shared/game-types.js';
 import { AbilitySystem } from '../game/abilities.js';
@@ -23,6 +25,7 @@ import { BuildSystem } from '../game/build.js';
 import { PlayerSystem } from '../game/players.js';
 import { ProjectileSystem } from '../game/projectiles.js';
 import { TurretSystem } from '../game/turrets.js';
+import { VehicleSystem } from '../game/vehicles.js';
 import { WaveSystem } from '../game/waves.js';
 import { EMPTY_INPUT, GameWorld } from '../game/world.js';
 import { ZombieSystem } from '../game/zombies.js';
@@ -74,6 +77,13 @@ const DEFENSE_PRECISION: Record<string, number> = {
   health: 1,
   maxHealth: 1,
 };
+const VEHICLE_PRECISION: Record<string, number> = {
+  x: 10,
+  y: 10,
+  rotation: 100,
+  health: 1,
+  maxHealth: 1,
+};
 const HAZARD_PRECISION: Record<string, number> = { x: 1, y: 1, r: 1, life: 100, maxLife: 100 };
 
 /**
@@ -88,6 +98,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   private zombieSystem!: ZombieSystem;
   private projectiles!: ProjectileSystem;
   private turrets!: TurretSystem;
+  private vehicles!: VehicleSystem;
   private build!: BuildSystem;
   private waves!: WaveSystem;
   private snapshotElapsed = 0;
@@ -104,6 +115,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.zombieSystem = new ZombieSystem(this.world, this.abilities);
     this.projectiles = new ProjectileSystem(this.world);
     this.turrets = new TurretSystem(this.world);
+    this.vehicles = new VehicleSystem(this.world);
     this.build = new BuildSystem(this.world, this.playerSystem);
     this.waves = new WaveSystem(
       this.world,
@@ -172,6 +184,12 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       (client, payload: { type?: DefenseType; x?: number; y?: number; rotation?: number }) =>
         this.build.placeDefense(client.sessionId, payload),
     );
+    this.onMessage(
+      'place_vehicle',
+      (client, payload: { type?: VehicleType; x?: number; y?: number; rotation?: number }) =>
+        this.build.placeVehicle(client.sessionId, payload),
+    );
+    this.onMessage('use_vehicle', (client) => this.vehicles.toggle(client.sessionId));
     this.onMessage('sell', (client, payload?: { id?: string }) =>
       this.build.sellDefense(client.sessionId, payload?.id),
     );
@@ -222,6 +240,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       weaponDiscounts: 0,
       barricadeDiscounts: 0,
       turretDiscounts: 0,
+      vehicleDiscounts: 0,
       lastStandReady: true,
       pushX: 0,
       pushY: 0,
@@ -232,6 +251,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   }
 
   onLeave(client: Client) {
+    // Free the seat first, otherwise the hull keeps a ghost in its crew list.
+    this.vehicles.leave(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.world.runtime.delete(client.sessionId);
     if (this.state.hostSessionId === client.sessionId) {
@@ -303,7 +324,12 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   private update(deltaMs: number) {
     const delta = Math.min(deltaMs, 100) / 1000;
     if (this.state.phase === 'combat') this.updateCombat(delta);
-    if (this.state.phase === 'build') this.playerSystem.update(delta);
+    if (this.state.phase === 'build') {
+      this.playerSystem.update(delta);
+      // Driving is allowed between waves so the squad can park where it wants,
+      // but the gun and the on-board gear stay quiet until the wave starts.
+      this.vehicles.update(delta, false);
+    }
 
     this.snapshotElapsed += deltaMs;
     // Big hordes push a lot of JSON, so send slightly fewer frames then and let
@@ -319,6 +345,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   private updateCombat(delta: number) {
     this.waves.spawn(delta);
     this.playerSystem.update(delta);
+    this.vehicles.update(delta, true);
     this.zombieSystem.update(delta);
     this.projectiles.update(delta);
     this.turrets.update(delta);
@@ -336,6 +363,9 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.state.defenses.forEach((defense) => {
       defense.refund = sellValue(defense.type, defense.health, defense.maxHealth);
     });
+    this.state.vehicles.forEach((vehicle) => {
+      vehicle.refund = vehicleSellValue(vehicle.type, vehicle.health, vehicle.maxHealth);
+    });
     this.state.players.forEach((player) => this.build.syncWeaponRefunds(player.id));
     if (this.clients.length === 0) {
       this.world.fxQueue.length = 0;
@@ -346,6 +376,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.compact(payload['zombies'], ZOMBIE_PRECISION);
     this.compact(payload['projectiles'], PROJECTILE_PRECISION);
     this.compact(payload['defenses'], DEFENSE_PRECISION);
+    this.compact(payload['vehicles'], VEHICLE_PRECISION);
     this.compact(payload['hazards'], HAZARD_PRECISION);
     if (this.world.fxQueue.length > 0) payload['fx'] = this.world.fxQueue;
     this.broadcast('snapshot', payload);
@@ -429,6 +460,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       build: this.build,
       players: this.playerSystem,
       abilities: this.abilities,
+      vehicles: this.vehicles,
     };
   }
 }

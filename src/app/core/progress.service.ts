@@ -6,6 +6,7 @@ import {
   MAPS,
   PERK_COST,
   UPGRADE_REQUIRES,
+  VEHICLE_MAX_PROTECTION,
   upgradeLevelCost,
   upgradeMaxLevel,
   upgradeUnlocked,
@@ -72,6 +73,26 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'barricadeHealth', label: 'Barrikadenleben', description: '+2 % Leben', icon: '▰' },
   { key: 'turretDamage', label: 'Turmschaden', description: '+2 % Schaden', icon: '⌖' },
   { key: 'turretRange', label: 'Turmreichweite', description: '+1 % Reichweite', icon: '◈' },
+  { key: 'vehicleHealth', label: 'Fahrzeugpanzerung', description: '+2 % Hüllenleben', icon: '🚙' },
+  {
+    key: 'vehicleArmor',
+    label: 'Innenraumschutz',
+    description: `+0,5 % weniger Schaden im Fahrzeug (max. ${Math.round(VEHICLE_MAX_PROTECTION * 100)} %)`,
+    icon: '⛨',
+  },
+  { key: 'vehicleSpeed', label: 'Motorleistung', description: '+2 % Tempo', icon: '⚙' },
+  {
+    key: 'vehicleRam',
+    label: 'Rammschaden',
+    description: '+2 % Schaden beim Überfahren',
+    icon: '✖',
+  },
+  {
+    key: 'vehicleGun',
+    label: 'Bordwaffen',
+    description: '+2 % Schaden der Fahrzeugwaffen',
+    icon: '⌗',
+  },
   { key: 'reviveSpeed', label: 'Wiederbelebung', description: '+2 % schneller', icon: '✚' },
 ];
 
@@ -94,6 +115,12 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     label: 'Erstausstattung',
     description: 'Der erste Turm eines Runs kostet 40 % weniger.',
     icon: '⌖',
+  },
+  {
+    key: 'motorPool',
+    label: 'Fuhrpark',
+    description: 'Das erste Fahrzeug eines Runs kostet 40 % weniger.',
+    icon: '🚙',
   },
   {
     key: 'dashShock',

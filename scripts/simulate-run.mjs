@@ -24,6 +24,8 @@ const {
   MINI_BOSSES,
   REPAIR_COST_PER_HP,
   TURRET_ORDER,
+  VEHICLES,
+  VEHICLE_ORDER,
   WEAPONS,
   WEAPON_ORDER,
   ZOMBIES,
@@ -265,6 +267,301 @@ for (const type of [
     `${DEFENSES[type].label} bekämpft Gegner (${Math.round(before - after)} Schaden)`,
     after < before,
     `(${after}/${before})`,
+  );
+}
+
+console.log('\n== Fahrzeuge ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 1150;
+
+  // Jedes Fahrzeug muss sich abstellen lassen, mit genug Abstand zum nächsten.
+  let parked = 0;
+  VEHICLE_ORDER.forEach((type, index) => {
+    const before = room.state.vehicles.size;
+    player.x = 400 + (index % 3) * 300;
+    player.y = 600 + Math.floor(index / 3) * 220;
+    room.systems.build.placeVehicle('p1', { type, x: player.x + 150, y: player.y, rotation: 0 });
+    if (room.state.vehicles.size > before) parked += 1;
+  });
+  check(
+    'Jedes Fahrzeug lässt sich kaufen und abstellen',
+    parked === VEHICLE_ORDER.length,
+    `(${parked}/${VEHICLE_ORDER.length})`,
+  );
+
+  const [first] = [...room.state.vehicles.values()];
+  const price = VEHICLES[first.type].cost;
+  const beforeSell = player.money;
+  player.x = first.x;
+  player.y = first.y + 60;
+  room.systems.build.sellDefense('p1', first.id);
+  check(
+    'Frisch gekauftes Fahrzeug zahlt den vollen Preis zurück',
+    !room.state.vehicles.has(first.id) && player.money === beforeSell + price,
+    `(+${player.money - beforeSell} statt +${price})`,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'car', x: 1260, y: 800, rotation: 0 });
+  const car = [...room.state.vehicles.values()][0];
+
+  room.systems.vehicles.toggle('p1');
+  check('Einsteigen klappt in Reichweite', player.vehicleId === car.id && car.crew.length === 1);
+
+  const startX = car.x;
+  runtime.input = { ...IDLE, right: true, aimX: player.x + 300, aimY: player.y };
+  step(room, 30);
+  check('Fahren bewegt die Hülle', car.x - startX > 100, `(${Math.round(car.x - startX)} px)`);
+  check(
+    'Die Besatzung fährt mit',
+    Math.abs(player.x - car.x) < 1 && Math.abs(player.y - car.y) < 1,
+  );
+
+  // Ein zweiter Spieler passt mit rein, ein dritter nicht mehr.
+  const mate = join(room, 'p2');
+  mate.x = car.x;
+  mate.y = car.y + 20;
+  room.systems.vehicles.toggle('p2');
+  check('Mitspieler steigt zu', car.crew.length === 2 && mate.vehicleId === car.id);
+  const third = join(room, 'p3');
+  third.x = car.x;
+  third.y = car.y + 20;
+  room.systems.vehicles.toggle('p3');
+  check(
+    'Ein voller Wagen nimmt niemanden mehr auf',
+    car.crew.length === 2 && third.vehicleId === '',
+    `(${car.crew.length}/${VEHICLES.car.seats})`,
+  );
+  check(
+    'Ein besetztes Fahrzeug lässt sich nicht verkaufen',
+    (() => {
+      const before = player.money;
+      room.systems.build.sellDefense('p1', car.id);
+      return room.state.vehicles.has(car.id) && player.money === before;
+    })(),
+  );
+
+  runtime.input = { ...IDLE };
+  room.systems.vehicles.toggle('p1');
+  check(
+    'Aussteigen setzt den Spieler neben die Hülle',
+    player.vehicleId === '' && Math.hypot(player.x - car.x, player.y - car.y) > 20,
+  );
+  check('Der Mitfahrer übernimmt das Steuer', car.crew[0] === 'p2');
+}
+{
+  // Panzerung, Rammschaden und das Wrack.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'apc', x: 1260, y: 800, rotation: 0 });
+  const apc = [...room.state.vehicles.values()][0];
+  room.systems.vehicles.toggle('p1');
+
+  player.maxHealth = 1000;
+  player.health = 1000;
+  room.systems.world.damagePlayer(player, 100);
+  const through = 1000 - player.health;
+  check(
+    `Im Fahrzeug kommt nur ein Teil des Schadens an (${Math.round(through)} statt 100)`,
+    Math.abs(through - 100 * (1 - VEHICLES.apc.protection)) < 0.01,
+  );
+
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  const victim = room.systems.world.spawnZombie('normal', { x: apc.x + 260, y: apc.y });
+  victim.health = 1e6;
+  victim.maxHealth = 1e6;
+  const hullBefore = apc.health;
+  runtime.input = { ...IDLE, right: true, aimX: apc.x + 400, aimY: apc.y };
+  step(room, 40);
+  check(
+    'Überfahren verletzt den Gegner',
+    victim.health < 1e6,
+    `(${Math.round(1e6 - victim.health)} Schaden)`,
+  );
+  check('Und kostet die Karosserie Leben', apc.health < hullBefore);
+
+  const crewHealth = player.health;
+  room.systems.world.damageVehicle(apc, apc.health);
+  check(
+    'Ein zerstörtes Fahrzeug wirft die Besatzung raus und tut weh',
+    !room.state.vehicles.has(apc.id) && player.vehicleId === '' && player.health < crewHealth,
+  );
+}
+{
+  // Bordwaffe, Bordlazarett und die fahrende Werkstatt.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'pickup', x: 1260, y: 800, rotation: 0 });
+  const pickup = [...room.state.vehicles.values()][0];
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  makeInvincible(player);
+
+  const target = room.systems.world.spawnZombie('normal', { x: pickup.x + 200, y: pickup.y });
+  target.health = 1e6;
+  target.maxHealth = 1e6;
+  step(room, 20);
+  check('Eine leere Hülle schießt nicht', target.health === 1e6);
+  room.systems.vehicles.toggle('p1');
+  step(room, 20);
+  check('Mit Besatzung feuert das MG von allein', target.health < 1e6);
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'van', x: 1280, y: 800, rotation: 0 });
+  room.systems.build.placeDefense('p1', { type: 'wood', x: 1200, y: 950, rotation: 0 });
+  const wall = [...room.state.defenses.values()][0];
+  wall.health = 100;
+  room.systems.vehicles.toggle('p1');
+  room.systems.waves.startNextWave();
+  // Ein Eintrag in der Warteschlange hält die Welle offen, die riesige
+  // Spawn-Pause sorgt dafür, dass trotzdem kein Gegner auftaucht.
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  player.health = 50;
+  step(room, 40);
+  check(
+    'Der Mannschaftswagen heilt seine Besatzung',
+    player.health > 50 && player.health < player.maxHealth,
+    `(${Math.round(player.health)} HP)`,
+  );
+  check('Aber er repariert nichts', wall.health === 100);
+
+  const workshopRoom = makeRoom('outpost');
+  const mechanic = join(workshopRoom, 'p1');
+  workshopRoom.systems.waves.startRun();
+  workshopRoom.systems.waves.finishWave();
+  mechanic.money = 1e6;
+  mechanic.x = 1200;
+  mechanic.y = 800;
+  workshopRoom.systems.build.placeVehicle('p1', {
+    type: 'workshop',
+    x: 1290,
+    y: 800,
+    rotation: 0,
+  });
+  workshopRoom.systems.build.placeDefense('p1', { type: 'wood', x: 1200, y: 950, rotation: 0 });
+  const damaged = [...workshopRoom.state.defenses.values()][0];
+  damaged.health = 100;
+  workshopRoom.systems.build.buyWeapon('p1', 'rifle');
+  mechanic.reserveAmmo = 5;
+  workshopRoom.systems.vehicles.toggle('p1');
+  workshopRoom.systems.waves.startNextWave();
+  workshopRoom.systems.waves.spawnQueue = ['normal'];
+  workshopRoom.systems.waves.spawnDelay = 1e6;
+  workshopRoom.state.zombies.clear();
+  step(workshopRoom, 60);
+  check(
+    'Der Werkstattwagen flickt Bauten in der Nähe',
+    damaged.health > 100,
+    `(${Math.round(damaged.health)} HP)`,
+  );
+  check('Und liefert Munition nach', mechanic.reserveAmmo > 5, `(${mechanic.reserveAmmo} Schuss)`);
+}
+{
+  // Der Dash bleibt zu Fuß, im Fahrzeug wird daraus das Nitro.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'quad', x: 1250, y: 800, rotation: 0 });
+  const quad = [...room.state.vehicles.values()][0];
+  room.systems.vehicles.toggle('p1');
+
+  runtime.input = { ...IDLE, dash: true, right: true, aimX: player.x + 300, aimY: player.y };
+  room.update(50);
+  check(
+    'Im Fahrzeug wird aus dem Dash ein Nitro',
+    quad.boost > 0 && player.dashing === 0 && player.dashCharges === 1,
+    `(Boost ${quad.boost.toFixed(2)} s, ${player.dashCharges} Ladungen)`,
+  );
+
+  const heavyRoom = makeRoom('outpost');
+  const heavyPlayer = join(heavyRoom, 'p1');
+  const heavyRuntime = heavyRoom.systems.world.runtime.get('p1');
+  heavyRoom.systems.waves.startRun();
+  heavyRoom.systems.waves.finishWave();
+  heavyPlayer.money = 1e6;
+  heavyPlayer.x = 1200;
+  heavyPlayer.y = 800;
+  heavyRoom.systems.build.placeVehicle('p1', { type: 'tank', x: 1280, y: 800, rotation: 0 });
+  heavyRoom.systems.vehicles.toggle('p1');
+  heavyRuntime.input = { ...IDLE, dash: true, right: true, aimX: 1600, aimY: 800 };
+  heavyRoom.update(50);
+  check(
+    'Ohne Nitro verpufft die Dash-Taste nicht die Ladung',
+    heavyPlayer.dashCharges === 2 && heavyPlayer.dashing === 0,
+    `(${heavyPlayer.dashCharges} Ladungen)`,
+  );
+}
+{
+  // Zombies reißen die Hülle auf, statt durch sie hindurchzulaufen.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'car', x: 1280, y: 800, rotation: 0 });
+  const car = [...room.state.vehicles.values()][0];
+  room.systems.vehicles.toggle('p1');
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  makeInvincible(player);
+
+  const attacker = room.systems.world.spawnZombie('normal', { x: car.x + 90, y: car.y });
+  const before = car.health;
+  step(room, 40);
+  check(
+    'Zombies gehen auf die Hülle los',
+    car.health < before,
+    `(${Math.round(before - car.health)} Schaden)`,
+  );
+  check(
+    'Und stehen dabei nicht im Fahrzeug',
+    !room.systems.world.state.vehicles.has(car.id) ||
+      Math.hypot(attacker.x - car.x, attacker.y - car.y) > VEHICLES.car.height / 2,
   );
 }
 

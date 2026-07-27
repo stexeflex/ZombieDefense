@@ -1,4 +1,5 @@
 import type { DefenseType } from './defenses.js';
+import type { VehicleType } from './vehicles.js';
 import type { WeaponType } from './weapons.js';
 import type { HazardKind, ZombieType } from './zombies.js';
 
@@ -22,7 +23,9 @@ export type FxKind =
   | 'heal'
   | 'dash'
   /** A dash cut through an enemy and charged the shield. */
-  | 'shield';
+  | 'shield'
+  /** Somebody got in or out of a vehicle. */
+  | 'engine';
 
 export interface FxEvent {
   k: FxKind;
@@ -72,6 +75,9 @@ export interface PlayerSnapshot {
   weaponDiscount: number;
   barricadeDiscount: number;
   turretDiscount: number;
+  vehicleDiscount: number;
+  /** Id of the vehicle this player sits in, empty while on foot. */
+  vehicleId: string;
   ready: boolean;
   kills: number;
   reviveProgress: number;
@@ -120,6 +126,21 @@ export interface DefenseSnapshot {
   refund: number;
 }
 
+export interface VehicleSnapshot {
+  id: string;
+  ownerId: string;
+  type: VehicleType;
+  x: number;
+  y: number;
+  rotation: number;
+  health: number;
+  maxHealth: number;
+  /** What selling pays right now, based on original price and current health. */
+  refund: number;
+  /** Session ids on board, the first one is driving. */
+  crew: string[];
+}
+
 export interface HazardSnapshot {
   id: string;
   kind: HazardKind;
@@ -156,6 +177,7 @@ export interface GameSnapshot {
   zombies: Record<string, ZombieSnapshot>;
   projectiles: Record<string, ProjectileSnapshot>;
   defenses: Record<string, DefenseSnapshot>;
+  vehicles: Record<string, VehicleSnapshot>;
   hazards: Record<string, HazardSnapshot>;
   fx?: FxEvent[];
 }

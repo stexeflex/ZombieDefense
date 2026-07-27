@@ -3,10 +3,12 @@ import {
   BARRICADE_ORDER,
   DEFENSES,
   MAPS,
+  VEHICLES,
   ZOMBIES,
   ZOMBIE_TYPES,
   type DefenseType,
   type ObstacleKind,
+  type VehicleType,
   type WeaponType,
   type ZombieType,
 } from '../../../shared/game-types';
@@ -805,6 +807,136 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
   },
 };
 
+// ----------------------------------------------------------------- vehicles
+
+/** Four wheels just outside the chassis, drawn top down like everything else. */
+function wheels(ctx: CanvasRenderingContext2D, w: number, h: number, inset: number, size: number) {
+  for (const x of [inset, w - inset - size]) {
+    for (const y of [1, h - 6]) fillRounded(ctx, x, y, size, 5, 2, '#14181a');
+  }
+}
+
+const VEHICLE_PAINTERS: Record<VehicleType, Painter> = {
+  quad: (ctx, w, h) => {
+    wheels(ctx, w, h, 3, 13);
+    fillRounded(ctx, 8, 7, w - 16, h - 14, 6, '#8a4a2a', '#2a1409', 2);
+    fillRounded(ctx, w * 0.24, h * 0.3, w * 0.3, h * 0.4, 4, '#241a14');
+    // handlebar
+    ctx.fillStyle = '#3d464a';
+    ctx.fillRect(w * 0.66, 5, 4, h - 10);
+    circle(ctx, w - 7, h / 2, 4, '#ffd489', '#2a1409', 1.5);
+    noise(ctx, w, h, 30, ['rgba(0,0,0,0.25)', 'rgba(255,255,255,0.07)'], 1, 2, 13);
+  },
+  car: (ctx, w, h) => {
+    wheels(ctx, w, h, 9, 17);
+    fillRounded(ctx, 3, 5, w - 6, h - 10, 9, '#2f5f4a', '#101f18', 2.5);
+    fillRounded(ctx, w * 0.5, 8, w * 0.3, h - 16, 5, '#16242b', '#0a1114', 1.5);
+    fillRounded(ctx, w * 0.2, 9, w * 0.26, h - 18, 4, '#3c6d57');
+    // roof rack
+    ctx.fillStyle = '#1c3a2d';
+    ctx.fillRect(w * 0.24, 6, 3, h - 12);
+    ctx.fillRect(w * 0.4, 6, 3, h - 12);
+    circle(ctx, w - 8, h * 0.28, 3.5, '#ffe6ae');
+    circle(ctx, w - 8, h * 0.72, 3.5, '#ffe6ae');
+    noise(ctx, w, h, 60, ['rgba(0,0,0,0.28)', 'rgba(255,255,255,0.07)'], 1, 3, 19);
+  },
+  van: (ctx, w, h) => {
+    wheels(ctx, w, h, 12, 18);
+    fillRounded(ctx, 2, 4, w - 4, h - 8, 7, '#b8bdb4', '#20241f', 2.5);
+    fillRounded(ctx, w * 0.62, 7, w * 0.3, h - 14, 4, '#17242a', '#0a1114', 1.5);
+    // red cross on the roof
+    ctx.fillStyle = '#c8404a';
+    ctx.fillRect(w * 0.26, h / 2 - 3, 22, 6);
+    ctx.fillRect(w * 0.26 + 8, h / 2 - 10, 6, 20);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(4, h - 12, w - 8, 4);
+    circle(ctx, w - 7, h * 0.26, 3, '#ffe6ae');
+    circle(ctx, w - 7, h * 0.74, 3, '#ffe6ae');
+    noise(ctx, w, h, 60, ['rgba(0,0,0,0.2)', 'rgba(255,255,255,0.08)'], 1, 3, 23);
+  },
+  pickup: (ctx, w, h) => {
+    wheels(ctx, w, h, 11, 18);
+    fillRounded(ctx, 3, 5, w - 6, h - 10, 6, '#4a5540', '#161b13', 2.5);
+    // open bed with the gun ring
+    fillRounded(ctx, 6, 8, w * 0.4, h - 16, 3, '#2c3426', '#151a12', 1.5);
+    circle(ctx, w * 0.28, h / 2, 9, '#20281c', '#7d8a6c', 2);
+    fillRounded(ctx, w * 0.56, 7, w * 0.3, h - 14, 4, '#16242b', '#0a1114', 1.5);
+    circle(ctx, w - 8, h * 0.28, 3.5, '#ffe6ae');
+    circle(ctx, w - 8, h * 0.72, 3.5, '#ffe6ae');
+    noise(ctx, w, h, 60, ['rgba(0,0,0,0.28)', 'rgba(255,255,255,0.06)'], 1, 3, 29);
+  },
+  workshop: (ctx, w, h) => {
+    wheels(ctx, w, h, 13, 19);
+    fillRounded(ctx, 2, 4, w - 4, h - 8, 6, '#c08a2c', '#2b1f08', 2.5);
+    fillRounded(ctx, 6, 7, w * 0.5, h - 14, 4, '#8a6420', '#241a06', 1.5);
+    // warning stripes on the box
+    ctx.fillStyle = '#1a1a16';
+    for (let x = 9; x < w * 0.54; x += 12) ctx.fillRect(x, 8, 6, h - 16);
+    fillRounded(ctx, w * 0.62, 7, w * 0.3, h - 14, 4, '#17242a', '#0a1114', 1.5);
+    // little crane arm
+    ctx.fillStyle = '#57606a';
+    ctx.fillRect(w * 0.2, h / 2 - 2, w * 0.36, 4);
+    circle(ctx, w - 7, h / 2, 3.5, '#ffe6ae');
+    noise(ctx, w, h, 70, ['rgba(0,0,0,0.25)', 'rgba(255,255,255,0.08)'], 1, 3, 31);
+  },
+  apc: (ctx, w, h) => {
+    wheels(ctx, w, h, 8, 15);
+    ctx.beginPath();
+    ctx.moveTo(6, 4);
+    ctx.lineTo(w - 14, 4);
+    ctx.lineTo(w - 2, h * 0.32);
+    ctx.lineTo(w - 2, h * 0.68);
+    ctx.lineTo(w - 14, h - 4);
+    ctx.lineTo(6, h - 4);
+    ctx.closePath();
+    ctx.fillStyle = '#4c5a47';
+    ctx.fill();
+    ctx.strokeStyle = '#161d14';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    fillRounded(ctx, 10, 9, w * 0.22, h - 18, 3, '#3b4737');
+    // vision slits
+    ctx.fillStyle = '#131a11';
+    ctx.fillRect(w * 0.68, h * 0.24, 12, 4);
+    ctx.fillRect(w * 0.68, h * 0.66, 12, 4);
+    circle(ctx, w * 0.46, h / 2, 11, '#39452f', '#7d8a6c', 2);
+    noise(ctx, w, h, 70, ['rgba(0,0,0,0.3)', 'rgba(255,255,255,0.06)'], 1, 3, 37);
+  },
+  tank: (ctx, w, h) => {
+    // tracks along both flanks
+    for (const y of [0, h - 12]) {
+      fillRounded(ctx, 4, y, w - 8, 12, 4, '#20241f', '#0d100c', 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      for (let x = 8; x < w - 10; x += 9) ctx.fillRect(x, y + 2, 5, 8);
+    }
+    fillRounded(ctx, 8, 11, w - 16, h - 22, 5, '#54604a', '#161d14', 2.5);
+    fillRounded(ctx, w * 0.62, h * 0.3, w * 0.24, h * 0.4, 3, '#3f4a38');
+    circle(ctx, w * 0.44, h / 2, 14, '#46533c', '#8b9a78', 2.5);
+    circle(ctx, w * 0.44, h / 2, 5, '#2a3324');
+    noise(ctx, w, h, 80, ['rgba(0,0,0,0.3)', 'rgba(255,255,255,0.06)'], 1, 3, 43);
+  },
+};
+
+/** Mounted guns sit on their own sprite so they can track a target. */
+const VEHICLE_GUN_PAINTERS: Partial<Record<VehicleType, Painter>> = {
+  pickup: (ctx) => {
+    fillRounded(ctx, 0, 8, 18, 10, 4, '#3d4a3c', '#131a12', 2);
+    fillRounded(ctx, 16, 11, 22, 5, 2, '#a3b1a0', '#131a12', 1.5);
+    fillRounded(ctx, 5, 3, 9, 5, 2, '#5d6d5a');
+  },
+  apc: (ctx) => {
+    fillRounded(ctx, 0, 6, 22, 14, 5, '#46533c', '#161d14', 2);
+    fillRounded(ctx, 20, 10, 28, 6, 2, '#b3c1a9', '#161d14', 2);
+    circle(ctx, 8, 13, 4, '#2a3324', '#8b9a78', 1.5);
+  },
+  tank: (ctx) => {
+    fillRounded(ctx, 0, 3, 28, 20, 7, '#4e5a44', '#141a12', 2.5);
+    fillRounded(ctx, 26, 9, 32, 8, 3, '#8b9a78', '#141a12', 2);
+    fillRounded(ctx, 52, 7, 8, 12, 3, '#b3c1a9', '#141a12', 1.5);
+    circle(ctx, 10, 13, 5, '#2a3324', '#8b9a78', 2);
+  },
+};
+
 // ---------------------------------------------------------------- obstacles
 
 const OBSTACLE_PAINTERS: Record<ObstacleKind, Painter> = {
@@ -1126,6 +1258,14 @@ export function createGameTextures(scene: Phaser.Scene) {
       paintTurretBase(TURRET_ACCENTS[type] ?? '#69f0ae', config.width),
     );
     make(scene, `turret-gun-${type}`, 58, 26, painter!);
+  }
+
+  for (const [type, painter] of Object.entries(VEHICLE_PAINTERS)) {
+    const config = VEHICLES[type as VehicleType];
+    make(scene, `vehicle-${type}`, config.width, config.height, painter);
+  }
+  for (const [type, painter] of Object.entries(VEHICLE_GUN_PAINTERS)) {
+    make(scene, `vehicle-gun-${type}`, 62, 26, painter!);
   }
 
   for (const [kind, painter] of Object.entries(OBSTACLE_PAINTERS)) {

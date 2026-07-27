@@ -3,6 +3,7 @@ import type {
   DefenseType,
   GamePhase,
   HazardKind,
+  VehicleType,
   WaveKind,
   WeaponType,
   ZombieType,
@@ -39,6 +40,9 @@ export class PlayerState extends Schema {
   @type('number') weaponDiscount = 0;
   @type('number') barricadeDiscount = 0;
   @type('number') turretDiscount = 0;
+  @type('number') vehicleDiscount = 0;
+  /** Id of the vehicle this player sits in, empty while on foot. */
+  @type('string') vehicleId = '';
   @type('boolean') ready = false;
   @type('number') kills = 0;
   @type('number') reviveProgress = 0;
@@ -126,6 +130,31 @@ export class DefenseState extends Schema {
   cooldown = 0;
 }
 
+/** A hull the squad can get into: it drives, rams and soaks damage for its crew. */
+export class VehicleState extends Schema {
+  @type('string') id = '';
+  @type('string') ownerId = '';
+  @type('string') type: VehicleType = 'car';
+  @type('number') x = 0;
+  @type('number') y = 0;
+  @type('number') rotation = 0;
+  @type('number') health = 100;
+  @type('number') maxHealth = 100;
+  /** What selling pays right now, based on original price and current health. */
+  @type('number') refund = 0;
+  /** Session ids on board, the first one is driving. */
+  @type(['string']) crew = new ArraySchema<string>();
+  vx = 0;
+  vy = 0;
+  cooldown = 0;
+  /** Seconds of nitro left; the browser predicts the same burst locally. */
+  boost = 0;
+  /** Cooldown per zombie, so driving through a horde is not a per-tick shredder. */
+  ramCooldowns = new Map<string, number>();
+  /** Fractional rounds and health the aura effects hand out over time. */
+  resupplyRest = 0;
+}
+
 /**
  * Ground effects: red warning rings that go off when they run out, and the
  * burning or toxic pools a boss leaves behind.
@@ -169,5 +198,6 @@ export class GameState extends Schema {
   @type({ map: ZombieState }) zombies = new MapSchema<ZombieState>();
   @type({ map: ProjectileState }) projectiles = new MapSchema<ProjectileState>();
   @type({ map: DefenseState }) defenses = new MapSchema<DefenseState>();
+  @type({ map: VehicleState }) vehicles = new MapSchema<VehicleState>();
   @type({ map: HazardState }) hazards = new MapSchema<HazardState>();
 }

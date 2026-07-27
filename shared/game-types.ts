@@ -7,6 +7,7 @@ export * from './defenses.js';
 export * from './maps.js';
 export * from './snapshots.js';
 export * from './upgrades.js';
+export * from './vehicles.js';
 export * from './waves.js';
 export * from './weapons.js';
 export * from './zombies.js';

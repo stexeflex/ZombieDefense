@@ -20,6 +20,7 @@ export type SoundName =
   | 'hurt'
   | 'deflect'
   | 'heal'
+  | 'engine'
   | 'gameover'
   | 'victory';
 
@@ -171,6 +172,11 @@ export class AudioService {
         break;
       case 'heal':
         this.tone(at, 'sine', 420, 880, 0.34, 0.24 * volume);
+        break;
+      // A short rev, so getting in is audible without a sample.
+      case 'engine':
+        this.tone(at, 'sawtooth', 90, 150, 0.32, 0.22 * volume, 'lowpass', 600);
+        this.burst(at, 0.22, 420, 0.2 * volume, 'lowpass');
         break;
       case 'gameover':
         this.tone(at, 'sawtooth', 220, 55, 1.8, 0.4 * volume, 'lowpass', 800);

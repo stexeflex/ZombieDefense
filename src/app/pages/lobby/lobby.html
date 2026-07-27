@@ -384,6 +384,19 @@
                 <span class="dash-timer ready">bereit</span>
               }
             </div>
+            @if (game.myVehicle(); as vehicle) {
+              <div class="grenade-block vehicle-block">
+                <small>{{ vehicle.driving ? 'Am Steuer' : 'Mitfahrer' }} · [E] raus</small>
+                <strong>{{ vehicle.label }}</strong>
+                <div class="health-track"><span [style.width.%]="vehicle.percent"></span></div>
+                <span
+                  >{{ vehicle.health }} / {{ vehicle.maxHealth }} · Crew {{ vehicle.crew }}/{{
+                    vehicle.seats
+                  }}</span
+                >
+                <em>{{ vehicle.boost ? 'Leertaste: Nitro' : vehicle.perk }}</em>
+              </div>
+            }
             <div class="money-block">
               <small>Konto</small>
               <strong>$ {{ game.player()?.money }}</strong>
@@ -399,6 +412,7 @@
             >
             <span><kbd>Leertaste</kbd> {{ dashHint() }}</span>
             <span><kbd>Maus</kbd> Zielen &amp; schießen</span>
+            <span><kbd>E</kbd> {{ game.myVehicle() ? 'Aussteigen' : 'Fahrzeug betreten' }}</span>
             @if (snapshot.phase === 'build') {
               <span><kbd>R</kbd> {{ game.selectedBuild() ? 'Bau drehen' : 'Nachladen' }}</span>
               <span><kbd>F</kbd> Reparieren</span>
@@ -551,6 +565,13 @@
                 >
                   Türme
                 </button>
+                <button
+                  type="button"
+                  [class.active]="shopTab() === 'vehicles'"
+                  (click)="shopTab.set('vehicles')"
+                >
+                  Fahrzeuge
+                </button>
               </div>
 
               @if (shopTab() === 'weapons') {
@@ -644,7 +665,7 @@
                     </button>
                   }
                 </div>
-              } @else {
+              } @else if (shopTab() === 'turrets') {
                 <div class="shop-scroll">
                   @for (defense of turrets; track defense.type) {
                     <button
@@ -664,12 +685,42 @@
                     </button>
                   }
                 </div>
+              } @else {
+                <div class="shop-scroll">
+                  @for (vehicle of vehicles; track vehicle.type) {
+                    <button
+                      class="shop-item build-item"
+                      type="button"
+                      [class.selected]="game.selectedVehicle() === vehicle.type"
+                      [class.deal]="vehicleDeal(vehicle.type)"
+                      [disabled]="(game.player()?.money ?? 0) < vehiclePrice(vehicle.type)"
+                      (click)="selectVehicle(vehicle.type)"
+                    >
+                      <span class="item-icon">{{ vehicle.short }}</span>
+                      <span>
+                        <b>{{ vehicle.label }}</b>
+                        <small>
+                          {{ vehicle.seats }} {{ vehicle.seats === 1 ? 'Platz' : 'Plätze' }} ·
+                          {{ vehicleHealth(vehicle.type) }} HP · −{{
+                            protectionPercent(vehicle.type)
+                          }}
+                          % Schaden
+                        </small>
+                        <small class="vehicle-perk">★ {{ vehicle.perk }}</small>
+                      </span>
+                      <strong>$ {{ vehiclePrice(vehicle.type) }}</strong>
+                    </button>
+                  }
+                </div>
               }
 
-              @if (game.selectedBuild()) {
+              @if (game.selectedBuild() || game.selectedVehicle()) {
                 <div class="placement-help">
                   <span><kbd>R</kbd> Drehen</span>
                   <span><kbd>Rechtsklick</kbd> Abbrechen</span>
+                  @if (game.selectedVehicle()) {
+                    <span><kbd>E</kbd> Einsteigen</span>
+                  }
                 </div>
               }
 
@@ -688,7 +739,12 @@
                       <span><kbd>F</kbd> Reparieren</span>
                       <b>{{ focus.repairCost === 0 ? 'ganz' : '$ ' + focus.repairCost }}</b>
                     </button>
-                    <button type="button" (click)="game.sellFocused()">
+                    <button
+                      type="button"
+                      [disabled]="!focus.sellable"
+                      [attr.title]="focus.sellable ? null : 'Erst aussteigen'"
+                      (click)="game.sellFocused()"
+                    >
                       <span
                         ><kbd>V</kbd> Verkaufen{{ focus.fullPrice ? ' (voller Preis)' : '' }}</span
                       >
@@ -698,8 +754,8 @@
                 </div>
               } @else {
                 <p class="focus-hint">
-                  Stell dich neben eine Barrikade oder einen Turm, um sie zu reparieren oder zu
-                  verkaufen.
+                  Stell dich neben eine Barrikade, einen Turm oder ein Fahrzeug, um es zu
+                  reparieren, zu verkaufen oder mit <kbd>E</kbd> einzusteigen.
                 </p>
               }
 

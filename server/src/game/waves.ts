@@ -55,6 +55,7 @@ export class WaveSystem {
     state.zombies.clear();
     state.projectiles.clear();
     state.defenses.clear();
+    state.vehicles.clear();
     state.hazards.clear();
     state.bossName = '';
     state.bossHealth = 0;
@@ -90,6 +91,7 @@ export class WaveSystem {
       player.reloading = 0;
       player.firing = 0;
       player.hurt = 0;
+      player.vehicleId = '';
       if (runtime) {
         runtime.grenadeRecharge = [];
         runtime.grenadeThrowLock = 0;

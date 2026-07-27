@@ -364,7 +364,7 @@ export interface PlacedDefense {
   rotation: number;
 }
 
-interface Box {
+export interface Box {
   x: number;
   y: number;
   w: number;
@@ -381,12 +381,12 @@ export function defenseFootprint(type: DefenseType, rotation: number) {
   };
 }
 
-function defenseBox(defense: PlacedDefense): Box {
+export function defenseBox(defense: PlacedDefense): Box {
   const size = defenseFootprint(defense.type, defense.rotation);
   return { x: defense.x, y: defense.y, w: size.w, h: size.h };
 }
 
-function boxesOverlap(a: Box, b: Box) {
+export function boxesOverlap(a: Box, b: Box) {
   return (
     Math.abs(a.x - b.x) < (a.w + b.w) / 2 - TOUCH_SLACK &&
     Math.abs(a.y - b.y) < (a.h + b.h) / 2 - TOUCH_SLACK

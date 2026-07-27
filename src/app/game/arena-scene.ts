@@ -8,13 +8,20 @@ import {
   DEFENSE_REACH,
   PLACE_RANGE,
   PLAYER_RADIUS,
+  VEHICLES,
+  VEHICLE_BOOST_SECONDS,
+  VEHICLE_REACH,
   ZOMBIES,
   canPlaceDefense,
+  canPlaceVehicle,
   defenseFootprint,
   distanceToDefense,
+  distanceToVehicle,
+  driveVehicle,
   findMap,
   repairCost,
   snapDefense,
+  vehicleFootprint,
   type DefenseSnapshot,
   type GameMap,
   type GameSnapshot,
@@ -23,6 +30,8 @@ import {
   type PlayerInput,
   type PlayerSnapshot,
   type ProjectileSnapshot,
+  type VehicleSnapshot,
+  type VehicleType,
   type ZombieSnapshot,
 } from '../../../shared/game-types';
 import type { AudioService } from '../core/audio.service';
@@ -37,6 +46,7 @@ import {
   type HazardView,
   type PlayerView,
   type ProjectileView,
+  type VehicleView,
   type ZombieView,
 } from './views';
 
@@ -46,6 +56,7 @@ export class ArenaScene extends Phaser.Scene {
   private readonly players = new Map<string, PlayerView>();
   private readonly zombies = new Map<string, ZombieView>();
   private readonly defenses = new Map<string, DefenseView>();
+  private readonly vehicles = new Map<string, VehicleView>();
   private readonly projectiles = new Map<string, ProjectileView>();
   private readonly hazards = new Map<string, HazardView>();
   private readonly subscriptions = new Subscription();
@@ -93,7 +104,7 @@ export class ArenaScene extends Phaser.Scene {
     this.cameras.main.setDeadzone(220, 140);
 
     this.keys = this.input.keyboard!.addKeys(
-      'W,S,A,D,UP,DOWN,LEFT,RIGHT,R,G,F,V,SPACE,SHIFT,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,ZERO',
+      'W,S,A,D,UP,DOWN,LEFT,RIGHT,R,G,F,V,E,SPACE,SHIFT,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,ZERO',
     ) as Record<string, Phaser.Input.Keyboard.Key>;
 
     this.effects = new EffectLayer(this, this.audio);
@@ -149,20 +160,24 @@ export class ArenaScene extends Phaser.Scene {
   private bindInput() {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       this.audio.unlock();
-      if (pointer.rightButtonDown() && this.gameService.selectedBuild()) {
-        this.gameService.selectBuild(null);
+      const selectedBuild = this.gameService.selectedBuild();
+      const selectedVehicle = this.gameService.selectedVehicle();
+      if (pointer.rightButtonDown() && (selectedBuild || selectedVehicle)) {
+        this.gameService.clearSelection();
         this.shooting = false;
         return;
       }
       if (pointer.leftButtonDown()) {
-        const selected = this.gameService.selectedBuild();
-        if (this.snapshot?.phase === 'build' && selected) {
+        const building = this.snapshot?.phase === 'build';
+        if (building && selectedBuild) {
           const spot = this.placement;
           this.gameService.placeDefense(
-            selected,
+            selectedBuild,
             spot ? spot.x : pointer.worldX,
             spot ? spot.y : pointer.worldY,
           );
+        } else if (building && selectedVehicle) {
+          this.gameService.placeVehicle(selectedVehicle, pointer.worldX, pointer.worldY);
         } else {
           this.shooting = true;
         }
@@ -182,7 +197,7 @@ export class ArenaScene extends Phaser.Scene {
 
   override update(_time: number, deltaMs: number) {
     const rotateOrReload = Phaser.Input.Keyboard.JustDown(this.keys['R']);
-    const selected = this.gameService.selectedBuild();
+    const selected = this.gameService.selectedBuild() ?? this.gameService.selectedVehicle();
     if (rotateOrReload && this.snapshot?.phase === 'build' && selected) {
       this.gameService.rotateBuild();
     } else if (
@@ -197,10 +212,12 @@ export class ArenaScene extends Phaser.Scene {
       if (Phaser.Input.Keyboard.JustDown(this.keys['F'])) this.gameService.repairFocused();
       if (Phaser.Input.Keyboard.JustDown(this.keys['V'])) this.gameService.sellFocused();
     }
+    if (Phaser.Input.Keyboard.JustDown(this.keys['E'])) this.gameService.useVehicle();
     this.checkWeaponSlots();
     this.checkDash(deltaMs);
 
     const input = this.buildInput();
+    this.moveVehicleViews(deltaMs, input);
     this.movePlayerViews(deltaMs, input);
     this.updateSpectatorCamera(deltaMs, input);
     this.animateZombies(deltaMs);
@@ -256,6 +273,18 @@ export class ArenaScene extends Phaser.Scene {
     const phase = this.snapshot?.phase;
     if (!me || !me.alive || (phase !== 'combat' && phase !== 'build')) return;
     if (me.dashCharges <= 0 || this.localDash > 0 || this.localDashLock > 0) return;
+
+    // Behind the wheel the same key is the nitro, so the burst is predicted on
+    // the hull instead of on the body.
+    if (me.vehicleId) {
+      const view = this.vehicles.get(me.vehicleId);
+      if (view && VEHICLES[view.type].boost && view.driverId === me.id) {
+        view.boost = VEHICLE_BOOST_SECONDS;
+        this.localDashLock = DASH_LOCK;
+        this.dashQueued = true;
+      }
+      return;
+    }
 
     let dx =
       Number(this.keys['D'].isDown || this.keys['RIGHT'].isDown) -
@@ -348,8 +377,14 @@ export class ArenaScene extends Phaser.Scene {
   private updatePointer() {
     const pointer = this.input.activePointer;
     this.crosshair.setPosition(pointer.worldX, pointer.worldY);
+    const building = this.snapshot?.phase === 'build';
+    const vehicle = this.gameService.selectedVehicle();
+    if (building && vehicle) {
+      this.previewVehicle(vehicle, pointer);
+      return;
+    }
     const selected = this.gameService.selectedBuild();
-    const showGhost = this.snapshot?.phase === 'build' && Boolean(selected);
+    const showGhost = building && Boolean(selected);
     if (!showGhost || !selected) {
       this.placement = undefined;
       this.ghost.setVisible(false);
@@ -392,6 +427,43 @@ export class ArenaScene extends Phaser.Scene {
       .setRadius(config.range ?? 100);
   }
 
+  /** A vehicle is parked, not snapped: it needs a free spot, not a neighbour. */
+  private previewVehicle(type: VehicleType, pointer: Phaser.Input.Pointer) {
+    const config = VEHICLES[type];
+    const rotation = this.gameService.placementRotation();
+    const spot = {
+      type,
+      x: Math.round(pointer.worldX),
+      y: Math.round(pointer.worldY),
+      rotation,
+    };
+    this.placement = undefined;
+    const me = this.players.get(this.gameService.sessionId());
+    const inRange = me ? Math.hypot(me.root.x - spot.x, me.root.y - spot.y) <= PLACE_RANGE : true;
+    const money = this.snapshot?.players[this.gameService.sessionId()]?.money ?? 0;
+    const affordable = money >= this.gameService.vehiclePrice(type);
+    const valid =
+      inRange &&
+      affordable &&
+      canPlaceVehicle(
+        spot,
+        Object.values(this.snapshot?.defenses ?? {}),
+        Object.values(this.snapshot?.vehicles ?? {}),
+        this.map.obstacles,
+      );
+
+    this.ghost
+      .setVisible(true)
+      .setTexture(`vehicle-${type}`)
+      .setPosition(spot.x, spot.y)
+      .setDisplaySize(config.width, config.height)
+      .setRotation(rotation)
+      .setAlpha(valid ? 0.62 : 0.4);
+    if (valid) this.ghost.clearTint();
+    else this.ghost.setTint(0xff5f71);
+    this.ghostRange.setVisible(false);
+  }
+
   // ------------------------------------------------------------- build focus
 
   private createFocusHighlight() {
@@ -418,8 +490,10 @@ export class ArenaScene extends Phaser.Scene {
   private updateFocusHighlight(deltaMs: number) {
     const snapshot = this.snapshot;
     const me = this.players.get(this.gameService.sessionId());
+    const inside = Boolean(snapshot?.players[this.gameService.sessionId()]?.vehicleId);
     let target: DefenseSnapshot | undefined;
-    if (snapshot?.phase === 'build' && me) {
+    let hull: VehicleSnapshot | undefined;
+    if (snapshot?.phase === 'build' && me && !inside) {
       let bestDistance = DEFENSE_REACH;
       for (const defense of Object.values(snapshot.defenses)) {
         const distance = distanceToDefense(me.root.x, me.root.y, defense);
@@ -427,17 +501,30 @@ export class ArenaScene extends Phaser.Scene {
         bestDistance = distance;
         target = defense;
       }
+      // A parked hull is worked on like a structure, and it wins when it is
+      // the closer of the two.
+      let hullDistance = target ? bestDistance : VEHICLE_REACH;
+      for (const vehicle of Object.values(snapshot.vehicles ?? {})) {
+        const distance = distanceToVehicle(me.root.x, me.root.y, vehicle);
+        if (distance > hullDistance) continue;
+        hullDistance = distance;
+        hull = vehicle;
+      }
+      if (hull) target = undefined;
     }
-    this.gameService.setFocusedDefense(target?.id ?? '');
+    this.gameService.setFocusedDefense(hull?.id ?? target?.id ?? '');
 
-    if (!target) {
+    if (!target && !hull) {
       this.focusOutline.setVisible(false);
       this.focusLabel.setVisible(false);
       return;
     }
 
     this.focusPulse += deltaMs / 1000;
-    const size = defenseFootprint(target.type, target.rotation);
+    const size = target
+      ? defenseFootprint(target.type, target.rotation)
+      : vehicleFootprint(hull!.type, hull!.rotation);
+    const spot = target ?? hull!;
     const width = size.w + 14;
     const height = size.h + 14;
     const alpha = 0.55 + Math.sin(this.focusPulse * 5) * 0.2;
@@ -445,19 +532,25 @@ export class ArenaScene extends Phaser.Scene {
       .setVisible(true)
       .clear()
       .lineStyle(2, 0x69f0ae, alpha)
-      .strokeRect(target.x - width / 2, target.y - height / 2, width, height);
+      .strokeRect(spot.x - width / 2, spot.y - height / 2, width, height);
 
-    const repair = repairCost(target);
-    const full = target.refund >= DEFENSES[target.type].cost;
+    const repair = repairCost(spot);
+    const cost = target ? DEFENSES[target.type].cost : VEHICLES[hull!.type].cost;
+    const label = target ? DEFENSES[target.type].label : VEHICLES[hull!.type].label;
+    // A hull is only for sale while nobody is sitting in it.
+    const canSell = !hull || hull.crew.length === 0;
+    const actions = [
+      `[F] ${repair > 0 ? `Reparieren $${repair}` : 'ganz repariert'}`,
+      hull ? '[E] Einsteigen' : '',
+      canSell
+        ? `[V] Verkaufen +$${spot.refund}${spot.refund >= cost ? ' (voller Preis)' : ''}`
+        : '',
+    ].filter((entry) => entry.length > 0);
     this.focusLabel
       .setVisible(true)
       // clears the structure's own health bar, which sits just above it
-      .setPosition(target.x, target.y - height / 2 - 16)
-      .setText(
-        `${DEFENSES[target.type].label}  ${Math.round(target.health)} / ${target.maxHealth}\n` +
-          `[F] ${repair > 0 ? `Reparieren $${repair}` : 'ganz repariert'}   ` +
-          `[V] Verkaufen +$${target.refund}${full ? ' (voller Preis)' : ''}`,
-      );
+      .setPosition(spot.x, spot.y - height / 2 - 16)
+      .setText(`${label}  ${Math.round(spot.health)} / ${spot.maxHealth}\n${actions.join('   ')}`);
   }
 
   /** Number keys pick a weapon from the arsenal, in the order it was bought. */
@@ -518,6 +611,12 @@ export class ArenaScene extends Phaser.Scene {
       snapshot.defenses,
       (defense) => this.createDefense(defense),
       (view, defense) => this.updateDefense(view, defense),
+    );
+    this.syncEntities(
+      this.vehicles,
+      snapshot.vehicles ?? {},
+      (vehicle) => this.createVehicle(vehicle),
+      (view, vehicle) => this.updateVehicle(view, vehicle),
     );
     this.syncEntities(
       this.projectiles,
@@ -887,6 +986,181 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  // ---------------------------------------------------------------- vehicles
+
+  private createVehicle(vehicle: VehicleSnapshot): VehicleView {
+    const config = VEHICLES[vehicle.type];
+    const shadow = this.add.ellipse(4, 8, config.width * 1.05, config.height * 1.1, 0x000000, 0.36);
+    const body = this.add
+      .image(0, 0, `vehicle-${vehicle.type}`)
+      .setDisplaySize(config.width, config.height);
+    const children: Phaser.GameObjects.GameObject[] = [shadow, body];
+    let gun: Phaser.GameObjects.Image | undefined;
+    if (config.gun) {
+      gun = this.add.image(0, 0, `vehicle-gun-${vehicle.type}`).setOrigin(0.2, 0.5);
+      children.push(gun);
+    }
+    const healthBackground = this.add.rectangle(
+      0,
+      -config.height / 2 - 12,
+      config.width * 0.8,
+      5,
+      0x260e14,
+      0.9,
+    );
+    const healthBar = this.add
+      .rectangle(
+        (-config.width * 0.8) / 2,
+        -config.height / 2 - 12,
+        config.width * 0.8,
+        5,
+        0xffcc66,
+      )
+      .setOrigin(0, 0.5);
+    const crewLabel = this.add
+      .text(0, -config.height / 2 - 22, '', {
+        align: 'center',
+        color: '#e8f4ed',
+        fontFamily: 'Inter, Arial, sans-serif',
+        fontStyle: 'bold',
+        fontSize: '11px',
+        stroke: '#04100b',
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5, 1);
+    children.push(healthBackground, healthBar, crewLabel);
+
+    // Above the barricades, below the players standing next to them.
+    const root = this.add.container(vehicle.x, vehicle.y, children).setDepth(14);
+    return {
+      root,
+      body,
+      gun,
+      healthBar,
+      crewLabel,
+      type: vehicle.type,
+      rotation: vehicle.rotation,
+      targetRotation: vehicle.rotation,
+      gunAngle: vehicle.rotation,
+      driverId: vehicle.crew[0] ?? '',
+      vx: 0,
+      vy: 0,
+      boost: 0,
+      smoke: 0,
+      targetX: vehicle.x,
+      targetY: vehicle.y,
+    };
+  }
+
+  private updateVehicle(view: VehicleView, vehicle: VehicleSnapshot) {
+    const config = VEHICLES[vehicle.type];
+    view.targetRotation = vehicle.rotation;
+    view.driverId = vehicle.crew[0] ?? '';
+    const ratio = Math.max(0, vehicle.health / vehicle.maxHealth);
+    view.healthBar.setDisplaySize(config.width * 0.8 * ratio, 5);
+    view.healthBar.setFillStyle(ratio < 0.3 ? 0xff5f71 : ratio < 0.6 ? 0xffcc66 : 0x69f0ae);
+
+    const names = vehicle.crew
+      .map((id) => this.snapshot?.players[id]?.name ?? '')
+      .filter((name) => name.length > 0);
+    view.crewLabel.setText(
+      names.length > 0 ? `${names.join(' · ')}  ${vehicle.crew.length}/${config.seats}` : '',
+    );
+  }
+
+  /**
+   * The hull the local player steers is simulated here as well, so steering
+   * answers immediately instead of a snapshot later. Everything else simply
+   * follows the server.
+   */
+  private moveVehicleViews(deltaMs: number, input: PlayerInput) {
+    const delta = Math.min(deltaMs, 50) / 1000;
+    const localId = this.gameService.sessionId();
+    const me = this.snapshot?.players[localId];
+    const drivenId = me?.vehicleId ?? '';
+    const phaseAllowsMovement =
+      this.snapshot?.phase === 'combat' || this.snapshot?.phase === 'build';
+
+    for (const [id, view] of this.vehicles) {
+      const config = VEHICLES[view.type];
+      const driving = id === drivenId && view.driverId === localId && phaseAllowsMovement;
+
+      if (driving) {
+        view.boost = Math.max(0, view.boost - delta);
+        const motion = {
+          x: view.root.x,
+          y: view.root.y,
+          rotation: view.rotation,
+          vx: view.vx,
+          vy: view.vy,
+        };
+        const topSpeed =
+          this.gameService.localVehicleSpeed(view.type) +
+          (view.boost > 0 ? (config.boost ?? 0) : 0);
+        driveVehicle(
+          motion,
+          Number(input.right) - Number(input.left),
+          Number(input.down) - Number(input.up),
+          config,
+          delta,
+          topSpeed,
+        );
+        view.vx = motion.vx;
+        view.vy = motion.vy;
+        view.rotation = motion.rotation;
+        view.root.x = Phaser.Math.Clamp(motion.x, 40, ARENA.width - 40);
+        view.root.y = Phaser.Math.Clamp(motion.y, 40, ARENA.height - 40);
+
+        // Walls and buildings are only resolved by the server, so a big gap is
+        // pulled straight back instead of drifting through them.
+        const error = Math.hypot(view.targetX - view.root.x, view.targetY - view.root.y);
+        const correction = error > 110 ? 1 : Math.min(1, delta * 2.4);
+        view.root.x += (view.targetX - view.root.x) * correction;
+        view.root.y += (view.targetY - view.root.y) * correction;
+        if (error > 110) {
+          view.vx = 0;
+          view.vy = 0;
+        }
+      } else {
+        const smoothing = 1 - Math.exp(-13 * delta);
+        view.root.x = Phaser.Math.Linear(view.root.x, view.targetX, smoothing);
+        view.root.y = Phaser.Math.Linear(view.root.y, view.targetY, smoothing);
+        view.rotation = Phaser.Math.Angle.RotateTo(view.rotation, view.targetRotation, 9 * delta);
+      }
+
+      view.body.setRotation(view.rotation);
+      this.aimVehicleGun(view, delta);
+      if (Math.hypot(view.root.x - view.targetX, view.root.y - view.targetY) > 2 || driving) {
+        view.smoke -= deltaMs;
+        if (view.smoke <= 0) {
+          view.smoke = 120;
+          this.effects.burst(
+            'smoke',
+            1,
+            view.root.x - Math.cos(view.rotation) * config.width * 0.5,
+            view.root.y - Math.sin(view.rotation) * config.width * 0.5,
+          );
+        }
+      }
+    }
+  }
+
+  /** The mounted gun tracks whatever it would shoot at, the hull does not. */
+  private aimVehicleGun(view: VehicleView, delta: number) {
+    const gun = VEHICLES[view.type].gun;
+    if (!gun || !view.gun) return;
+    let target = view.rotation;
+    let bestDistance = gun.range;
+    for (const zombie of Object.values(this.snapshot?.zombies ?? {})) {
+      const distance = Math.hypot(zombie.x - view.root.x, zombie.y - view.root.y);
+      if (distance > bestDistance) continue;
+      bestDistance = distance;
+      target = Math.atan2(zombie.y - view.root.y, zombie.x - view.root.x);
+    }
+    view.gunAngle = Phaser.Math.Angle.RotateTo(view.gunAngle, target, 8 * delta);
+    view.gun.setRotation(view.gunAngle);
+  }
+
   // ----------------------------------------------------------------- hazards
 
   private createHazard(hazard: HazardSnapshot): HazardView {
@@ -1048,6 +1322,23 @@ export class ArenaScene extends Phaser.Scene {
 
     for (const [id, view] of this.players) {
       const player = this.snapshot?.players[id];
+      // Everyone on board rides with the hull: the body is hidden, but the
+      // container keeps moving so the camera and the aim still work.
+      const hull = player?.vehicleId ? this.vehicles.get(player.vehicleId) : undefined;
+      if (hull) {
+        view.root.setVisible(false);
+        view.root.x = hull.root.x;
+        view.root.y = hull.root.y;
+        view.actor.setRotation(
+          id === localId
+            ? Math.atan2(input.aimY - view.root.y, input.aimX - view.root.x)
+            : (player?.rotation ?? 0),
+        );
+        this.updateDashRing(view, false, deltaMs);
+        continue;
+      }
+      view.root.setVisible(true);
+
       if (id === localId && player?.alive && phaseAllowsMovement) {
         const dashing = this.localDash > 0;
         let dx = Number(input.right) - Number(input.left);

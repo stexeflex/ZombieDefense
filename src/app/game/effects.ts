@@ -186,6 +186,11 @@ export class EffectLayer {
         this.burst('energy', 12, event.x, event.y);
         this.audio.play('heal', 0.6);
         break;
+      // Somebody climbed in or out, or hit the nitro.
+      case 'engine':
+        this.burst('smoke', 5, event.x, event.y);
+        this.audio.play('engine', 0.55);
+        break;
       case 'dash':
         this.dashTrail(event);
         break;

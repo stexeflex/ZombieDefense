@@ -33,6 +33,9 @@ Aufruf kann das Laden deshalb kurz dauern.
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
 - sechs Barrikaden und zwölf Türme vom günstigen MG bis zur Plasma-Bastion
+- **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
+  mehrere Spieler; drinnen kommt deutlich weniger Schaden an, dafür geht der
+  Dash verloren
 - Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
@@ -45,8 +48,8 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, neunzehn Stufen-Upgrades und neun besondere Vorteile über
-  `localStorage`
+- permanentes Gold, sechsundzwanzig Stufen-Upgrades und zehn besondere Vorteile
+  über `localStorage`
 
 ### Karten
 
@@ -132,6 +135,30 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 | Laserturm          | 3200  | Endgame: durchschlägt Reihen auf weite Distanz    |
 | Plasma-Bastion     | 6800  | Luxus-Endgame, deutlich stärker als der Laserturm |
 
+### Fahrzeuge
+
+Fahrzeuge werden wie Bauten in der Bauphase gekauft und abgestellt. Mit `E`
+steigt man ein und wieder aus; wer zuerst einsteigt, fährt. Alle an Bord zielen
+und schießen weiter mit ihrer eigenen Waffe.
+
+| Fahrzeug          | Preis | Plätze | Leben | Schutz | Besonderheit                            |
+| ----------------- | ----- | ------ | ----- | ------ | --------------------------------------- |
+| Quad              | 700   | 1      | 520   | 30 %   | schnellstes Fahrzeug, Nitro auf `Space` |
+| Geländewagen      | 1200  | 2      | 980   | 45 %   | Allrounder mit gutem Tempo              |
+| Mannschaftswagen  | 1900  | 4      | 1400  | 55 %   | heilt die Besatzung während der Fahrt   |
+| Kampf-Pickup      | 2400  | 2      | 1120  | 45 %   | MG feuert selbstständig                 |
+| Werkstattwagen    | 3000  | 3      | 1600  | 55 %   | repariert Bauten, liefert Munition      |
+| Schützenpanzer    | 4200  | 4      | 2900  | 70 %   | Bordkanone, langsamer als zu Fuß        |
+| Kampfpanzer       | 6800  | 2      | 4400  | 80 %   | Sprengkanone, walzt alles nieder        |
+
+Der Schutz ist der Anteil jedes Treffers, den die Hülle für die Besatzung
+schluckt; mit dem Upgrade _Innenraumschutz_ steigt er, endet aber immer bei
+85 %. Bezahlt wird das mit dem Dash: Am Steuer gibt es kein Ausweichen mehr,
+nur das Quad macht aus der Ladung ein Nitro. Zombies gehen auf die Hülle los
+statt auf die Besatzung, Überfahren kostet auch die Karosserie Leben, und
+repariert wird erst wieder in der nächsten Bauphase. Geht die Hülle hoch,
+fliegen alle heraus und nehmen Schaden.
+
 ## Voraussetzungen
 
 - Node.js 24.15 oder neuer
@@ -183,9 +210,10 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | `R`                      | Nachladen; beim Platzieren Barrikade drehen      |
 | `1`–`9` oder Mausrad     | Waffe aus dem Arsenal wählen                     |
 | `G`                      | Granate zum Mauszeiger werfen                    |
-| `F`                      | markierte Verteidigung reparieren (nur Bauphase) |
-| `V`                      | markierte Verteidigung verkaufen (nur Bauphase)  |
-| Rechtsklick              | ausgewählte Verteidigung abwählen                |
+| `E`                      | in ein Fahrzeug ein- und wieder aussteigen       |
+| `F`                      | markiertes Objekt reparieren (nur Bauphase)      |
+| `V`                      | markiertes Objekt verkaufen (nur Bauphase)       |
+| Rechtsklick              | ausgewählten Bau abwählen                        |
 
 Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange er
 läuft, schluckt er 40 % jedes Treffers — der blaue Ring zeigt an, wann das gilt.
@@ -204,8 +232,9 @@ Lebens und schmilzt danach von selbst wieder weg — es lohnt sich also nur, wer
 weiter in die Horde dasht. Unter dem Leben zeigt ein blauer Balken, wie viel noch
 steht, auch über den Köpfen der Mitspieler.
 
-In der Bauphase wird im Seitenmenü zwischen Waffen, Barrikaden und Türmen
-gewechselt, ein Bauteil ausgewählt und danach auf dem Spielfeld platziert.
+In der Bauphase wird im Seitenmenü zwischen Waffen, Barrikaden, Türmen und
+Fahrzeugen gewechselt, ein Bauteil ausgewählt und danach auf dem Spielfeld
+platziert.
 Spieler können sich dabei weiterhin bewegen. Die Vorschau rastet an
 Nachbarbauten und Hindernissen ein, sodass Wände lückenlos entstehen; rot
 bedeutet, dass dort nicht gebaut werden kann. Mit dem Start der Welle fällt die
@@ -238,13 +267,14 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
 - **Stufen-Upgrades** – Leben, Panzerung, Tempo, Waffenschaden, Nachladen,
   Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
+  Fahrzeugpanzerung, Innenraumschutz, Motorleistung, Rammschaden, Bordwaffen,
   Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schadensreduktion,
   Dash-Schaden und Dash-Schild
-- **Besondere Vorteile** – günstigere erste Waffe, erste Barrikaden und erster
-  Turm eines Runs, ein Dash der Zombies wegschleudert, ein Dash der durch Gegner
-  schneidet und Schild auflädt, doppelt so schnelles Wiederbeleben, günstigere
-  Reparaturen, eine Granate mehr und ein Aufbäumen, das einen tödlichen Treffer
-  pro Welle überlebt
+- **Besondere Vorteile** – günstigere erste Waffe, erste Barrikaden, erster
+  Turm und erstes Fahrzeug eines Runs, ein Dash der Zombies wegschleudert, ein
+  Dash der durch Gegner schneidet und Schild auflädt, doppelt so schnelles
+  Wiederbeleben, günstigere Reparaturen, eine Granate mehr und ein Aufbäumen,
+  das einen tödlichen Treffer pro Welle überlebt
 
 Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als
@@ -287,10 +317,10 @@ npm run build:all
 ```
 
 `npm run sim` startet einen Rauchtest ohne Browser: Ein Bot spielt jede Karte
-bis zum Endboss durch und prüft Waffen, Verteidigungen, Türme, Dash samt
-Schadensreduktion, Klingendash und Schild, den Frost der Frostkanone, den
-Endlosmodus, die gleiche Geldverteilung, alle Boss-Fähigkeiten und ob jede Welle
-wirklich endet.
+bis zum Endboss durch und prüft Waffen, Verteidigungen, Türme, Fahrzeuge samt
+Ein- und Aussteigen, Rammschaden und Bordgerät, Dash samt Schadensreduktion,
+Klingendash und Schild, den Frost der Frostkanone, den Endlosmodus, die gleiche
+Geldverteilung, alle Boss-Fähigkeiten und ob jede Welle wirklich endet.
 
 Der fertige Browser-Build liegt danach unter
 `dist/zombie-defense/browser`. Der Server-Build liegt unter `server/build`.

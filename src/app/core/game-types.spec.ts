@@ -8,6 +8,7 @@ import {
   DASH_RESIST_STEP,
   DASH_SECONDS,
   DASH_SHIELD_PER_HIT,
+  DASH_SPEED,
   DEFENSES,
   DEFENSE_REACH,
   EMPTY_PERKS,
@@ -16,6 +17,7 @@ import {
   MAPS,
   MINI_BOSSES,
   PERK_COST,
+  PLAYER_BASE_SPEED,
   REPAIR_COST_PER_HP,
   REVIVE_RADIUS,
   REVIVE_SECONDS,
@@ -26,6 +28,12 @@ import {
   STARTER_DISCOUNT,
   TURRET_ORDER,
   UPGRADE_MAX_LEVEL,
+  VEHICLES,
+  VEHICLE_MAX_PROTECTION,
+  VEHICLE_MELEE_BLEED,
+  VEHICLE_ORDER,
+  VEHICLE_RAM_SELF,
+  VEHICLE_WRECK_DAMAGE,
   VIEWPORT,
   WEAPONS,
   WEAPON_ORDER,
@@ -35,10 +43,14 @@ import {
   armorReduction,
   campaignRunReward,
   canPlaceDefense,
+  canPlaceVehicle,
+  circleOverlapsVehicle,
   dashReduction,
   defenseFootprint,
   discountedCost,
   distanceToDefense,
+  distanceToVehicle,
+  driveVehicle,
   endlessDamageScale,
   endlessHealthScale,
   endlessRunReward,
@@ -57,10 +69,18 @@ import {
   upgradeLevelCost,
   upgradeMaxLevel,
   upgradeUnlocked,
+  vehicleGunDamage,
+  vehicleMaxHealth,
+  vehicleProtection,
+  vehicleRamDamage,
+  vehicleSellValue,
+  vehicleTopSpeed,
   weaponSellValue,
   type MapObstacle,
   type PerkKey,
   type PlacedDefense,
+  type PlacedVehicle,
+  type VehicleMotion,
   type WeaponType,
 } from '../../../shared/game-types';
 
@@ -408,6 +428,142 @@ describe('building rules', () => {
   it('discounts repairs for the engineer', () => {
     const damaged = { health: wood.health - 200, maxHealth: wood.health };
     expect(repairCost(damaged, 0.4)).toBeLessThan(repairCost(damaged));
+  });
+});
+
+describe('vehicles', () => {
+  it('offers seven hulls ordered by price, with room for a squad', () => {
+    expect(VEHICLE_ORDER).toHaveLength(7);
+    for (let index = 1; index < VEHICLE_ORDER.length; index += 1) {
+      expect(VEHICLES[VEHICLE_ORDER[index]].cost).toBeGreaterThan(
+        VEHICLES[VEHICLE_ORDER[index - 1]].cost,
+      );
+    }
+    for (const type of VEHICLE_ORDER) {
+      expect(VEHICLES[type].seats).toBeGreaterThanOrEqual(1);
+      expect(VEHICLES[type].ram).toBeGreaterThan(0);
+      expect(VEHICLES[type].health).toBeGreaterThan(0);
+    }
+    // Driving together has to be a real option, not a single-seat gimmick.
+    expect(VEHICLE_ORDER.filter((type) => VEHICLES[type].seats >= 2).length).toBeGreaterThanOrEqual(
+      5,
+    );
+    expect(Math.max(...VEHICLE_ORDER.map((type) => VEHICLES[type].seats))).toBe(4);
+  });
+
+  it('stays a trade against walking and dashing', () => {
+    for (const type of VEHICLE_ORDER) {
+      // Nothing on wheels beats the burst of a dash …
+      expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED * DASH_SPEED);
+      // … and the heavy hulls pay for their armour with pace.
+      if (VEHICLES[type].protection >= 0.7) {
+        expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED);
+      }
+    }
+    expect(VEHICLES.quad.speed).toBeGreaterThan(PLAYER_BASE_SPEED);
+    // More armour costs pace, every single step of the way.
+    const byProtection = [...VEHICLE_ORDER].sort(
+      (a, b) => VEHICLES[a].protection - VEHICLES[b].protection,
+    );
+    expect(VEHICLES[byProtection[0]].speed).toBeGreaterThan(
+      VEHICLES[byProtection[byProtection.length - 1]].speed,
+    );
+  });
+
+  it('gives every vehicle one thing the others do not have', () => {
+    expect(VEHICLES.quad.boost).toBeGreaterThan(0);
+    expect(VEHICLES.van.heal).toBeGreaterThan(0);
+    expect(VEHICLES.workshop.repair).toBeGreaterThan(0);
+    expect(VEHICLES.workshop.resupply).toBeGreaterThan(0);
+    expect(VEHICLES.pickup.gun).toBeDefined();
+    expect(VEHICLES.apc.gun!.damage).toBeGreaterThan(VEHICLES.pickup.gun!.damage);
+    expect(VEHICLES.tank.gun!.splashRadius).toBeGreaterThan(0);
+    expect(VEHICLES.tank.ram).toBeGreaterThan(VEHICLES.car.ram);
+    for (const type of VEHICLE_ORDER) expect(VEHICLES[type].perk.length).toBeGreaterThan(0);
+  });
+
+  it('protects the crew without ever making it untouchable', () => {
+    for (const type of VEHICLE_ORDER) {
+      expect(vehicleProtection(type, 0)).toBe(VEHICLES[type].protection);
+      expect(vehicleProtection(type, 40)).toBeGreaterThan(vehicleProtection(type, 0));
+      expect(vehicleProtection(type, UPGRADE_MAX_LEVEL * 10)).toBeLessThanOrEqual(
+        VEHICLE_MAX_PROTECTION,
+      );
+    }
+    expect(VEHICLE_MAX_PROTECTION).toBeLessThan(1);
+    // Ramming grinds the hull down, so it can never replace a wall of turrets.
+    expect(VEHICLE_RAM_SELF).toBeGreaterThan(0);
+    expect(VEHICLE_MELEE_BLEED).toBeGreaterThan(0);
+    expect(VEHICLE_WRECK_DAMAGE).toBeGreaterThan(0);
+  });
+
+  it('scales health, pace, ram and gun with their upgrades', () => {
+    expect(vehicleMaxHealth('car', 0)).toBe(VEHICLES.car.health);
+    expect(vehicleMaxHealth('car', 40)).toBeGreaterThan(vehicleMaxHealth('car', 0));
+    expect(vehicleTopSpeed('car', 40)).toBeGreaterThan(vehicleTopSpeed('car', 0));
+    expect(vehicleRamDamage('car', 40)).toBeGreaterThan(vehicleRamDamage('car', 0));
+    expect(vehicleGunDamage(100, 40)).toBeGreaterThan(100);
+  });
+
+  it('keeps the original sell price and only deducts actual damage', () => {
+    for (const type of VEHICLE_ORDER) {
+      const health = VEHICLES[type].health;
+      expect(vehicleSellValue(type, health, health)).toBe(VEHICLES[type].cost);
+      expect(vehicleSellValue(type, health / 2, health)).toBe(Math.round(VEHICLES[type].cost / 2));
+      expect(vehicleSellValue(type, 0, health)).toBe(0);
+    }
+  });
+
+  it('needs a free parking spot and measures reach from the hull', () => {
+    const car: PlacedVehicle = { type: 'car', x: 1000, y: 800, rotation: 0 };
+    expect(canPlaceVehicle(car, [], [], [])).toBe(true);
+    expect(canPlaceVehicle({ ...car, x: 1060 }, [], [car], [])).toBe(false);
+    expect(canPlaceVehicle({ ...car, x: 1000 + VEHICLES.car.width + 4 }, [], [car], [])).toBe(true);
+    const wall: MapObstacle = {
+      x: 1000,
+      y: 800,
+      w: 80,
+      h: 80,
+      kind: 'wall',
+      rotation: 0,
+      solid: true,
+    };
+    expect(canPlaceVehicle(car, [], [], [wall])).toBe(false);
+
+    expect(distanceToVehicle(1000, 800, car)).toBe(0);
+    expect(distanceToVehicle(1000 + VEHICLES.car.width / 2 + 30, 800, car)).toBeCloseTo(30);
+    expect(circleOverlapsVehicle(1000, 800, 10, car)).toBe(true);
+    // A turned hull is checked in its own frame, not as an axis aligned box.
+    const turned: PlacedVehicle = { ...car, rotation: Math.PI / 2 };
+    expect(distanceToVehicle(1000, 800 + VEHICLES.car.width / 2 + 30, turned)).toBeCloseTo(30);
+  });
+
+  it('builds up speed and rolls out instead of stopping dead', () => {
+    const config = VEHICLES.car;
+    const motion: VehicleMotion = { x: 0, y: 0, rotation: 0, vx: 0, vy: 0 };
+    const first = driveVehicle(motion, 1, 0, config, 0.05, config.speed);
+    expect(first).toBeGreaterThan(0);
+    expect(first).toBeLessThan(config.speed);
+    for (let tick = 0; tick < 60; tick += 1) driveVehicle(motion, 1, 0, config, 0.05, config.speed);
+    expect(Math.hypot(motion.vx, motion.vy)).toBeCloseTo(config.speed, 0);
+    expect(motion.x).toBeGreaterThan(0);
+
+    // Letting go coasts for a moment and then really stops.
+    const rolling = driveVehicle(motion, 0, 0, config, 0.05, config.speed);
+    expect(rolling).toBeLessThan(config.speed);
+    expect(rolling).toBeGreaterThan(0);
+    for (let tick = 0; tick < 120; tick += 1)
+      driveVehicle(motion, 0, 0, config, 0.05, config.speed);
+    expect(motion.vx).toBe(0);
+    expect(motion.vy).toBe(0);
+  });
+
+  it('turns the hull towards the driving direction at a limited rate', () => {
+    const config = VEHICLES.tank;
+    const motion: VehicleMotion = { x: 0, y: 0, rotation: 0, vx: 0, vy: 0 };
+    for (let tick = 0; tick < 40; tick += 1) driveVehicle(motion, 0, 1, config, 0.05, config.speed);
+    expect(motion.rotation).toBeGreaterThan(0);
+    expect(motion.rotation).toBeLessThanOrEqual(Math.PI / 2 + 0.001);
   });
 });
 

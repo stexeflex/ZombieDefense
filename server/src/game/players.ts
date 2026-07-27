@@ -16,9 +16,13 @@ import {
   REVIVE_SECONDS,
   SHIELD_DECAY,
   SHIELD_SHARE,
+  VEHICLES,
+  VEHICLE_BOOST_SECONDS,
   WEAPONS,
+  circleOverlapsVehicle,
   healthRegenPerSecond,
   magazineCapacity,
+  pushOutOfVehicle,
   reserveCapacity,
   weaponLife,
   type PermanentPerks,
@@ -144,6 +148,18 @@ export class PlayerSystem {
     runtime.wasDashing = runtime.input.dash;
     if (!pressed || !player.alive) return;
     if (player.dashCharges <= 0 || runtime.dashLock > 0 || player.dashing > 0) return;
+    // In a seat there is nothing to dodge with, so the charge goes into the
+    // nitro of the vehicles that have one.
+    const vehicle = this.world.vehicleOf(player.id);
+    if (vehicle) {
+      if (!VEHICLES[vehicle.type].boost) return;
+      vehicle.boost = VEHICLE_BOOST_SECONDS;
+      player.dashCharges -= 1;
+      runtime.dashLock = DASH_LOCK;
+      runtime.dashRecharge.push(this.dashRechargeTime(runtime.upgrades));
+      this.world.pushFx({ k: 'engine', x: vehicle.x, y: vehicle.y, s: vehicle.type });
+      return;
+    }
     this.startDash(player, runtime);
   }
 
@@ -230,6 +246,11 @@ export class PlayerSystem {
 
   private move(player: PlayerState, runtime: RuntimePlayer, delta: number) {
     const input = runtime.input;
+    // A passenger goes wherever the hull goes; only the aim stays their own.
+    if (player.vehicleId) {
+      player.rotation = Math.atan2(input.aimY - player.y, input.aimX - player.x);
+      return;
+    }
     let dx = Number(input.right) - Number(input.left);
     let dy = Number(input.down) - Number(input.up);
     const length = Math.hypot(dx, dy) || 1;
@@ -271,6 +292,7 @@ export class PlayerSystem {
     );
     this.resolveObstacles(player);
     this.resolveDefenses(player);
+    this.resolveVehicles(player);
     if (dashing && runtime.perks.dashBlades) this.cutThroughZombies(player, runtime, fromX, fromY);
     player.rotation = Math.atan2(input.aimY - player.y, input.aimX - player.x);
   }
@@ -344,6 +366,16 @@ export class PlayerSystem {
       const worldSin = Math.sin(defense.rotation);
       player.x = defense.x + localX * worldCos - localY * worldSin;
       player.y = defense.y + localX * worldSin + localY * worldCos;
+    });
+  }
+
+  /** A parked hull is as solid as a wall for anybody walking past it. */
+  private resolveVehicles(player: PlayerState) {
+    this.world.state.vehicles.forEach((vehicle) => {
+      if (!circleOverlapsVehicle(player.x, player.y, PLAYER_RADIUS, vehicle)) return;
+      const freed = pushOutOfVehicle(player.x, player.y, PLAYER_RADIUS, vehicle);
+      player.x = this.world.clamp(freed.x, ARENA.padding, ARENA.width - ARENA.padding);
+      player.y = this.world.clamp(freed.y, ARENA.padding, ARENA.height - ARENA.padding);
     });
   }
 

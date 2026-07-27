@@ -7,6 +7,8 @@ import {
   DEFENSES,
   MAPS,
   TURRET_ORDER,
+  VEHICLES,
+  VEHICLE_ORDER,
   WEAPONS,
   WEAPON_ORDER,
   ZOMBIES,
@@ -14,7 +16,10 @@ import {
   dashReduction,
   findMap,
   reserveCapacity,
+  vehicleMaxHealth,
+  vehicleProtection,
   type DefenseType,
+  type VehicleType,
   type WeaponType,
 } from '../../../../shared/game-types';
 import { AudioService } from '../../core/audio.service';
@@ -24,7 +29,7 @@ import { ProgressService } from '../../core/progress.service';
 import { GameCanvas } from '../../game/game-canvas';
 import { UpgradeShop } from '../../shared/upgrade-shop';
 
-type ShopTab = 'weapons' | 'barricades' | 'turrets';
+type ShopTab = 'weapons' | 'barricades' | 'turrets' | 'vehicles';
 
 @Component({
   selector: 'app-lobby',
@@ -63,6 +68,7 @@ export class Lobby implements OnInit, OnDestroy {
   }));
   readonly barricades = BARRICADE_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
   readonly turrets = TURRET_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
+  readonly vehicles = VEHICLE_ORDER.map((type) => ({ type, ...VEHICLES[type] }));
 
   readonly activeMap = computed(() =>
     findMap(this.game.snapshot()?.mapId ?? this.game.preferredMap()),
@@ -163,6 +169,28 @@ export class Lobby implements OnInit, OnDestroy {
 
   selectBuild(type: DefenseType) {
     this.game.selectBuild(this.game.selectedBuild() === type ? null : type);
+  }
+
+  selectVehicle(type: VehicleType) {
+    this.game.selectVehicle(this.game.selectedVehicle() === type ? null : type);
+  }
+
+  vehiclePrice(type: VehicleType) {
+    return this.game.vehiclePrice(type);
+  }
+
+  vehicleDeal(type: VehicleType) {
+    return this.vehiclePrice(type) < VEHICLES[type].cost;
+  }
+
+  /** What the hull swallows for its crew, including the bought upgrade. */
+  protectionPercent(type: VehicleType) {
+    return Math.round(vehicleProtection(type, this.progress.upgrades().vehicleArmor) * 100);
+  }
+
+  /** The hull this player actually gets, upgrades included. */
+  vehicleHealth(type: VehicleType) {
+    return vehicleMaxHealth(type, this.progress.upgrades().vehicleHealth);
   }
 
   selectMap(mapId: string) {

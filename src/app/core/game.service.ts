@@ -7,16 +7,19 @@ import {
   DEFENSES,
   ENGINEER_DISCOUNT,
   PLAYER_BASE_SPEED,
+  VEHICLES,
   WEAPONS,
   discountedCost,
   findMap,
   repairCost,
   reserveCapacity,
+  vehicleTopSpeed,
   type DefenseType,
   type FxEvent,
   type GamePhase,
   type GameSnapshot,
   type PlayerInput,
+  type VehicleType,
   type WeaponType,
 } from '../../../shared/game-types';
 import { AudioService } from './audio.service';
@@ -40,6 +43,7 @@ export class GameService {
   readonly sessionId = signal('');
   readonly lastReward = signal<{ gold: number; victory: boolean; mapId: string } | null>(null);
   readonly selectedBuild = signal<DefenseType | null>(null);
+  readonly selectedVehicle = signal<VehicleType | null>(null);
   readonly placementRotation = signal(0);
   readonly preferredMap = signal(this.storedMap());
   readonly preferredEndless = signal(this.storedEndless());
@@ -54,19 +58,49 @@ export class GameService {
   readonly isHost = computed(() => this.snapshot()?.hostSessionId === this.sessionId());
   readonly activeMap = computed(() => findMap(this.snapshot()?.mapId ?? this.preferredMap()));
 
-  /** The structure the player stands next to, with its repair and sell price. */
+  /**
+   * What the player stands next to right now, with its repair and sell price.
+   * A parked vehicle is worked on exactly like a structure.
+   */
   readonly focusedDefense = computed(() => {
     const snapshot = this.snapshot();
-    const defense = snapshot?.defenses[this.focusedDefenseId()];
-    if (!snapshot || !defense || snapshot.phase !== 'build') return null;
+    const id = this.focusedDefenseId();
+    if (!snapshot || snapshot.phase !== 'build') return null;
+    const defense = snapshot.defenses[id];
+    const vehicle = snapshot.vehicles?.[id];
+    const target = defense ?? vehicle;
+    if (!target) return null;
+    const cost = defense ? DEFENSES[defense.type].cost : VEHICLES[vehicle.type].cost;
     return {
-      id: defense.id,
-      label: DEFENSES[defense.type].label,
-      health: Math.round(defense.health),
-      maxHealth: defense.maxHealth,
-      repairCost: repairCost(defense, this.progress.perks().engineer ? ENGINEER_DISCOUNT : 0),
-      sellRefund: defense.refund,
-      fullPrice: defense.refund >= DEFENSES[defense.type].cost,
+      id: target.id,
+      label: defense ? DEFENSES[defense.type].label : VEHICLES[vehicle.type].label,
+      health: Math.round(target.health),
+      maxHealth: target.maxHealth,
+      repairCost: repairCost(target, this.progress.perks().engineer ? ENGINEER_DISCOUNT : 0),
+      sellRefund: target.refund,
+      fullPrice: target.refund >= cost,
+      // A hull with the squad inside stays where it is.
+      sellable: !vehicle || vehicle.crew.length === 0,
+    };
+  });
+
+  /** The vehicle the local player is sitting in, for the HUD. */
+  readonly myVehicle = computed(() => {
+    const snapshot = this.snapshot();
+    const player = this.player();
+    const vehicle = player?.vehicleId ? snapshot?.vehicles?.[player.vehicleId] : undefined;
+    if (!vehicle) return null;
+    const config = VEHICLES[vehicle.type];
+    return {
+      label: config.label,
+      perk: config.perk,
+      seats: config.seats,
+      crew: vehicle.crew.length,
+      health: Math.round(vehicle.health),
+      maxHealth: vehicle.maxHealth,
+      percent: Math.max(0, (vehicle.health / vehicle.maxHealth) * 100),
+      driving: vehicle.crew[0] === this.sessionId(),
+      boost: Boolean(config.boost),
     };
   });
 
@@ -182,6 +216,7 @@ export class GameService {
     this.snapshot.set(null);
     this.sessionId.set('');
     this.selectedBuild.set(null);
+    this.selectedVehicle.set(null);
     this.placementRotation.set(0);
     this.focusedDefenseId.set('');
     this.connection.set('idle');
@@ -339,13 +374,27 @@ export class GameService {
   selectBuild(type: DefenseType | null) {
     if (type !== this.selectedBuild()) this.placementRotation.set(0);
     this.selectedBuild.set(type);
+    this.selectedVehicle.set(null);
     if (type) this.audio.play('ui');
+  }
+
+  selectVehicle(type: VehicleType | null) {
+    if (type !== this.selectedVehicle()) this.placementRotation.set(0);
+    this.selectedVehicle.set(type);
+    this.selectedBuild.set(null);
+    if (type) this.audio.play('ui');
+  }
+
+  clearSelection() {
+    this.selectBuild(null);
+    this.selectedVehicle.set(null);
   }
 
   rotateBuild() {
     const type = this.selectedBuild();
-    if (!type || DEFENSES[type].kind !== 'barricade') return;
-    this.placementRotation.update((rotation) => (rotation + Math.PI / 2) % Math.PI);
+    if (this.selectedVehicle() || (type && DEFENSES[type].kind === 'barricade')) {
+      this.placementRotation.update((rotation) => (rotation + Math.PI / 2) % Math.PI);
+    }
   }
 
   placeDefense(type: DefenseType, x: number, y: number) {
@@ -357,8 +406,33 @@ export class GameService {
     });
   }
 
+  placeVehicle(type: VehicleType, x: number, y: number) {
+    this.audio.play('build');
+    this.room?.send('place_vehicle', {
+      type,
+      x,
+      y,
+      rotation: this.placementRotation(),
+    });
+  }
+
+  /** One key gets in and out again, so nobody has to remember two of them. */
+  useVehicle() {
+    this.room?.send('use_vehicle');
+  }
+
+  /** What a vehicle costs this player right now, motor pool perk included. */
+  vehiclePrice(type: VehicleType) {
+    return discountedCost(VEHICLES[type].cost, this.player()?.vehicleDiscount ?? 0);
+  }
+
   localMoveSpeed() {
     return PLAYER_BASE_SPEED * (1 + this.progress.upgrades().moveSpeed * 0.02);
+  }
+
+  /** Steering is predicted locally, so the hull needs the same top speed. */
+  localVehicleSpeed(type: VehicleType) {
+    return vehicleTopSpeed(type, this.progress.upgrades().vehicleSpeed);
   }
 
   /** Called by the scene so panel and highlight always mean the same structure. */
@@ -368,7 +442,7 @@ export class GameService {
 
   sellFocused() {
     const target = this.focusedDefense();
-    if (!target) return;
+    if (!target || !target.sellable) return;
     this.audio.play('ui');
     this.room?.send('sell', { id: target.id });
   }
@@ -424,7 +498,9 @@ export class GameService {
       this.lastPhase = snapshot.phase;
       // A ghost left over from the last build phase would come back with the
       // next one, so the start of a wave drops the selection.
-      if (snapshot.phase !== 'build' && this.selectedBuild()) this.selectBuild(null);
+      if (snapshot.phase !== 'build' && (this.selectedBuild() || this.selectedVehicle())) {
+        this.clearSelection();
+      }
       if (snapshot.phase === 'combat') this.audio.play('wave', 0.9);
       this.audio.setTrack(
         snapshot.phase === 'combat'
