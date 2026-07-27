@@ -145,11 +145,10 @@ export class ZombieRoom extends Room<{ state: GameState }> {
         this.waves.startRun();
       }
     });
-    this.onMessage('return_lobby', (client) => {
-      if (client.sessionId === this.state.hostSessionId && this.state.phase === 'gameover') {
-        this.waves.returnToLobby();
-      }
-    });
+    this.onMessage('leave_run', (client) => this.settleLeavingClient(client));
+    // Older clients used this message to reset the shared room. Treating it as
+    // an individual exit keeps one player from pulling the whole squad along.
+    this.onMessage('return_lobby', (client) => this.settleLeavingClient(client));
     this.onMessage('loadout', (client, options: JoinOptions) => {
       this.applyLoadout(client.sessionId, options);
     });
@@ -241,6 +240,17 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     if (this.state.phase === 'combat') this.waves.checkDefeat();
     // Nothing counts down any more, so a leaver must not keep the rest waiting.
     if (this.state.phase === 'build' && this.world.everyoneReady()) this.waves.startNextWave();
+  }
+
+  /**
+   * Confirm the permanent reward before the browser closes its connection.
+   * The client leaves by itself afterwards, so every remaining teammate stays
+   * in the current run or game-over screen.
+   */
+  private settleLeavingClient(client: Client) {
+    const reward = this.waves.currentReward(this.state.runVictory);
+    if (reward) client.send('permanent_reward', reward);
+    client.send('leave_settled', { runId: reward?.runId ?? '' });
   }
 
   /**

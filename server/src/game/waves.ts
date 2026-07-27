@@ -1,6 +1,7 @@
 import {
   SHIELD_SHARE,
   campaignRunReward,
+  endlessRunReward,
   endlessWave,
   reserveCapacity,
   startingMoney,
@@ -47,6 +48,9 @@ export class WaveSystem {
   startRun() {
     const state = this.world.state;
     this.runId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    state.runId = this.runId;
+    state.runGold = 0;
+    state.runVictory = false;
     state.wave = 0;
     state.zombies.clear();
     state.projectiles.clear();
@@ -129,6 +133,8 @@ export class WaveSystem {
     state.waveKind = definition.kind;
     state.waveLabel = definition.label;
     state.statusText = this.waveStatus(definition.kind);
+    state.runGold = this.rewardGold(false);
+    state.runVictory = false;
     state.players.forEach((player) => {
       player.ready = false;
       const runtime = this.world.runtime.get(player.id);
@@ -204,43 +210,35 @@ export class WaveSystem {
       : state.endless
         ? `Endlos-Run beendet · Welle ${state.wave}`
         : `Der Run auf ${this.world.map.name} ist vorbei`;
-    const gold = state.endless
-      ? Math.round((15 + state.wave * 12) * this.world.map.moneyScale)
-      : campaignRunReward(this.world.map, state.wave, victory);
-    this.onReward({
-      gold,
+    const reward = this.currentReward(victory);
+    if (!reward) return;
+    state.runGold = reward.gold;
+    state.runVictory = victory;
+    this.onReward(reward);
+  }
+
+  /**
+   * Current payout for a normal defeat or voluntary exit. The stable run id
+   * lets the browser reject a duplicate if the regular game-over reward and an
+   * exit confirmation cross each other on the wire.
+   */
+  currentReward(victory = false): RunReward | undefined {
+    const state = this.world.state;
+    if (!this.runId || state.phase === 'lobby' || state.wave <= 0) return undefined;
+    return {
+      gold: this.rewardGold(victory),
       runId: this.runId,
       victory,
       mapId: this.world.map.id,
       wave: state.wave,
-    });
+    };
   }
 
-  /** Keep the room and squad together while returning to the pre-run lobby. */
-  returnToLobby() {
+  private rewardGold(victory: boolean) {
     const state = this.world.state;
-    if (state.phase !== 'gameover') return;
-    state.phase = 'lobby';
-    state.wave = 0;
-    state.waveKind = 'normal';
-    state.waveLabel = 'Welle';
-    state.enemiesRemaining = 0;
-    state.zombies.clear();
-    state.projectiles.clear();
-    state.defenses.clear();
-    state.hazards.clear();
-    state.bossName = '';
-    state.bossHealth = 0;
-    state.bossMaxHealth = 0;
-    state.statusText = state.endless
-      ? `${this.world.map.name} · Endlos`
-      : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
-    state.players.forEach((player) => {
-      player.ready = false;
-      player.reloading = 0;
-      player.firing = 0;
-    });
-    this.onClearField();
+    return state.endless
+      ? endlessRunReward(this.world.map, state.wave)
+      : campaignRunReward(this.world.map, state.wave, victory);
   }
 
   checkDefeat() {

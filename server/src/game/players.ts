@@ -376,13 +376,17 @@ export class PlayerSystem {
         projectile.radius =
           player.weapon === 'rocket'
             ? 8
-            : player.weapon === 'acid'
-              ? 7
-              : player.weapon === 'flamer'
-                ? 13
-                : player.weapon === 'cryo'
-                  ? 10
-                  : 4;
+            : player.weapon === 'gravity'
+              ? 14
+              : player.weapon === 'nova'
+                ? 7
+                : player.weapon === 'acid'
+                  ? 7
+                  : player.weapon === 'flamer'
+                    ? 13
+                    : player.weapon === 'cryo'
+                      ? 10
+                      : 4;
         projectile.splashRadius = config.splashRadius ?? 0;
         projectile.splashDamage = (config.splashDamage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
         projectile.chain = config.chain ?? 0;
@@ -391,6 +395,7 @@ export class PlayerSystem {
         projectile.burnSeconds = config.burnSeconds ?? 0;
         projectile.slow = config.slow ?? 0;
         projectile.slowSeconds = config.slowSeconds ?? 0;
+        projectile.pull = config.pull ?? 0;
       }
       this.world.pushFx({
         k: 'muzzle',

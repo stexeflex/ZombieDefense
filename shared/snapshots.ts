@@ -136,6 +136,10 @@ export interface GameSnapshot {
   lobbyCode: string;
   hostSessionId: string;
   mapId: string;
+  /** Stable id and current permanent payout, also used for a safe voluntary exit. */
+  runId: string;
+  runGold: number;
+  runVictory: boolean;
   /** Endless run: the waves never stop and no map gets cleared. */
   endless: boolean;
   wave: number;

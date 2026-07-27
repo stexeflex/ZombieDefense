@@ -41,6 +41,7 @@ import {
   distanceToDefense,
   endlessDamageScale,
   endlessHealthScale,
+  endlessRunReward,
   endlessSpeedScale,
   endlessWave,
   healthRegenPerSecond,
@@ -93,6 +94,13 @@ describe('map campaign', () => {
     expect(lateDefeat).toBeGreaterThan(map.reward / 2);
     expect(bossDefeat).toBeGreaterThan(lateDefeat);
     expect(bossDefeat).toBeLessThan(victory);
+  });
+
+  it('pays a meaningful survival bonus for deep endless runs', () => {
+    const map = MAPS[0];
+    expect(endlessRunReward(map, 10)).toBe(135);
+    expect(endlessRunReward(map, 50)).toBe(1415);
+    expect(endlessRunReward(map, 50)).toBeGreaterThan(endlessRunReward(map, 30) * 2);
   });
 
   it('ends every map with its own boss', () => {
@@ -216,8 +224,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists thirteen weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(13);
+  it('lists sixteen weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(16);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -241,6 +249,11 @@ describe('weapon balance', () => {
     expect(WEAPONS.nailgun.pierce).toBeGreaterThan(WEAPONS.rifle.pierce);
     expect(WEAPONS.acid.splashRadius).toBeGreaterThan(0);
     expect(WEAPONS.acid.burn).toBeGreaterThan(0);
+    expect(WEAPONS.railgun.pierce).toBeGreaterThan(WEAPONS.laser.pierce);
+    expect(WEAPONS.gravity.pull).toBeGreaterThan(0);
+    expect(WEAPONS.gravity.slow).toBeGreaterThan(0);
+    expect(WEAPONS.nova.pellets).toBeGreaterThan(1);
+    expect(WEAPONS.nova.splashRadius).toBeGreaterThan(0);
   });
 
   it('lets the frost cannon brake instead of burn', () => {

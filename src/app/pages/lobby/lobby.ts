@@ -47,6 +47,7 @@ export class Lobby implements OnInit, OnDestroy {
   readonly shopTab = signal<ShopTab>('weapons');
   readonly upgradesOpen = signal(false);
   readonly combatPanelCollapsed = signal(false);
+  readonly changingLobby = signal(false);
   readonly fullscreen = signal(false);
   readonly fullscreenSupported =
     typeof document !== 'undefined' &&
@@ -83,6 +84,7 @@ export class Lobby implements OnInit, OnDestroy {
   ngOnInit() {
     this.syncFullscreenState();
     document.addEventListener('fullscreenchange', this.syncFullscreenState);
+    window.addEventListener('beforeunload', this.creditRewardBeforeUnload);
     const code = (this.route.snapshot.paramMap.get('code') ?? '')
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '')
@@ -98,6 +100,7 @@ export class Lobby implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     document.removeEventListener('fullscreenchange', this.syncFullscreenState);
+    window.removeEventListener('beforeunload', this.creditRewardBeforeUnload);
     void this.game.disconnect();
   }
 
@@ -281,16 +284,25 @@ export class Lobby implements OnInit, OnDestroy {
     return type ? WEAPONS[type].short : '—';
   }
 
-  /**
-   * The route change alone tears the lobby down and `ngOnDestroy` closes the
-   * room, so the button never waits for the server to confirm the leave — that
-   * wait made the first click look as if nothing had happened.
-   */
-  leave() {
-    void this.router.navigateByUrl('/');
+  async leave() {
+    if (this.changingLobby()) return;
+    this.changingLobby.set(true);
+    await this.game.settleRunReward();
+    await this.router.navigateByUrl('/');
+  }
+
+  async returnToLobby() {
+    if (this.changingLobby()) return;
+    this.changingLobby.set(true);
+    await this.game.returnToLobby(this.lobbyCode(), this.name);
+    this.changingLobby.set(false);
   }
 
   private readonly syncFullscreenState = () => {
     this.fullscreen.set(Boolean(document.fullscreenElement));
+  };
+
+  private readonly creditRewardBeforeUnload = () => {
+    this.game.creditVisibleRunReward();
   };
 }

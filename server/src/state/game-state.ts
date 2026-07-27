@@ -108,6 +108,7 @@ export class ProjectileState extends Schema {
   burnSeconds = 0;
   slow = 0;
   slowSeconds = 0;
+  pull = 0;
   hitIds = new Set<string>();
 }
 
@@ -148,6 +149,10 @@ export class GameState extends Schema {
   @type('string') lobbyCode = '';
   @type('string') hostSessionId = '';
   @type('string') mapId = 'outpost';
+  /** Current permanent payout is mirrored so a disconnect can be credited safely. */
+  @type('string') runId = '';
+  @type('number') runGold = 0;
+  @type('boolean') runVictory = false;
   /** Endless run: the waves never stop and no map gets cleared. */
   @type('boolean') endless = false;
   @type('number') wave = 0;

@@ -39,6 +39,9 @@ const WEAPON_SOUND: Record<WeaponType, SoundName> = {
   rocket: 'shot-rocket',
   tesla: 'shot-tesla',
   laser: 'shot-energy',
+  railgun: 'shot-energy',
+  gravity: 'shot-tesla',
+  nova: 'shot-energy',
 };
 
 /** Minor scale steps used by the generated soundtrack. */

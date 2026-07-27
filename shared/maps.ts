@@ -66,6 +66,8 @@ export interface GameMap {
 
 /** A failed campaign run can earn up to this share of the map's victory reward. */
 export const DEFEAT_REWARD_SHARE = 0.6;
+/** Endless starts paying a survival bonus once the planned-map length is behind you. */
+export const ENDLESS_REWARD_RAMP_WAVE = 10;
 
 /**
  * Permanent gold for a campaign run.
@@ -82,6 +84,19 @@ export function campaignRunReward(map: GameMap, reachedWave: number, victory: bo
     ? map.reward
     : map.reward * DEFEAT_REWARD_SHARE * progress * progress;
   return Math.round(baseGold + mapGold);
+}
+
+/**
+ * Permanent gold for an endless run.
+ *
+ * The familiar early reward stays intact. Past wave ten a quadratic survival
+ * bonus makes long runs worthwhile: wave 50 on the first map pays 1,415 gold
+ * instead of the old 615, while later maps still apply their money scale.
+ */
+export function endlessRunReward(map: GameMap, reachedWave: number) {
+  const wave = Math.max(0, Math.floor(reachedWave));
+  const lateWaves = Math.max(0, wave - ENDLESS_REWARD_RAMP_WAVE);
+  return Math.round((15 + wave * 12 + lateWaves * lateWaves * 0.5) * map.moneyScale);
 }
 
 export function seeded(seed: number) {

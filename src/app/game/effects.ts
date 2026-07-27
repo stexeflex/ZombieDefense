@@ -132,10 +132,24 @@ export class EffectLayer {
         break;
       case 'explosion': {
         const radius = event.r ?? 100;
-        this.burst('flame', Math.min(26, 10 + radius / 8), event.x, event.y);
-        this.burst('smoke', Math.min(20, 8 + radius / 10), event.x, event.y);
+        const energyBlast = event.s === 'gravity' || event.s === 'nova';
+        this.burst(
+          energyBlast ? 'energy' : 'flame',
+          Math.min(26, 10 + radius / 8),
+          event.x,
+          event.y,
+        );
+        if (!energyBlast) this.burst('smoke', Math.min(20, 8 + radius / 10), event.x, event.y);
         this.burst('shard', 10, event.x, event.y);
-        this.shockwave(event.x, event.y, radius, event.s === 'mortar' ? 0xff4f6b : 0xffb347);
+        const color =
+          event.s === 'gravity'
+            ? 0xa67cff
+            : event.s === 'nova'
+              ? 0xff9ee0
+              : event.s === 'mortar'
+                ? 0xff4f6b
+                : 0xffb347;
+        this.shockwave(event.x, event.y, radius, color);
         this.audio.play('explosion', 0.9);
         this.scene.cameras.main.shake(220, Math.min(0.014, 0.004 + radius / 22000));
         break;
@@ -239,15 +253,21 @@ export class EffectLayer {
           ? 0x7eeaff
           : source === 'drone'
             ? 0x4ce0d5
-            : weapon === 'laser'
-              ? 0xff8fd8
-              : weapon === 'acid'
-                ? 0xb8ff71
-                : weapon === 'tesla'
-                  ? 0x9fdcff
-                  : weapon === 'cryo'
-                    ? 0xaef0ff
-                    : 0xffd489,
+            : weapon === 'railgun'
+              ? 0xbaf7ff
+              : weapon === 'gravity'
+                ? 0xa67cff
+                : weapon === 'nova'
+                  ? 0xff9ee0
+                  : weapon === 'laser'
+                    ? 0xff8fd8
+                    : weapon === 'acid'
+                      ? 0xb8ff71
+                      : weapon === 'tesla'
+                        ? 0x9fdcff
+                        : weapon === 'cryo'
+                          ? 0xaef0ff
+                          : 0xffd489,
       )
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.42, 0.3)

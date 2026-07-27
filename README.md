@@ -28,8 +28,8 @@ Aufruf kann das Laden deshalb kurz dauern.
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
 - dreizehn Zombiearten plus zehn Bosse
-- dreizehn Waffen von der Pistole bis zur Laserkanone, darunter die Frostkanone, die
-  ganze Reihen auf halbes Tempo bremst
+- sechzehn Waffen von der Pistole bis zur Nova-Kanone, darunter Railgun und
+  Gravitationswerfer für teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
 - sechs Barrikaden und zwölf Türme vom günstigen MG bis zur Plasma-Bastion
@@ -96,19 +96,24 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 
 ### Waffen
 
-| Waffe                | Preis | Besonderheit                                     |
-| -------------------- | ----- | ------------------------------------------------ |
-| Pistole              | 0     | Startwaffe                                       |
-| Maschinenpistole     | 450   | sehr hohe Feuerrate                              |
-| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner            |
-| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz              |
-| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner            |
-| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                            |
-| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand          |
-| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner |
-| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                         |
-| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner            |
-| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner           |
+| Waffe                | Preis | Besonderheit                                       |
+| -------------------- | ----- | -------------------------------------------------- |
+| Pistole              | 0     | Startwaffe                                         |
+| Maschinenpistole     | 450   | sehr hohe Feuerrate                                |
+| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner              |
+| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz                |
+| Nagelwerfer          | 1400  | schwere Nägel durchbohren mehrere Gegner           |
+| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner              |
+| Säurewerfer          | 2000  | ätzender Flächenschaden über Zeit                  |
+| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                              |
+| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand            |
+| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner   |
+| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                           |
+| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner              |
+| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner             |
+| Railgun              | 5700  | Magnetgeschoss durchbohrt bis zu vierzehn Gegner   |
+| Gravitationswerfer   | 6600  | zieht Horden in eine verlangsamende Singularität   |
+| Nova-Kanone          | 7600  | fünf explosive Plasmalanzen in einer breiten Salve |
 
 ### Türme
 
@@ -223,7 +228,11 @@ Kopfgeld wird gleichmäßig geteilt: Jeder im Trupp bekommt denselben Anteil an
 jeder Prämie, egal ob er geschossen, gebaut oder wiederbelebt hat. Der Abschuss
 in der Statistik zählt für den, der dem Zombie am meisten Schaden zugefügt hat.
 
-Permanentes Gold gibt es am Ende jedes Runs. Der Shop steht auf der Startseite
+Permanentes Gold gibt es am Ende jedes Runs und auch bei einem freiwilligen
+Ausstieg; die Auszahlung wird vor dem Verlassen bestätigt. Im Endlosmodus
+steigt der Lohn nach Welle 10 immer stärker, sodass Welle 50 auf der ersten
+Karte 1.415 statt 615 Gold bringt. „Zurück zur Lobby“ öffnet nur für den
+klickenden Spieler eine frische Lobby und zieht keinen Mitspieler mit. Der Shop steht auf der Startseite
 und in der Lobby offen, solange der Run noch nicht läuft — dort gekaufte
 Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 

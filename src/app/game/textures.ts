@@ -30,6 +30,9 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   rocket: 50,
   tesla: 42,
   laser: 48,
+  railgun: 62,
+  gravity: 50,
+  nova: 52,
 };
 
 export const OBSTACLE_TEXTURE_SIZE: Record<ObstacleKind, { w: number; h: number }> = {
@@ -361,6 +364,29 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     circle(ctx, 60, 14.5, 4.5, '#ff8fd8');
     fillRounded(ctx, 14, 4, 14, 6, 2, '#4a4361');
     fillRounded(ctx, 18, 19, 8, 13, 2, '#241f31');
+  },
+  railgun: (ctx) => {
+    fillRounded(ctx, 0, 11, 62, 8, 3, '#263b43', '#0c161a', 1.5);
+    fillRounded(ctx, 18, 7, 42, 4, 2, '#52798a', '#15242a', 1);
+    fillRounded(ctx, 18, 19, 42, 4, 2, '#52798a', '#15242a', 1);
+    circle(ctx, 62, 15, 5, '#baf7ff', '#4ce0ff', 2);
+    fillRounded(ctx, 11, 19, 9, 13, 2, '#1d2c32');
+  },
+  gravity: (ctx) => {
+    fillRounded(ctx, 1, 8, 34, 14, 5, '#29243e', '#100d1a', 2);
+    circle(ctx, 37, 15, 12, '#171126', '#a67cff', 2);
+    circle(ctx, 37, 15, 5, '#efe1ff');
+    fillRounded(ctx, 45, 11, 18, 8, 4, '#51436f', '#171126', 1.5);
+    fillRounded(ctx, 13, 21, 9, 11, 2, '#211b31');
+  },
+  nova: (ctx) => {
+    fillRounded(ctx, 2, 9, 38, 12, 4, '#3a2738', '#160d15', 2);
+    for (let index = 0; index < 5; index += 1) {
+      const y = 6 + index * 4.5;
+      fillRounded(ctx, 38, y, 25, 3.5, 1.5, '#a44f80', '#32152a', 0.8);
+    }
+    circle(ctx, 35, 15, 6, '#ff9ee0', '#ffd7f1', 1.5);
+    fillRounded(ctx, 14, 20, 9, 12, 2, '#2d1c2c');
   },
 };
 

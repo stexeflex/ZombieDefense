@@ -457,14 +457,20 @@
                   }
                 }
                 <div class="gameover-actions">
-                  @if (game.isHost()) {
-                    <button class="primary-button" type="button" (click)="game.returnToLobby()">
-                      Zurück zur Lobby
-                    </button>
-                  } @else {
-                    <p>Warte, bis der Host euch zurück in die Lobby bringt.</p>
-                  }
-                  <button class="ghost-button" type="button" (click)="leave()">
+                  <button
+                    class="primary-button"
+                    type="button"
+                    [disabled]="changingLobby()"
+                    (click)="returnToLobby()"
+                  >
+                    {{ changingLobby() ? 'Gold wird gesichert …' : 'Zurück zur Lobby' }}
+                  </button>
+                  <button
+                    class="ghost-button"
+                    type="button"
+                    [disabled]="changingLobby()"
+                    (click)="leave()"
+                  >
                     Zur Startseite
                   </button>
                 </div>

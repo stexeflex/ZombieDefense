@@ -32,6 +32,7 @@ export class GameService {
   private room?: Room;
   private lastPhase: GamePhase | null = null;
   private lastWave = 0;
+  private readonly settledRunIds = new Set<string>();
 
   readonly connection = signal<ConnectionState>('idle');
   readonly errorMessage = signal('');
@@ -169,8 +170,9 @@ export class GameService {
     }
   }
 
-  async disconnect() {
+  async disconnect(settleReward = true) {
     const room = this.room;
+    if (room && settleReward) await this.settleRunReward();
     this.room = undefined;
     if (room) {
       room.removeAllListeners();
@@ -197,9 +199,66 @@ export class GameService {
     this.room?.send('restart');
   }
 
-  returnToLobby() {
-    this.lastReward.set(null);
-    this.room?.send('return_lobby');
+  /**
+   * Leave the finished room alone and open a fresh lobby with the same code.
+   * Other clients remain in their current room until they decide for
+   * themselves where to go.
+   */
+  async returnToLobby(lobbyCode: string, name: string) {
+    await this.settleRunReward();
+    await this.disconnect(false);
+    await this.connect(lobbyCode, name, true);
+  }
+
+  /**
+   * Wait until the server has sent the current payout before closing the room.
+   * A local snapshot fallback covers a connection that disappears during the
+   * short confirmation window.
+   */
+  async settleRunReward() {
+    const room = this.room;
+    const current = this.snapshot();
+    if (
+      !room ||
+      !current ||
+      current.phase === 'lobby' ||
+      !current.runId ||
+      this.settledRunIds.has(current.runId)
+    ) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timeout);
+        unsubscribe();
+        resolve();
+      };
+      const unsubscribe = room.onMessage<{ runId: string }>('leave_settled', () => finish());
+      const timeout = setTimeout(() => {
+        this.creditVisibleRunReward();
+        finish();
+      }, 1200);
+      room.send('leave_run');
+    });
+  }
+
+  /** Synchronous fallback used when a tab is closed without waiting for the server. */
+  creditVisibleRunReward() {
+    const current = this.snapshot();
+    if (
+      !current ||
+      current.phase === 'lobby' ||
+      !current.runId ||
+      this.settledRunIds.has(current.runId)
+    ) {
+      return;
+    }
+    this.progress.addRunReward(current.runGold, current.runId, current.mapId, current.runVictory);
+    this.settledRunIds.add(current.runId);
   }
 
   sendInput(input: PlayerInput) {
@@ -338,6 +397,7 @@ export class GameService {
       victory: boolean;
       mapId: string;
     }>('permanent_reward', (reward) => {
+      this.settledRunIds.add(reward.runId);
       if (this.progress.addRunReward(reward.gold, reward.runId, reward.mapId, reward.victory)) {
         this.lastReward.set({
           gold: reward.gold,

@@ -32,6 +32,7 @@ const {
   dashReduction,
   endlessDamageScale,
   endlessHealthScale,
+  endlessRunReward,
   endlessSpeedScale,
   healthRegenPerSecond,
   magazineCapacity,
@@ -139,6 +140,9 @@ console.log('\n== Alle Waffen treffen ==');
   makeInvincible(player);
 
   for (const weapon of WEAPON_ORDER) {
+    // A very strong weapon may clear the pack and end the wave; the next
+    // weapon still needs a combat phase for its isolated firing check.
+    room.state.phase = 'combat';
     room.state.zombies.clear();
     room.state.projectiles.clear();
     const pack = [];
@@ -276,6 +280,12 @@ console.log('\n== Endlos-Skalierung ==');
     endlessHealthScale(60, 2) > endlessHealthScale(40, 2) &&
       endlessDamageScale(60) > endlessDamageScale(40) &&
       endlessSpeedScale(60) > endlessSpeedScale(40),
+  );
+  check(
+    'Welle 50 zahlt deutlich mehr permanentes Gold',
+    endlessRunReward(MAPS[0], 50) === 1415 &&
+      endlessRunReward(MAPS[0], 50) > endlessRunReward(MAPS[0], 30) * 2,
+    `(${endlessRunReward(MAPS[0], 50)} Gold)`,
   );
 
   const room = makeRoom('outpost', { endless: true });
@@ -969,13 +979,38 @@ console.log('\n== Endlosmodus ==');
     `(${room.state.phase})`,
   );
   check('Und zählt die Wellen der Karte', room.state.totalWaves === map.waves.length);
-  room.systems.waves.returnToLobby();
+  const confirmed = room.systems.waves.currentReward(true);
   check(
-    'Nach dem Run bleibt der Trupp in derselben Lobby',
-    room.state.phase === 'lobby' && room.state.players.get('p1') === player,
+    'Die Exit-Bestätigung wiederholt denselben Run-Lohn sicher',
+    confirmed !== undefined &&
+      confirmed.runId === reward.runId &&
+      confirmed.gold === reward.gold &&
+      room.state.players.get('p1') === player,
   );
+}
+
+console.log('\n== Freiwilliger Run-Ausstieg ==');
+{
+  const map = MAPS[0];
+  const room = makeRoom(map.id);
+  const player = join(room, 'p1');
+  const teammate = join(room, 'p2');
   room.systems.waves.startRun();
-  check('Aus derselben Lobby startet der nächste Run', room.state.phase === 'combat');
+  room.state.wave = 7;
+  const reward = room.systems.waves.currentReward(false);
+  check(
+    'Verlassen ohne Tod zahlt den erreichten Kampagnenfortschritt',
+    reward !== undefined &&
+      reward.gold === campaignRunReward(map, 7, false) &&
+      reward.runId === room.state.runId,
+    `(${reward && reward.gold} Gold)`,
+  );
+  check(
+    'Die Abrechnung verändert den Run des Mitspielers nicht',
+    room.state.phase === 'combat' &&
+      room.state.players.get('p1') === player &&
+      room.state.players.get('p2') === teammate,
+  );
 }
 
 console.log('\n== Kampagnenlohn bei Niederlage ==');

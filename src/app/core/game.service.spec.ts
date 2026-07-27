@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import type { GamePhase, GameSnapshot } from '../../../shared/game-types';
 import { GameService } from './game.service';
 
@@ -82,14 +83,38 @@ describe('GameService', () => {
     expect(sent).toEqual([['sell_weapon', 'rifle']]);
   });
 
-  it('returns the whole squad to the existing lobby after a run', () => {
+  it('settles the run before leaving without changing the shared room phase', async () => {
     const sent: string[] = [];
-    (service as unknown as { room: { send(type: string): void } }).room = {
-      send: (type) => sent.push(type),
+    let confirmed: ((payload: { runId: string }) => void) | undefined;
+    service.snapshot.set({
+      ...snapshotWith('combat'),
+      runId: 'run-1',
+      runGold: 250,
+      runVictory: false,
+      mapId: 'outpost',
+    });
+    (service as unknown as { room: unknown }).room = {
+      send: (type: string) => sent.push(type),
+      onMessage: (_type: string, handler: (payload: { runId: string }) => void) => {
+        confirmed = handler;
+        return () => undefined;
+      },
     };
 
-    service.returnToLobby();
+    const settlement = service.settleRunReward();
+    expect(sent).toEqual(['leave_run']);
+    confirmed?.({ runId: 'run-1' });
+    await settlement;
+  });
 
-    expect(sent).toEqual(['return_lobby']);
+  it('opens an individual fresh lobby instead of moving the teammate', async () => {
+    vi.spyOn(service, 'settleRunReward').mockResolvedValue();
+    vi.spyOn(service, 'disconnect').mockResolvedValue();
+    vi.spyOn(service, 'connect').mockResolvedValue();
+
+    await service.returnToLobby('ABCDE', 'Alex');
+
+    expect(service.disconnect).toHaveBeenCalledWith(false);
+    expect(service.connect).toHaveBeenCalledWith('ABCDE', 'Alex', true);
   });
 });

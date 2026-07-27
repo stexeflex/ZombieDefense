@@ -11,7 +11,10 @@ export type WeaponType =
   | 'cryo'
   | 'rocket'
   | 'tesla'
-  | 'laser';
+  | 'laser'
+  | 'railgun'
+  | 'gravity'
+  | 'nova';
 
 export interface WeaponConfig {
   label: string;
@@ -39,6 +42,8 @@ export interface WeaponConfig {
   /** Share of speed a hit takes away, 0.5 leaves half the pace. */
   slow?: number;
   slowSeconds?: number;
+  /** Immediate pull towards a splash impact, measured in world units. */
+  pull?: number;
   description: string;
 }
 
@@ -276,6 +281,64 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     ammoCost: 310,
     description: 'Durchgehender Strahl, schmilzt alles',
   },
+  railgun: {
+    label: 'Railgun',
+    short: 'RG',
+    cost: 5700,
+    damage: 520,
+    fireDelay: 1500,
+    magazine: 4,
+    reserve: 28,
+    reload: 2600,
+    speed: 3400,
+    pellets: 1,
+    spread: 0.001,
+    pierce: 14,
+    range: 1900,
+    ammoCost: 380,
+    description: 'Magnetgeschoss durchbohrt eine komplette Horde',
+  },
+  gravity: {
+    label: 'Gravitationswerfer',
+    short: 'GW',
+    cost: 6600,
+    damage: 75,
+    fireDelay: 900,
+    magazine: 6,
+    reserve: 36,
+    reload: 2800,
+    speed: 540,
+    pellets: 1,
+    spread: 0.008,
+    pierce: 0,
+    range: 1250,
+    ammoCost: 430,
+    splashRadius: 230,
+    splashDamage: 360,
+    slow: 0.42,
+    slowSeconds: 2.8,
+    pull: 155,
+    description: 'Singularität zieht Horden zusammen und bremst sie',
+  },
+  nova: {
+    label: 'Nova-Kanone',
+    short: 'NK',
+    cost: 7600,
+    damage: 92,
+    fireDelay: 680,
+    magazine: 12,
+    reserve: 72,
+    reload: 3000,
+    speed: 1500,
+    pellets: 5,
+    spread: 0.13,
+    pierce: 2,
+    range: 1050,
+    ammoCost: 510,
+    splashRadius: 82,
+    splashDamage: 125,
+    description: 'Fünf explosive Plasmalanzen in einer breiten Salve',
+  },
 };
 
 export const WEAPON_ORDER: WeaponType[] = [
@@ -292,6 +355,9 @@ export const WEAPON_ORDER: WeaponType[] = [
   'rocket',
   'tesla',
   'laser',
+  'railgun',
+  'gravity',
+  'nova',
 ];
 
 /** Upper limit for carried spare ammunition, one full resupply. */
