@@ -151,11 +151,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       this.applyMap(this.state.mapId);
       this.broadcastSnapshot();
     });
-    this.onMessage('start', (client) => {
-      if (client.sessionId === this.state.hostSessionId && this.state.phase === 'lobby') {
-        this.waves.startRun();
-      }
-    });
+    this.onMessage('start', (client) => this.requestStart(client.sessionId));
     this.onMessage('restart', (client) => {
       if (client.sessionId === this.state.hostSessionId && this.state.phase === 'gameover') {
         this.waves.startRun();
@@ -218,7 +214,10 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.maxHealth = Math.round(100 * (1 + upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
     player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
-    player.money = startingMoney(upgrades.startMoney);
+    // Start money is granted by startRun to everybody already in the lobby.
+    // Anyone joining an active run starts at zero, so reconnecting can never
+    // mint another building budget while the old structures stay on the map.
+    player.money = this.state.phase === 'lobby' ? startingMoney(upgrades.startMoney) : 0;
     player.ammo = this.playerSystem.magazineSize('pistol', upgrades);
     player.reserveAmmo = reserveCapacity('pistol', upgrades.reserveAmmo);
     player.dashMax = this.playerSystem.maxDashes(upgrades);
@@ -252,6 +251,20 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.build.resetDiscounts(client.sessionId);
     if (!this.state.hostSessionId) this.state.hostSessionId = client.sessionId;
     this.broadcastSnapshot();
+  }
+
+  /** The host may start the run or deliberately skip missing ready votes. */
+  requestStart(sessionId: string) {
+    if (sessionId !== this.state.hostSessionId) return false;
+    if (this.state.phase === 'lobby') {
+      this.waves.startRun();
+      return true;
+    }
+    if (this.state.phase === 'build') {
+      this.waves.startNextWave();
+      return true;
+    }
+    return false;
   }
 
   onLeave(client: Client) {

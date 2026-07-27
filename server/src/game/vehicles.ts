@@ -143,6 +143,7 @@ export class VehicleSystem {
     }
 
     this.world.state.defenses.forEach((defense) => {
+      if (DEFENSES[defense.type].passable) return;
       if (!this.world.circleOverlapsDefense(point.x, point.y, radius, defense)) return;
       point = this.pushOutOfDefense(point.x, point.y, radius, defense);
     });

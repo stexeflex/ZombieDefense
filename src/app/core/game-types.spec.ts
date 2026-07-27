@@ -418,8 +418,12 @@ describe('defenses', () => {
   });
 
   it('gives both new barricades a distinct last-resort role', () => {
+    expect(DEFENSES.wire.passable).toBe(true);
     expect(DEFENSES.wire.slow).toBeGreaterThan(DEFENSES.stone.slow!);
-    expect(DEFENSES.wire.thorns).toBeGreaterThan(0);
+    expect(DEFENSES.wire.contactDamage).toBeGreaterThan(0);
+    expect(DEFENSES.wire.contactWear).toBeGreaterThan(0);
+    expect(DEFENSES.spike.passable).toBeUndefined();
+    expect(DEFENSES.spike.thorns).toBeGreaterThan(0);
     expect(DEFENSES.blastwall.blastRadius).toBeGreaterThan(0);
     expect(DEFENSES.blastwall.blastDamage).toBeGreaterThan(0);
   });

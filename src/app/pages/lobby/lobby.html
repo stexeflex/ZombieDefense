@@ -783,6 +783,12 @@
                   <span>Die Welle startet erst auf Knopfdruck</span>
                 }
               </button>
+              @if (game.isHost() && players().length > 1 && readyCount() < players().length) {
+                <button class="force-start-button" type="button" (click)="forceStartWave()">
+                  Welle jetzt starten
+                  <span>Host-Start · unbereite Spieler werden übergangen</span>
+                </button>
+              }
             </section>
           } @else {
             <section class="mission-info">

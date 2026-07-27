@@ -894,6 +894,29 @@ kbd {
   color: var(--ink);
 }
 
+.force-start-button {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid rgba(255, 204, 102, 0.55);
+  color: var(--gold);
+  background: rgba(255, 204, 102, 0.06);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.force-start-button:hover {
+  background: rgba(255, 204, 102, 0.14);
+}
+
+.force-start-button span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted-2);
+  font-size: 0.52rem;
+  font-weight: 600;
+}
+
 .mission-info {
   padding: 24px 18px;
 }

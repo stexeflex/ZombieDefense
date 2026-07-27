@@ -650,8 +650,10 @@ export class GameWorld {
   }
 
   blockingDefense(zombie: ZombieState, dx: number, dy: number) {
-    return [...this.state.defenses.values()].find((defense) =>
-      this.circleOverlapsDefense(zombie.x + dx, zombie.y + dy, zombie.radius, defense),
+    return [...this.state.defenses.values()].find(
+      (defense) =>
+        !DEFENSES[defense.type].passable &&
+        this.circleOverlapsDefense(zombie.x + dx, zombie.y + dy, zombie.radius, defense),
     );
   }
 

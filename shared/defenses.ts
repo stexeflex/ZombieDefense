@@ -30,9 +30,15 @@ export interface DefenseConfig {
   health: number;
   width: number;
   height: number;
+  /** Ground defenses can be crossed instead of blocking movement. */
+  passable?: boolean;
+  /** Damage per second dealt while a zombie crosses this defense. */
+  contactDamage?: number;
+  /** Health lost per second for every zombie currently crossing it. */
+  contactWear?: number;
   /** damage dealt back to attacking zombies */
   thorns?: number;
-  /** slows zombies that attack it */
+  /** Share of speed removed while crossing or after attacking it. */
   slow?: number;
   slowSeconds?: number;
   /** explodes when enemies destroy it */
@@ -84,10 +90,11 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     health: 460,
     width: 64,
     height: 20,
-    thorns: 16,
-    slow: 0.5,
-    slowSeconds: 1.8,
-    description: 'Verheddert Angreifer und hält sie auf halbem Tempo',
+    passable: true,
+    contactDamage: 36,
+    contactWear: 10,
+    slow: 0.55,
+    description: 'Durchquerbare Falle: bremst, verletzt und verschleißt unter der Horde',
   },
   spike: {
     label: 'Stachelwall',

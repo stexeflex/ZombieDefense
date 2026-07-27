@@ -6,9 +6,10 @@ import {
   circleOverlapsVehicle,
   hasteAura,
   pushOutOfVehicle,
+  sellValue,
   type ZombieType,
 } from '../../../shared/game-types.js';
-import type { ZombieState } from '../state/game-state.js';
+import type { DefenseState, ZombieState } from '../state/game-state.js';
 import type { AbilitySystem } from './abilities.js';
 import type { GameWorld } from './world.js';
 
@@ -46,6 +47,7 @@ export class ZombieSystem {
       if (!this.world.state.zombies.has(id)) return;
 
       zombie.speed = this.currentSpeed(zombie, delta);
+      if (!this.applyGroundDefenses(id, zombie, delta)) return;
 
       const target = this.world.nearestLivingPlayer(zombie.x, zombie.y);
       if (!target) return;
@@ -145,6 +147,34 @@ export class ZombieSystem {
     this.pushOffPlayers();
     this.pushOffVehicles();
     this.freeFromObstacles();
+  }
+
+  /**
+   * Passable defenses are floor traps, not walls. Anything crossing one is
+   * slowed and damaged while every body on top of it wears the trap down.
+   */
+  private applyGroundDefenses(id: string, zombie: ZombieState, delta: number) {
+    let slow = 0;
+    const broken: DefenseState[] = [];
+    this.world.state.defenses.forEach((defense) => {
+      const config = DEFENSES[defense.type];
+      if (!config.passable) return;
+      if (!this.world.circleOverlapsDefense(zombie.x, zombie.y, zombie.radius, defense)) return;
+
+      slow = Math.max(slow, config.slow ?? 0);
+      if (config.contactWear) {
+        defense.health -= config.contactWear * delta;
+        defense.refund = sellValue(defense.type, defense.health, defense.maxHealth);
+        if (defense.health <= 0) broken.push(defense);
+      }
+      if (config.contactDamage) {
+        this.world.damageZombie(id, zombie, config.contactDamage * delta, defense.ownerId);
+      }
+    });
+    for (const defense of broken) this.world.destroyDefense(defense);
+    if (!this.world.state.zombies.has(id)) return false;
+    zombie.speed *= Math.max(0, 1 - slow);
+    return true;
   }
 
   /**

@@ -338,6 +338,7 @@ export class PlayerSystem {
   private resolveDefenses(player: PlayerState) {
     this.world.state.defenses.forEach((defense: DefenseState) => {
       const config = DEFENSES[defense.type];
+      if (config.passable) return;
       if (config.kind === 'turret') {
         const dx = player.x - defense.x;
         const dy = player.y - defense.y;

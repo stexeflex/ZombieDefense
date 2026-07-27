@@ -908,7 +908,38 @@ console.log('\n== Neue Barrikaden ==');
     zombie.health < before,
     `(${Math.round(before - zombie.health)} Schaden)`,
   );
-  check('Stacheldraht bremst stärker als Stein', DEFENSES.wire.slow > DEFENSES.stone.slow);
+
+  room.state.zombies.clear();
+  room.systems.build.placeDefense('p1', {
+    type: 'wire',
+    x: 1200,
+    y: 1050,
+    rotation: 0,
+  });
+  const wire = [...room.state.defenses.values()][0];
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  makeInvincible(player);
+  const runner = room.systems.world.spawnZombie('normal', { x: 1200, y: 960 });
+  runner.health = 1000;
+  runner.maxHealth = 1000;
+  const wireHealth = wire.health;
+  step(room, 75);
+  check(
+    'Stacheldraht ist eine durchquerbare Bodenfalle',
+    runner.y > wire.y + DEFENSES.wire.height / 2 + runner.radius,
+    `(Zombie bei y=${Math.round(runner.y)})`,
+  );
+  check(
+    'Die Bodenfalle verletzt Zombies beim Durchlaufen',
+    runner.health < runner.maxHealth,
+    `(${Math.round(runner.maxHealth - runner.health)} Schaden)`,
+  );
+  check(
+    'Die Horde verschleißt den Stacheldraht',
+    wire.health < wireHealth,
+    `(${Math.round(wireHealth - wire.health)} Haltbarkeit)`,
+  );
 }
 
 console.log('\n== Freie Ecken und sichere Zombie-Einstiege ==');
@@ -1400,6 +1431,58 @@ console.log('\n== Wellenende heilt den Trupp ==');
   check(
     'Bereit startet die nächste Welle',
     room.state.phase === 'combat' && room.state.wave === before + 1,
+  );
+}
+
+console.log('\n== Host-Start und sicherer Rejoin ==');
+{
+  const room = makeRoom('outpost');
+  const host = join(room, 'host');
+  const guest = join(room, 'guest');
+  check(
+    'Nur der Host kann den Run starten',
+    room.requestStart('guest') === false &&
+      room.state.phase === 'lobby' &&
+      room.requestStart('host') === true &&
+      room.state.phase === 'combat',
+  );
+  room.systems.waves.finishWave();
+  const wave = room.state.wave;
+  host.ready = false;
+  guest.ready = false;
+  check(
+    'Ein Mitspieler kann die Bereitschaft nicht übergehen',
+    room.requestStart('guest') === false && room.state.phase === 'build',
+  );
+  check(
+    'Der Host kann die nächste Welle ohne alle Stimmen erzwingen',
+    room.requestStart('host') === true &&
+      room.state.phase === 'combat' &&
+      room.state.wave === wave + 1,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  join(room, 'anchor');
+  room.requestStart('p1');
+  room.systems.waves.finishWave();
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeDefense('p1', {
+    type: 'wood',
+    x: 1260,
+    y: 800,
+    rotation: 0,
+  });
+  const buildings = room.state.defenses.size;
+  room.onLeave({ sessionId: 'p1' });
+  const returned = join(room, 'p1-return', { upgrades: { startMoney: 40 } });
+  check('Gebautes bleibt nach dem Rejoin stehen', room.state.defenses.size === buildings);
+  check(
+    'Rejoin in einen laufenden Run gibt kein neues Anfangsgeld',
+    returned.money === 0,
+    `($ ${returned.money})`,
   );
 }
 

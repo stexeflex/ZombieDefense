@@ -37,12 +37,13 @@ Aufruf kann das Laden deshalb kurz dauern.
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
   mehrere Spieler; die Hülle macht Insassen unverwundbar, dafür geht der Dash
   verloren
-- Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein
+- Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein;
+  Stacheldraht ist eine durchquerbare Bodenfalle, die bremst und Schaden macht
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
 - Munition, Reparieren und Verkaufen im Bau-Shop
-- die Bauphase hat keine Uhr: die nächste Welle startet erst, wenn alle bereit
-  sind
+- die Bauphase hat keine Uhr: alle können sich bereit melden, der Host kann die
+  nächste Welle bei Bedarf trotzdem sofort starten
 - am Wellenende wird der ganze Trupp geheilt und wieder aufgestellt
 - automatische Wiederbelebung gefallener Spieler durch kurzes Danebenstehen
 - freie WASD-/Pfeiltasten-Kamera, solange der eigene Spieler am Boden liegt
@@ -250,11 +251,14 @@ dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Was in der
 laufenden Bauphase gesetzt wurde, gibt es zum vollen Preis zurück; ab der
 nächsten Welle nur noch anteilig.
 
-Die Bauphase läuft ohne Uhr: Erst wenn alle auf „Bereit“ gedrückt haben, startet
-die nächste Welle. Zwischen den Wellen wird der Trupp voll geheilt, Gefallene
-stehen wieder auf. Zum Wiederbeleben mitten in der Welle genügt es, kurz neben
-einem gefallenen Mitspieler stehen zu bleiben. Sound und Musik lassen sich oben
-rechts abschalten.
+Die Bauphase läuft ohne Uhr: Sobald alle auf „Bereit“ gedrückt haben, startet
+die nächste Welle automatisch. Der Host kann fehlende Stimmen mit
+„Welle jetzt starten“ übergehen. Ein Spieler, der erst in einen laufenden Run
+einsteigt oder erneut verbindet, bekommt kein zweites Startbudget. Zwischen den
+Wellen wird der Trupp voll geheilt, Gefallene stehen wieder auf. Zum
+Wiederbeleben mitten in der Welle genügt es, kurz neben einem gefallenen
+Mitspieler stehen zu bleiben. Sound und Musik lassen sich oben rechts
+abschalten.
 
 ## Geld und Fortschritt
 

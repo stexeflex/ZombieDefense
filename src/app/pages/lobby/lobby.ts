@@ -176,6 +176,10 @@ export class Lobby implements OnInit, OnDestroy {
     if (player) this.game.setReady(!player.ready);
   }
 
+  forceStartWave() {
+    if (this.game.isHost()) this.game.startRun();
+  }
+
   selectBuild(type: DefenseType) {
     this.game.selectBuild(this.game.selectedBuild() === type ? null : type);
   }
