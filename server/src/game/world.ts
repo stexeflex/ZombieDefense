@@ -4,6 +4,7 @@ import {
   EMPTY_PERKS,
   EMPTY_UPGRADES,
   MAX_ACTIVE_ZOMBIES,
+  PLAYER_RADIUS,
   SUMMON_CYCLES,
   ZOMBIES,
   armorReduction,
@@ -137,7 +138,7 @@ export class GameWorld {
     const zombie = new ZombieState();
     zombie.id = this.nextId('z');
     zombie.type = type;
-    const spawn = at ?? this.edgeSpawn();
+    const spawn = at ?? this.edgeSpawn(config.radius);
     zombie.x = spawn.x;
     zombie.y = spawn.y;
     const waveScale = 1 + Math.max(0, this.state.wave - 1) * 0.07;
@@ -223,13 +224,66 @@ export class GameWorld {
     };
   }
 
-  edgeSpawn() {
-    const side = Math.floor(Math.random() * 4);
-    const margin = 25;
-    if (side === 0) return { x: margin, y: 70 + Math.random() * (ARENA.height - 140) };
-    if (side === 1) return { x: ARENA.width - margin, y: 70 + Math.random() * (ARENA.height - 140) };
-    if (side === 2) return { x: 70 + Math.random() * (ARENA.width - 140), y: margin };
-    return { x: 70 + Math.random() * (ARENA.width - 140), y: ARENA.height - margin };
+  /**
+   * Enemies enter from just outside the arena. Prefer an entry lane without
+   * buildings or players, so every corner remains useful for defenses and no
+   * enemy appears inside somebody's fortification.
+   */
+  edgeSpawn(radius = ZOMBIES.normal.radius) {
+    const randomCandidate = () =>
+      this.edgeSpawnCandidate(Math.floor(Math.random() * 4), Math.random(), radius);
+
+    const start = Math.floor(Math.random() * 64);
+    for (const avoidPlayers of [true, false]) {
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        const candidate = randomCandidate();
+        if (this.spawnLaneClear(candidate, radius, avoidPlayers)) return candidate;
+      }
+      // A fixed sweep catches narrow free gaps that the random attempts missed.
+      for (let index = 0; index < 64; index += 1) {
+        const slot = (start + index * 17) % 64;
+        const candidate = this.edgeSpawnCandidate(
+          Math.floor(slot / 16),
+          ((slot % 16) + 0.5) / 16,
+          radius,
+        );
+        if (this.spawnLaneClear(candidate, radius, avoidPlayers)) return candidate;
+      }
+    }
+
+    // Even a completely walled-off edge must not freeze a wave. Spawning just
+    // outside lets that enemy attack its way through instead of overlapping it.
+    return randomCandidate();
+  }
+
+  private edgeSpawnCandidate(side: number, offset: number, radius: number) {
+    const outside = radius + 24;
+    const edgeMargin = 50;
+    const vertical = edgeMargin + offset * (ARENA.height - edgeMargin * 2);
+    const horizontal = edgeMargin + offset * (ARENA.width - edgeMargin * 2);
+    if (side === 0) return { x: -outside, y: vertical };
+    if (side === 1) return { x: ARENA.width + outside, y: vertical };
+    if (side === 2) return { x: horizontal, y: -outside };
+    return { x: horizontal, y: ARENA.height + outside };
+  }
+
+  private spawnLaneClear(
+    candidate: { x: number; y: number },
+    radius: number,
+    avoidPlayers: boolean,
+  ) {
+    const entryX = this.clamp(candidate.x, 12, ARENA.width - 12);
+    const entryY = this.clamp(candidate.y, 12, ARENA.height - 12);
+    if (!this.canStand(entryX, entryY, radius + 10)) return false;
+    for (const defense of this.state.defenses.values()) {
+      if (this.circleOverlapsDefense(entryX, entryY, radius + 18, defense)) return false;
+    }
+    if (!avoidPlayers) return true;
+    return this.livingPlayers().every(
+      (player) =>
+        Math.hypot(player.x - entryX, player.y - entryY) >=
+        radius + PLAYER_RADIUS + 180,
+    );
   }
 
   // ------------------------------------------------------------------- damage

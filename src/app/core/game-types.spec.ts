@@ -280,6 +280,17 @@ describe('building rules', () => {
     expect(canPlaceDefense(barricade(1000 + wood.width - 6, 800), [placed], [])).toBe(false);
   });
 
+  it('allows defenses directly in every map corner', () => {
+    const insetX = 30 + wood.width / 2;
+    const insetY = 30 + wood.height / 2;
+    expect(canPlaceDefense(barricade(insetX, insetY), [], [])).toBe(true);
+    expect(canPlaceDefense(barricade(ARENA.width - insetX, insetY), [], [])).toBe(true);
+    expect(canPlaceDefense(barricade(insetX, ARENA.height - insetY), [], [])).toBe(true);
+    expect(
+      canPlaceDefense(barricade(ARENA.width - insetX, ARENA.height - insetY), [], []),
+    ).toBe(true);
+  });
+
   it('snaps a loose preview flush against its neighbour', () => {
     const placed = barricade(1000, 800);
     const loose = barricade(1000 + wood.width + 9, 800);

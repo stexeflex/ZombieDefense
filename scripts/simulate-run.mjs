@@ -15,6 +15,7 @@ const load = (path) => import(pathToFileURL(resolve(root, path)).href);
 
 const { ZombieRoom } = await load('server/build/server/src/rooms/zombie-room.js');
 const {
+  ARENA,
   BOSSES,
   DASH_BASE_RESIST,
   DASH_SECONDS,
@@ -306,6 +307,52 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
     'Nur tatsächlicher Schaden senkt den Verkaufspreis',
     room.state.defenses.size === 0 && player.money === beforeUsedSell + damagedRefund,
     `(${player.money - beforeUsedSell} $)`,
+  );
+}
+
+console.log('\n== Freie Ecken und sichere Zombie-Einstiege ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 100;
+  player.y = 100;
+  room.systems.build.placeDefense('p1', { type: 'wood', x: 60, y: 60, rotation: 0 });
+  const cornerDefense = [...room.state.defenses.values()][0];
+  check('Verteidigung lässt sich direkt in der Ecke bauen', Boolean(cornerDefense));
+
+  const radius = ZOMBIES.normal.radius;
+  const spawns = Array.from({ length: 160 }, () => room.systems.world.edgeSpawn(radius));
+  check(
+    'Zombies betreten die Karte von außerhalb',
+    spawns.every(
+      (spawn) =>
+        spawn.x < 0 || spawn.x > ARENA.width || spawn.y < 0 || spawn.y > ARENA.height,
+    ),
+  );
+  check(
+    'Kein Zombie-Einstieg liegt in der Eckverteidigung',
+    !cornerDefense ||
+      spawns.every((spawn) => {
+        const entryX = Math.max(12, Math.min(ARENA.width - 12, spawn.x));
+        const entryY = Math.max(12, Math.min(ARENA.height - 12, spawn.y));
+        return !room.systems.world.circleOverlapsDefense(
+          entryX,
+          entryY,
+          radius + 18,
+          cornerDefense,
+        );
+      }),
+  );
+  check(
+    'Zombie-Einstiege halten Abstand zum Spieler',
+    spawns.every((spawn) => {
+      const entryX = Math.max(12, Math.min(ARENA.width - 12, spawn.x));
+      const entryY = Math.max(12, Math.min(ARENA.height - 12, spawn.y));
+      return Math.hypot(player.x - entryX, player.y - entryY) >= radius + 198;
+    }),
   );
 }
 
