@@ -64,6 +64,26 @@ export interface GameMap {
   decor: MapDecor[];
 }
 
+/** A failed campaign run can earn up to this share of the map's victory reward. */
+export const DEFEAT_REWARD_SHARE = 0.6;
+
+/**
+ * Permanent gold for a campaign run.
+ *
+ * Reaching later waves pays a growing part of the map reward even on defeat,
+ * while beating the boss still grants the full reward. Squaring the progress
+ * keeps deliberately restarting early from becoming worthwhile.
+ */
+export function campaignRunReward(map: GameMap, reachedWave: number, victory: boolean) {
+  const wave = Math.max(0, Math.floor(reachedWave));
+  const baseGold = (15 + wave * 12) * map.moneyScale;
+  const progress = Math.min(1, wave / Math.max(1, map.waves.length));
+  const mapGold = victory
+    ? map.reward
+    : map.reward * DEFEAT_REWARD_SHARE * progress * progress;
+  return Math.round(baseGold + mapGold);
+}
+
 export function seeded(seed: number) {
   let state = seed >>> 0;
   return () => {

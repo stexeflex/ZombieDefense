@@ -28,6 +28,7 @@ const {
   WEAPON_ORDER,
   ZOMBIES,
   ammoRefillCost,
+  campaignRunReward,
   dashReduction,
   reserveCapacity,
   sellValue,
@@ -856,6 +857,35 @@ console.log('\n== Endlosmodus ==');
   );
   room.systems.waves.startRun();
   check('Aus derselben Lobby startet der nächste Run', room.state.phase === 'combat');
+}
+
+console.log('\n== Kampagnenlohn bei Niederlage ==');
+{
+  const map = MAPS[MAPS.length - 1];
+  const room = makeRoom(map.id);
+  const player = join(room, 'p1');
+  let reward = null;
+  room.broadcast = (type, payload) => {
+    if (type === 'permanent_reward') reward = payload;
+  };
+  room.systems.waves.startRun();
+  room.state.wave = map.waves.length - 1;
+  player.health = 0;
+  player.alive = false;
+  room.systems.waves.checkDefeat();
+
+  check(
+    'Eine späte Niederlage zahlt den Fortschrittsbonus',
+    reward !== null &&
+      reward.gold === campaignRunReward(map, map.waves.length - 1, false) &&
+      reward.gold > map.reward / 2,
+    `(${reward && reward.gold} Gold)`,
+  );
+  check(
+    'Der Sieg bleibt mehr wert',
+    reward !== null && reward.gold < campaignRunReward(map, map.waves.length, true),
+    `(${reward && reward.gold} Gold)`,
+  );
 }
 
 console.log('\n== Arsenal ==');

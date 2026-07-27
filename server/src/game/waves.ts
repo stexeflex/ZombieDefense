@@ -1,5 +1,6 @@
 import {
   SHIELD_SHARE,
+  campaignRunReward,
   endlessWave,
   reserveCapacity,
   startingMoney,
@@ -200,9 +201,9 @@ export class WaveSystem {
       : state.endless
         ? `Endlos-Run beendet · Welle ${state.wave}`
         : `Der Run auf ${this.world.map.name} ist vorbei`;
-    const gold = Math.round(
-      (15 + state.wave * 12) * this.world.map.moneyScale + (victory ? this.world.map.reward : 0),
-    );
+    const gold = state.endless
+      ? Math.round((15 + state.wave * 12) * this.world.map.moneyScale)
+      : campaignRunReward(this.world.map, state.wave, victory);
     this.onReward({
       gold,
       runId: this.runId,

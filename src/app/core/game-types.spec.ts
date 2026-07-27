@@ -32,6 +32,7 @@ import {
   ZOMBIE_TYPES,
   ammoRefillCost,
   armorReduction,
+  campaignRunReward,
   canPlaceDefense,
   dashReduction,
   defenseFootprint,
@@ -72,6 +73,19 @@ describe('map campaign', () => {
 
   it('pays enough boss gold to fund several upgrade paths across the campaign', () => {
     expect(MAPS.reduce((total, map) => total + map.reward, 0)).toBeGreaterThanOrEqual(34_000);
+  });
+
+  it('rewards late campaign defeats without making them as valuable as a victory', () => {
+    const map = MAPS[MAPS.length - 1];
+    const earlyDefeat = campaignRunReward(map, 1, false);
+    const lateDefeat = campaignRunReward(map, map.waves.length - 1, false);
+    const bossDefeat = campaignRunReward(map, map.waves.length, false);
+    const victory = campaignRunReward(map, map.waves.length, true);
+
+    expect(lateDefeat).toBeGreaterThan(earlyDefeat);
+    expect(lateDefeat).toBeGreaterThan(map.reward / 2);
+    expect(bossDefeat).toBeGreaterThan(lateDefeat);
+    expect(bossDefeat).toBeLessThan(victory);
   });
 
   it('ends every map with its own boss', () => {
