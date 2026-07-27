@@ -41,7 +41,12 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     icon: '+',
   },
   { key: 'startMoney', label: 'Startkapital', description: '+$ 50 Startgeld', icon: '$' },
-  { key: 'maxHealth', label: 'Maximales Leben', description: '+2 % Leben', icon: '♥' },
+  {
+    key: 'maxHealth',
+    label: 'Maximales Spielerleben',
+    description: '+2 % maximales Leben',
+    icon: '♥',
+  },
   { key: 'armor', label: 'Panzerung', description: '−1 % Schaden (max. −35 %)', icon: '⛨' },
   { key: 'moveSpeed', label: 'Bewegung', description: '+2 % Tempo', icon: '➜' },
   { key: 'dashCharges', label: 'Zusätzlicher Dash', description: '+1 Dash-Ladung', icon: '»' },
@@ -131,7 +136,7 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
   {
     key: 'dashShock',
     label: 'Stoßdash',
-    description: 'Der Dash schleudert Zombies weg und verletzt sie.',
+    description: 'Der ganze Dash schleudert getroffene Zombies weit weg und verletzt sie.',
     icon: '✺',
   },
   {

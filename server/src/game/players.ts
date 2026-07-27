@@ -7,6 +7,7 @@ import {
   DASH_SECONDS,
   DASH_SHIELD_PER_HIT,
   DASH_SHOCK_DAMAGE,
+  DASH_SHOCK_FORCE,
   DASH_SHOCK_RADIUS,
   DASH_SPEED,
   DEFENSES,
@@ -208,23 +209,16 @@ export class PlayerSystem {
         if (Math.hypot(zombie.x - player.x, zombie.y - player.y) > DASH_SHOCK_RADIUS) return;
         victims.push([id, zombie]);
       });
-      const damage = this.dashDamage(DASH_SHOCK_DAMAGE, runtime.upgrades);
-      for (const [id, zombie] of victims) {
-        const angle = Math.atan2(zombie.y - player.y, zombie.x - player.x);
-        zombie.x = this.world.clamp(zombie.x + Math.cos(angle) * 42, 12, ARENA.width - 12);
-        zombie.y = this.world.clamp(zombie.y + Math.sin(angle) * 42, 12, ARENA.height - 12);
-        this.world.damageZombie(id, zombie, damage, player.id);
-      }
+      this.applyDashHits(player, runtime, victims, true);
     }
   }
 
   /**
-   * Everything the blade dash runs through takes a cut and pays out a bit of
-   * shield. The whole travelled line is tested, not just where the player ends
-   * up: at more than three times the walking speed a dash would otherwise jump
-   * clean over a zombie between two ticks.
+   * Both offensive dash perks cover the whole travelled line, not just the
+   * activation point. At more than three times walking speed a point-only test
+   * would otherwise jump clean over zombies between two ticks.
    */
-  private cutThroughZombies(
+  private hitZombiesAlongDash(
     player: PlayerState,
     runtime: RuntimePlayer,
     fromX: number,
@@ -245,14 +239,44 @@ export class PlayerSystem {
       if (at !== undefined) victims.push([id, zombie]);
     });
     if (victims.length === 0) return;
+    this.applyDashHits(player, runtime, victims, false);
+  }
 
-    const damage = this.dashDamage(DASH_CUT_DAMAGE, runtime.upgrades);
+  private applyDashHits(
+    player: PlayerState,
+    runtime: RuntimePlayer,
+    victims: Array<[string, ZombieState]>,
+    radialPush: boolean,
+  ) {
+    const shockDamage = this.dashDamage(DASH_SHOCK_DAMAGE, runtime.upgrades);
+    const cutDamage = this.dashDamage(DASH_CUT_DAMAGE, runtime.upgrades);
     const shield = DASH_SHIELD_PER_HIT * (1 + runtime.upgrades.dashShield * 0.02);
     for (const [id, zombie] of victims) {
+      if (runtime.dashHits.has(id)) continue;
       runtime.dashHits.add(id);
-      player.shieldMax = this.shieldCap(player);
-      player.shield = Math.min(player.shieldMax, player.shield + shield);
-      this.world.pushFx({ k: 'shield', x: zombie.x, y: zombie.y });
+      let damage = 0;
+      if (runtime.perks.dashShock) {
+        const angle = radialPush
+          ? Math.atan2(zombie.y - player.y, zombie.x - player.x)
+          : Math.atan2(player.dashDirY, player.dashDirX);
+        zombie.x = this.world.clamp(
+          zombie.x + Math.cos(angle) * DASH_SHOCK_FORCE,
+          12,
+          ARENA.width - 12,
+        );
+        zombie.y = this.world.clamp(
+          zombie.y + Math.sin(angle) * DASH_SHOCK_FORCE,
+          12,
+          ARENA.height - 12,
+        );
+        damage += shockDamage;
+      }
+      if (runtime.perks.dashBlades) {
+        damage += cutDamage;
+        player.shieldMax = this.shieldCap(player);
+        player.shield = Math.min(player.shieldMax, player.shield + shield);
+        this.world.pushFx({ k: 'shield', x: zombie.x, y: zombie.y });
+      }
       this.world.damageZombie(id, zombie, damage, player.id);
     }
   }
@@ -308,7 +332,9 @@ export class PlayerSystem {
     this.resolveObstacles(player);
     this.resolveDefenses(player);
     this.resolveVehicles(player);
-    if (dashing && runtime.perks.dashBlades) this.cutThroughZombies(player, runtime, fromX, fromY);
+    if (dashing && (runtime.perks.dashShock || runtime.perks.dashBlades)) {
+      this.hitZombiesAlongDash(player, runtime, fromX, fromY);
+    }
     player.rotation = Math.atan2(input.aimY - player.y, input.aimX - player.x);
   }
 

@@ -59,6 +59,8 @@ export interface GameMap {
 export const DEFEAT_REWARD_SHARE = 0.6;
 /** Consolation on top of everything a lost campaign run earned. */
 export const DEFEAT_REWARD_BONUS = 0.2;
+/** Campaign runs now pay roughly twice as much permanent gold at every depth. */
+export const CAMPAIGN_REWARD_MULTIPLIER = 2;
 /** Endless starts paying a survival bonus once the planned-map length is behind you. */
 export const ENDLESS_REWARD_RAMP_WAVE = 10;
 
@@ -76,7 +78,8 @@ export function campaignRunReward(map: GameMap, reachedWave: number, victory: bo
   const progress = Math.min(1, wave / Math.max(1, map.waves.length));
   const mapGold = victory ? map.reward : map.reward * DEFEAT_REWARD_SHARE * progress * progress;
   const gold = baseGold + mapGold;
-  return Math.round(victory ? gold : gold * (1 + DEFEAT_REWARD_BONUS));
+  const result = victory ? gold : gold * (1 + DEFEAT_REWARD_BONUS);
+  return Math.round(result * CAMPAIGN_REWARD_MULTIPLIER);
 }
 
 /**

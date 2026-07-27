@@ -36,6 +36,7 @@ const WEAPON_SOUND: Record<WeaponType, SoundName> = {
   sniper: 'shot-heavy',
   acid: 'shot-flame',
   lmg: 'shot-heavy',
+  elephant: 'shot-heavy',
   flamer: 'shot-flame',
   cryo: 'shot-frost',
   rocket: 'shot-rocket',

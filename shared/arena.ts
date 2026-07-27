@@ -37,9 +37,10 @@ export const DASH_LOCK = 0.28;
 export const DASH_BASE_RESIST = 0.4;
 /** How much more of a hit every level of the dash resistance swallows. */
 export const DASH_RESIST_STEP = 0.1;
-/** Radius and damage of the shockwave the dash perk adds. */
-export const DASH_SHOCK_RADIUS = 96;
-export const DASH_SHOCK_DAMAGE = 45;
+/** Initial reach, damage and shove of the shockwave the dash perk adds. */
+export const DASH_SHOCK_RADIUS = 112;
+export const DASH_SHOCK_DAMAGE = 65;
+export const DASH_SHOCK_FORCE = 90;
 /** Damage every enemy takes that the blade dash runs through. */
 export const DASH_CUT_DAMAGE = 58;
 /** Shield one of those hits hands out, before the levelled upgrade. */

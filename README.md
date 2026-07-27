@@ -28,7 +28,7 @@ Aufruf kann das Laden deshalb kurz dauern.
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
 - dreizehn Zombiearten plus zehn Bosse
-- achtzehn Waffen von der Pistole bis zur Nova-Kanone, darunter Railgun und
+- neunzehn Waffen von der Pistole bis zur Nova-Kanone, darunter Railgun und
   Gravitationswerfer für teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
@@ -56,18 +56,18 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 ### Karten
 
-| Karte              | Wellen | Härte | Endboss        | Gold |
-| ------------------ | ------ | ----- | -------------- | ---- |
-| Vorposten 07       | 10     | ×1    | Fleischkönig   | 150  |
-| Industriehafen     | 12     | ×1,45 | Brutmutter     | 320  |
-| Militärbasis Nord  | 14     | ×2    | Feldmarschall  | 600  |
-| Krater-Quarantäne  | 16     | ×2,8  | Artillerist    | 1000 |
-| Metro Sektor 9     | 17     | ×3,6  | Sogfürst       | 1500 |
-| Stahlwerk Kessel 3 | 18     | ×4,4  | Schlackenherr  | 2100 |
-| Zitadelle Alpha    | 20     | ×5,2  | Zerreißer      | 3000 |
-| Nekropole          | 22     | ×6    | Schwarmkönigin | 4200 |
-| Reaktorblock 4     | 24     | ×6,8  | Seuchenfürst   | 5800 |
-| Abgrund-Kathedrale | 26     | ×7,6  | OMEGA          | 9000 |
+| Karte              | Wellen | Härte | Endboss        | Gold bei Sieg |
+| ------------------ | ------ | ----- | -------------- | ------------- |
+| Vorposten 07       | 10     | ×1    | Fleischkönig   | 570           |
+| Industriehafen     | 12     | ×1,45 | Brutmutter     | 1101          |
+| Militärbasis Nord  | 14     | ×2    | Feldmarschall  | 1932          |
+| Krater-Quarantäne  | 16     | ×2,8  | Artillerist    | 3159          |
+| Metro Sektor 9     | 17     | ×3,6  | Sogfürst       | 4577          |
+| Stahlwerk Kessel 3 | 18     | ×4,4  | Schlackenherr  | 6233          |
+| Zitadelle Alpha    | 20     | ×5,2  | Zerreißer      | 8652          |
+| Nekropole          | 22     | ×6    | Schwarmkönigin | 11748         |
+| Reaktorblock 4     | 24     | ×6,8  | Seuchenfürst   | 15721         |
+| Abgrund-Kathedrale | 26     | ×7,6  | OMEGA          | 22970         |
 
 ### Endlosmodus
 
@@ -113,6 +113,7 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 | Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner              |
 | Säurewerfer          | 2000  | zerplatzt und lässt grüne Säurelachen liegen       |
 | Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                              |
+| Elefantenbüchse      | 2500  | zwölf Schuss, 720 Schaden pro Treffer              |
 | Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand            |
 | Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner   |
 | Raketenwerfer        | 3300  | Sprengschaden im Umkreis                           |
@@ -233,6 +234,9 @@ metallisch statt dumpf, so ist ein geglücktes Ausweichen auch ohne Blick auf de
 Ring zu hören. Dazu gibt es im permanenten Shop weitere Ladungen und eine
 schnellere Aufladung.
 
+Der **Stoßdash** wirkt jetzt über die komplette Dash-Strecke. Getroffene Zombies
+werden deutlich weiter weggeschleudert und nehmen erhöhten Schaden.
+
 Mit dem besonderen Vorteil **Klingendash** wird der Dash zur Waffe: Jeder Gegner,
 durch den man hindurchdasht, nimmt Schaden und lädt ein Schild. Geprüft wird die
 ganze zurückgelegte Strecke, ein Gegner also nie doppelt pro Dash. Das Schild
@@ -270,14 +274,16 @@ jeder Prämie, egal ob er geschossen, gebaut oder wiederbelebt hat. Der Abschuss
 in der Statistik zählt für den, der dem Zombie am meisten Schaden zugefügt hat.
 
 Permanentes Gold gibt es am Ende jedes Runs und auch bei einem freiwilligen
-Ausstieg; die Auszahlung wird vor dem Verlassen bestätigt. Im Endlosmodus
+Ausstieg; die Auszahlung wird vor dem Verlassen bestätigt. Kampagnenruns zahlen
+jetzt auf jeder erreichten Tiefe ungefähr doppelt so viel wie zuvor, auch bei
+einer Niederlage. Im Endlosmodus
 steigt der Lohn nach Welle 10 immer stärker, sodass Welle 50 auf der ersten
 Karte 1.415 statt 615 Gold bringt. „Zurück zur Lobby“ öffnet nur für den
 klickenden Spieler eine frische Lobby und zieht keinen Mitspieler mit. Der Shop steht auf der Startseite
 und in der Lobby offen, solange der Run noch nicht läuft — dort gekaufte
 Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
-- **Stufen-Upgrades** – Leben, Panzerung, Tempo, Waffenschaden, Nachladen,
+- **Stufen-Upgrades** – maximales Spielerleben, Panzerung, Tempo, Waffenschaden, Nachladen,
   Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
   Fahrzeugpanzerung, Hüllenpanzerung, Motorleistung, Rammschaden, Bordwaffen,
   Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schadensreduktion,

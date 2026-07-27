@@ -13,6 +13,7 @@ import {
   WEAPON_ORDER,
   ZOMBIES,
   ammoRefillCost,
+  campaignRunReward,
   dashReduction,
   findMap,
   reserveCapacity,
@@ -288,6 +289,11 @@ export class Lobby implements OnInit, OnDestroy {
 
   bossName(mapId: string) {
     return ZOMBIES[findMap(mapId).boss].label;
+  }
+
+  campaignVictoryGold(mapId: string) {
+    const map = findMap(mapId);
+    return campaignRunReward(map, map.waves.length, true);
   }
 
   bossThreat(mapId: string) {

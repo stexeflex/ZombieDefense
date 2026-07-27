@@ -2,12 +2,16 @@ import {
   ARENA,
   BARRICADE_ORDER,
   BOSSES,
+  CAMPAIGN_REWARD_MULTIPLIER,
   DASH_BASE_CHARGES,
   DASH_BASE_RESIST,
   DASH_CUT_DAMAGE,
   DASH_RESIST_STEP,
   DASH_SECONDS,
   DASH_SHIELD_PER_HIT,
+  DASH_SHOCK_DAMAGE,
+  DASH_SHOCK_FORCE,
+  DASH_SHOCK_RADIUS,
   DASH_SPEED,
   DEFEAT_REWARD_BONUS,
   DEFEAT_REWARD_SHARE,
@@ -119,21 +123,24 @@ describe('map campaign', () => {
     expect(bossDefeat).toBeLessThan(victory);
   });
 
-  it('pays a fifth more for a lost campaign run than the bare progress', () => {
+  it('doubles campaign payouts while retaining the defeat consolation', () => {
     for (const map of MAPS) {
       for (const wave of [1, Math.round(map.waves.length / 2), map.waves.length]) {
         const bare = (15 + wave * 12) * map.moneyScale;
         const progress = Math.min(1, wave / map.waves.length);
         const withoutBonus = bare + map.reward * DEFEAT_REWARD_SHARE * progress * progress;
         expect(campaignRunReward(map, wave, false)).toBe(
-          Math.round(withoutBonus * (1 + DEFEAT_REWARD_BONUS)),
+          Math.round(withoutBonus * (1 + DEFEAT_REWARD_BONUS) * CAMPAIGN_REWARD_MULTIPLIER),
         );
       }
-      // Winning is untouched — the consolation is only for a lost run.
+      // Victories are doubled too; the consolation itself remains defeat-only.
       expect(campaignRunReward(map, map.waves.length, true)).toBe(
-        Math.round((15 + map.waves.length * 12) * map.moneyScale + map.reward),
+        Math.round(
+          ((15 + map.waves.length * 12) * map.moneyScale + map.reward) * CAMPAIGN_REWARD_MULTIPLIER,
+        ),
       );
     }
+    expect(CAMPAIGN_REWARD_MULTIPLIER).toBe(2);
   });
 
   it('pays a meaningful survival bonus for deep endless runs', () => {
@@ -264,8 +271,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists eighteen weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(18);
+  it('lists nineteen weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(19);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -329,6 +336,17 @@ describe('weapon balance', () => {
     expect(magnum.damage).toBeGreaterThan(WEAPONS.nailgun.damage);
     expect(dps('magnum')).toBeGreaterThan(dps('nailgun'));
     expect(dps('magnum')).toBeLessThan(dps('lmg'));
+  });
+
+  it('gives the elephant rifle scarce ammunition and extreme single-shot damage', () => {
+    const elephant = WEAPONS.elephant;
+    expect(elephant.cost).toBeGreaterThan(WEAPONS.lmg.cost);
+    expect(elephant.cost).toBeLessThan(WEAPONS.flamer.cost);
+    expect(elephant.magazine).toBeLessThanOrEqual(2);
+    expect(elephant.magazine + elephant.reserve).toBeLessThanOrEqual(12);
+    expect(elephant.damage).toBeGreaterThan(WEAPONS.railgun.damage);
+    expect(elephant.pierce).toBe(0);
+    expect(elephant.splashRadius).toBeUndefined();
   });
 
   it('lets the frost cannon brake instead of burn', () => {
@@ -768,6 +786,13 @@ describe('permanent upgrades', () => {
     expect(SHIELD_SHARE).toBeLessThan(1);
     expect(SHIELD_DECAY).toBeGreaterThan(0);
     expect(PERK_COST.dashBlades).toBeGreaterThan(0);
+  });
+
+  it('makes the shock dash a meaningful crowd shove', () => {
+    expect(DASH_SHOCK_RADIUS).toBeGreaterThan(100);
+    expect(DASH_SHOCK_FORCE).toBeGreaterThan(70);
+    expect(DASH_SHOCK_DAMAGE).toBeGreaterThan(DASH_CUT_DAMAGE);
+    expect(PERK_COST.dashShock).toBeGreaterThan(0);
   });
 
   it('caps armour so no build becomes untouchable', () => {

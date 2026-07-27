@@ -403,6 +403,21 @@ console.log('\n== Säure, Feuer und Magnum ==');
     `(${Math.round(magnum.front)})`,
   );
   check('Magnum durchschlägt niemanden', magnum.back === 0, `(${Math.round(magnum.back)})`);
+  const elephant = line('elephant');
+  check(
+    'Elefantenbüchse richtet extremen Einzelschaden an',
+    elephant.front >= WEAPONS.elephant.damage,
+    `(${Math.round(elephant.front)})`,
+  );
+  check(
+    'Elefantenbüchse bleibt im ersten Gegner stecken',
+    elephant.back === 0,
+    `(${Math.round(elephant.back)})`,
+  );
+  check(
+    'Elefantenbüchse hat nur zwölf Schuss',
+    WEAPONS.elephant.magazine + WEAPONS.elephant.reserve === 12,
+  );
   const nailgun = line('nailgun');
   check(
     'Zum Vergleich: der Nagelwerfer geht durch',
@@ -1138,6 +1153,38 @@ console.log('\n== Dash ==');
   );
 }
 
+console.log('\n== Stoßdash ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1', { perks: { dashShock: true } });
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  makeInvincible(player);
+
+  const target = room.systems.world.spawnZombie('big', { x: player.x + 150, y: player.y });
+  target.health = 1e6;
+  target.maxHealth = 1e6;
+  target.speed = 0;
+  target.baseSpeed = 0;
+  const beforeX = target.x;
+  const beforeHealth = target.health;
+
+  runtime.input = { ...IDLE, dash: true, right: true, aimX: player.x + 300, aimY: player.y };
+  room.update(50);
+  runtime.input = { ...IDLE, right: true, aimX: player.x + 300, aimY: player.y };
+  step(room, 4);
+
+  check('Stoßdash trifft über die ganze Dash-Strecke', target.health < beforeHealth);
+  check(
+    'Stoßdash schleudert den Gegner deutlich nach vorne',
+    target.x - beforeX > 70,
+    `(${Math.round(target.x - beforeX)} px)`,
+  );
+}
+
 console.log('\n== Klingendash und Schild ==');
 {
   const room = makeRoom('outpost');
@@ -1632,7 +1679,7 @@ console.log('\n== Kampagnenlohn bei Niederlage ==');
   room.systems.waves.checkDefeat();
 
   check(
-    'Eine späte Niederlage zahlt den Fortschrittsbonus',
+    'Eine späte Niederlage zahlt den verdoppelten Fortschrittsbonus',
     reward !== null &&
       reward.gold === campaignRunReward(map, map.waves.length - 1, false) &&
       reward.gold > map.reward / 2,

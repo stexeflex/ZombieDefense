@@ -1,4 +1,4 @@
-import { ProgressService } from './progress.service';
+import { ProgressService, UPGRADE_DEFINITIONS } from './progress.service';
 
 describe('ProgressService run rewards', () => {
   beforeEach(() => localStorage.clear());
@@ -26,5 +26,14 @@ describe('ProgressService run rewards', () => {
     expect(progress.addRunReward(500, 'legacy-run', 'outpost', true)).toBe(false);
     expect(progress.gold()).toBe(75);
     expect(progress.isCleared('outpost')).toBe(false);
+  });
+});
+
+describe('ProgressService upgrade shop', () => {
+  it('offers maximum player health as a levelled upgrade', () => {
+    const health = UPGRADE_DEFINITIONS.find((upgrade) => upgrade.key === 'maxHealth');
+
+    expect(health?.label).toContain('Spielerleben');
+    expect(health?.description).toContain('maximales Leben');
   });
 });

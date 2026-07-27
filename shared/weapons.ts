@@ -8,6 +8,7 @@ export type WeaponType =
   | 'sniper'
   | 'acid'
   | 'lmg'
+  | 'elephant'
   | 'flamer'
   | 'cryo'
   | 'rocket'
@@ -213,6 +214,23 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     ammoCost: 175,
     description: '100 Schuss Dauerfeuer, langes Nachladen',
   },
+  elephant: {
+    label: 'Elefantenbüchse',
+    short: 'EB',
+    cost: 2500,
+    damage: 720,
+    fireDelay: 1450,
+    magazine: 2,
+    reserve: 10,
+    reload: 2500,
+    speed: 1750,
+    pellets: 1,
+    spread: 0.008,
+    pierce: 0,
+    range: 1100,
+    ammoCost: 260,
+    description: 'Nur zwölf Schuss, dafür vernichtender Einzelschaden',
+  },
   flamer: {
     label: 'Flammenwerfer',
     short: 'FL',
@@ -397,6 +415,7 @@ export const WEAPON_ORDER: WeaponType[] = [
   'sniper',
   'acid',
   'lmg',
+  'elephant',
   'flamer',
   'cryo',
   'rocket',
