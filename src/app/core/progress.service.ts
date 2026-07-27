@@ -48,7 +48,12 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'weaponDamage', label: 'Waffenschaden', description: '+2 % Schaden', icon: '✦' },
   { key: 'reloadSpeed', label: 'Nachladen', description: '+2 % schneller', icon: '↻' },
   { key: 'magazineSize', label: 'Magazingröße', description: '+2 % Kapazität', icon: '▥' },
-  { key: 'reserveAmmo', label: 'Munitionsvorrat', description: '+2 % Reserve', icon: '⛁' },
+  {
+    key: 'reserveAmmo',
+    label: 'Munitionsreserve',
+    description: '+2 % Munition für alle gekauften Waffen',
+    icon: '⛁',
+  },
   { key: 'grenadeDamage', label: 'Granatenschaden', description: '+2 % Schaden', icon: '●' },
   { key: 'grenadeCooldown', label: 'Granaten-Cooldown', description: '+2 % schneller', icon: '◷' },
   {

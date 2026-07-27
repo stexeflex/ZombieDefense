@@ -381,7 +381,7 @@ export const MAPS: GameMap[] = [
       'Ruhiger Einstieg mit offenen Sichtlinien. Zehn Wellen, zwei Mini-Boss-Wellen und der Fleischkönig als erster Endboss.',
     difficulty: 1,
     moneyScale: 1,
-    reward: 150,
+    reward: 200,
     boss: 'butcher',
     theme: {
       ground: '#101c16',
@@ -413,7 +413,7 @@ export const MAPS: GameMap[] = [
       'Enge Gassen zwischen Containern. Zwölf Wellen, eine Schwarmwelle und die Brutmutter, die sich beim Sterben teilt.',
     difficulty: 1.45,
     moneyScale: 1.25,
-    reward: 320,
+    reward: 400,
     boss: 'brood',
     theme: {
       ground: '#0f1720',
@@ -445,7 +445,7 @@ export const MAPS: GameMap[] = [
       'Befestigte Stellungen mit langen Feuergassen. Vierzehn Wellen und der Feldmarschall, der sich und seine Horde heilt.',
     difficulty: 2,
     moneyScale: 1.5,
-    reward: 600,
+    reward: 750,
     boss: 'warlord',
     theme: {
       ground: '#1a170f',
@@ -477,7 +477,7 @@ export const MAPS: GameMap[] = [
       'Offenes Feld ohne Deckung. Sechzehn Wellen und der Artillerist, dessen Bomben sich mit roten Warnkreisen ankündigen.',
     difficulty: 2.8,
     moneyScale: 1.8,
-    reward: 1000,
+    reward: 1250,
     boss: 'artillery',
     theme: {
       ground: '#1b1116',
@@ -509,7 +509,7 @@ export const MAPS: GameMap[] = [
       'Bahnsteige und blockierte Gleise. Siebzehn Wellen und der Sogfürst, der den Trupp zu sich zieht und wieder wegschleudert.',
     difficulty: 3.6,
     moneyScale: 2.15,
-    reward: 1500,
+    reward: 1900,
     boss: 'vortex',
     theme: {
       ground: '#0d1418',
@@ -541,7 +541,7 @@ export const MAPS: GameMap[] = [
       'Enge Gänge zwischen Hochöfen. Achtzehn Wellen und der Schlackenherr, der brennende Lavapfützen hinterlässt.',
     difficulty: 4.4,
     moneyScale: 2.5,
-    reward: 2100,
+    reward: 2600,
     boss: 'slag',
     theme: {
       ground: '#1d120c',
@@ -573,7 +573,7 @@ export const MAPS: GameMap[] = [
       'Zwanzig Wellen im Festungsring. Der Zerreißer schlägt mit einer gewaltigen Druckwelle zu — der rote Kreis ist die einzige Warnung.',
     difficulty: 5.2,
     moneyScale: 2.9,
-    reward: 3000,
+    reward: 3750,
     boss: 'render',
     theme: {
       ground: '#131722',
@@ -605,7 +605,7 @@ export const MAPS: GameMap[] = [
       'Zweiundzwanzig Wellen zwischen Grabmalen. Die Schwarmkönigin schickt ohne Pause Nachschub und zerfällt beim Sterben in Brutlinge.',
     difficulty: 6,
     moneyScale: 3.3,
-    reward: 4200,
+    reward: 5250,
     boss: 'swarmqueen',
     theme: {
       ground: '#141319',
@@ -637,7 +637,7 @@ export const MAPS: GameMap[] = [
       'Vierundzwanzig Wellen im Strahlenschatten. Der Seuchenfürst vergiftet den Boden und flickt seine Horde schneller zusammen, als sie fällt.',
     difficulty: 6.8,
     moneyScale: 3.7,
-    reward: 5800,
+    reward: 7250,
     boss: 'plague',
     theme: {
       ground: '#0e1a13',
@@ -669,7 +669,7 @@ export const MAPS: GameMap[] = [
       'Sechsundzwanzig Wellen bis zum Ende. OMEGA bringt fast jede Fähigkeit der bisherigen Bosse mit — heilen kann es sich als einziges nicht.',
     difficulty: 7.6,
     moneyScale: 4.2,
-    reward: 9000,
+    reward: 11250,
     boss: 'omega',
     theme: {
       ground: '#16101a',

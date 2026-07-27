@@ -435,9 +435,38 @@
 
 .game-layout {
   min-height: 0;
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 322px;
   overflow: hidden;
+  transition: grid-template-columns 180ms ease;
+}
+
+.game-layout.combat-panel-collapsed {
+  grid-template-columns: minmax(0, 1fr) 0;
+}
+
+.combat-panel-toggle {
+  position: absolute;
+  top: 50%;
+  right: 322px;
+  z-index: 25;
+  width: 34px;
+  height: 64px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid var(--line-bright);
+  border-radius: 4px 0 0 4px;
+  background: rgba(7, 13, 11, 0.94);
+  color: var(--acid);
+  font-family: var(--mono);
+  font-size: 1.25rem;
+  font-weight: 900;
+  transition: right 180ms ease;
+}
+
+.game-layout.combat-panel-collapsed .combat-panel-toggle {
+  right: 0;
 }
 
 .game-stage {
@@ -613,11 +642,16 @@ kbd {
 }
 
 .side-panel {
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   border-left: 1px solid var(--line);
   background: #0c1411;
   z-index: 5;
+}
+
+.game-layout.combat-panel-collapsed .side-panel {
+  display: none;
 }
 
 .squad-mini {
@@ -1575,11 +1609,26 @@ kbd {
     overflow: visible;
   }
 
+  .game-layout.combat-panel-collapsed {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(440px, min(62dvh, 720px)) auto;
+  }
+
+  .combat-panel-toggle {
+    display: none;
+  }
+
   .side-panel {
     border-left: 0;
     border-top: 1px solid var(--line);
     display: grid;
     grid-template-columns: 280px 1fr;
+  }
+
+  .game-layout.combat-panel-collapsed .side-panel {
+    display: grid;
+    overflow: auto;
+    border-top: 1px solid var(--line);
   }
 
   .shop-panel {

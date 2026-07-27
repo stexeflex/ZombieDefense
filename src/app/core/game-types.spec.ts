@@ -68,6 +68,10 @@ describe('map campaign', () => {
     }
   });
 
+  it('pays enough boss gold to fund several upgrade paths across the campaign', () => {
+    expect(MAPS.reduce((total, map) => total + map.reward, 0)).toBeGreaterThanOrEqual(34_000);
+  });
+
   it('ends every map with its own boss', () => {
     const seen = new Set<string>();
     for (const map of MAPS) {

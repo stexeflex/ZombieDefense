@@ -825,15 +825,24 @@ console.log('\n== Arsenal ==');
   room.systems.build.selectWeapon('p1', 'pistol');
   check('Startwaffe bleibt jederzeit verfügbar', player.weapon === 'pistol');
 
+  const pistolMoney = player.money;
+  player.reserveAmmo = 10;
+  room.systems.build.buyAmmo('p1');
+  check(
+    'Unendliche Pistolenmunition kann nicht gekauft werden',
+    player.money === pistolMoney && player.reserveAmmo === 10,
+  );
+
+  room.systems.build.selectWeapon('p1', 'rifle');
   const money = player.money;
-  player.reserveAmmo = reserveCapacity('pistol');
+  player.reserveAmmo = reserveCapacity('rifle');
   room.systems.build.buyAmmo('p1');
   check('Kein Munitionskauf bei vollem Vorrat', player.money === money);
   player.reserveAmmo = 10;
   room.systems.build.buyAmmo('p1');
   check(
     'Munitionskauf füllt bis zum Maximum',
-    player.money < money && player.reserveAmmo === reserveCapacity('pistol'),
+    player.money < money && player.reserveAmmo === reserveCapacity('rifle'),
     `(${player.reserveAmmo})`,
   );
 }

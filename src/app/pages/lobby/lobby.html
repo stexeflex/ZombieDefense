@@ -256,7 +256,12 @@
         </section>
       </section>
     } @else {
-      <section class="game-layout">
+      <section
+        class="game-layout"
+        [class.combat-panel-collapsed]="
+          snapshot.phase === 'combat' && combatPanelCollapsed()
+        "
+      >
         <div class="game-stage">
           <app-game-canvas />
 
@@ -436,7 +441,27 @@
           }
         </div>
 
-        <aside class="side-panel">
+        @if (snapshot.phase === 'combat') {
+          <button
+            class="combat-panel-toggle"
+            type="button"
+            aria-controls="mission-side-panel"
+            [attr.aria-expanded]="!combatPanelCollapsed()"
+            [attr.aria-label]="
+              combatPanelCollapsed()
+                ? 'Rechte Infoleiste einblenden'
+                : 'Rechte Infoleiste ausblenden'
+            "
+            [attr.title]="
+              combatPanelCollapsed() ? 'Infoleiste einblenden' : 'Infoleiste ausblenden'
+            "
+            (click)="toggleCombatPanel()"
+          >
+            {{ combatPanelCollapsed() ? '‹' : '›' }}
+          </button>
+        }
+
+        <aside id="mission-side-panel" class="side-panel">
           <section class="squad-mini">
             <header>
               <span>{{ activeMap().name }}</span>

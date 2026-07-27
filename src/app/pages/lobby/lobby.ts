@@ -44,6 +44,7 @@ export class Lobby implements OnInit, OnDestroy {
   readonly lobbyCode = signal('');
   readonly shopTab = signal<ShopTab>('weapons');
   readonly upgradesOpen = signal(false);
+  readonly combatPanelCollapsed = signal(false);
   readonly fullscreen = signal(false);
   readonly fullscreenSupported =
     typeof document !== 'undefined' &&
@@ -104,6 +105,10 @@ export class Lobby implements OnInit, OnDestroy {
   setUiScale(event: Event) {
     const input = event.target as HTMLInputElement;
     this.display.setUiScale(Number(input.value));
+  }
+
+  toggleCombatPanel() {
+    this.combatPanelCollapsed.update((collapsed) => !collapsed);
   }
 
   async toggleFullscreen() {
