@@ -9,6 +9,8 @@ export class TurretSystem {
     this.world.state.defenses.forEach((defense) => {
       const config = DEFENSES[defense.type];
       if (config.kind !== 'turret') return;
+      // A hangar carries no gun; its drones do the shooting, see DroneSystem.
+      if (config.drones) return;
       defense.cooldown = Math.max(0, defense.cooldown - delta);
 
       const upgrades = this.world.runtime.get(defense.ownerId)?.upgrades ?? EMPTY_UPGRADES;
@@ -48,6 +50,9 @@ export class TurretSystem {
           projectile.burnSeconds = config.burnSeconds ?? 0;
           projectile.slow = config.slow ?? 0;
           projectile.slowSeconds = config.slowSeconds ?? 0;
+          projectile.acidRadius = config.acidRadius ?? 0;
+          projectile.acidDps = (config.acidDps ?? 0) * bonus;
+          projectile.acidSeconds = config.acidSeconds ?? 0;
           if (config.burn || config.slow) projectile.radius = 10;
           if (config.splashRadius) {
             projectile.splashRadius = config.splashRadius;

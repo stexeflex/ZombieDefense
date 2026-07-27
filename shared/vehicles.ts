@@ -33,8 +33,6 @@ export interface VehicleConfig {
   grip: number;
   /** How fast the hull swings around towards the driving direction. */
   turn: number;
-  /** Share of every hit the hull swallows for everyone inside. */
-  protection: number;
   /** Damage dealt to a zombie the hull runs into at full speed. */
   ram: number;
   gun?: VehicleGun;
@@ -69,7 +67,6 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     speed: 340,
     grip: 7.5,
     turn: 7,
-    protection: 0.3,
     ram: 38,
     boost: 190,
     perk: 'Nitro auf der Dash-Taste',
@@ -86,7 +83,6 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     speed: 300,
     grip: 5.2,
     turn: 4.6,
-    protection: 0.45,
     ram: 68,
     perk: 'Allrounder für zwei',
     description: 'Solide Karosserie, gutes Tempo, hält zwei Überlebende zusammen',
@@ -102,7 +98,6 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     speed: 250,
     grip: 3.8,
     turn: 3.4,
-    protection: 0.55,
     ram: 52,
     heal: 4.5,
     perk: 'Bordlazarett heilt die Besatzung',
@@ -119,7 +114,6 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     speed: 285,
     grip: 4.8,
     turn: 4.2,
-    protection: 0.45,
     ram: 74,
     gun: { damage: 17, fireDelay: 0.2, range: 430, speed: 900, pierce: 0 },
     perk: 'MG auf der Ladefläche feuert selbst',
@@ -136,7 +130,6 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     speed: 235,
     grip: 3.4,
     turn: 3,
-    protection: 0.55,
     ram: 48,
     repair: 26,
     repairRange: 260,
@@ -156,7 +149,6 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     speed: 195,
     grip: 3,
     turn: 2.6,
-    protection: 0.7,
     ram: 105,
     gun: { damage: 34, fireDelay: 0.42, range: 540, speed: 1050, pierce: 2 },
     perk: 'Schwere Panzerung für vier',
@@ -173,7 +165,6 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     speed: 170,
     grip: 2.4,
     turn: 1.9,
-    protection: 0.8,
     ram: 165,
     gun: {
       damage: 60,
@@ -201,14 +192,14 @@ export const VEHICLE_ORDER: VehicleType[] = [
 
 /** How far from the hull a player may get in, repair or sell it. */
 export const VEHICLE_REACH = 104;
-/** Even fully upgraded a hull never makes the crew untouchable. */
-export const VEHICLE_MAX_PROTECTION = 0.85;
+/** Every armour level keeps this share of incoming damage off the hull. */
+export const VEHICLE_ARMOR_STEP = 0.01;
+/** Hüllenschutz stays capped so even an upgraded vehicle still wears down. */
+export const VEHICLE_MAX_ARMOR_REDUCTION = 0.35;
 /** Seconds before the same zombie can be run over again. */
 export const VEHICLE_RAM_COOLDOWN = 0.45;
 /** Share of the ram damage the hull takes itself — driving through wears it out. */
 export const VEHICLE_RAM_SELF = 0.14;
-/** Share of a melee blow against the hull that still reaches the crew. */
-export const VEHICLE_MELEE_BLEED = 0.5;
 /** Damage everyone inside takes when the hull goes up. */
 export const VEHICLE_WRECK_DAMAGE = 45;
 /** Below this share of the top speed a ram is just a nudge. */
@@ -232,9 +223,12 @@ export function vehicleGunDamage(damage: number, gunLevel = 0) {
   return damage * (1 + gunLevel * 0.02);
 }
 
-/** Share of a hit the hull swallows for the crew, capped for every vehicle. */
-export function vehicleProtection(type: VehicleType, armorLevel = 0) {
-  return Math.min(VEHICLE_MAX_PROTECTION, VEHICLES[type].protection + armorLevel * 0.005);
+/** Share of incoming damage removed by the permanent hull-armour upgrade. */
+export function vehicleArmorReduction(armorLevel = 0) {
+  return Math.min(
+    VEHICLE_MAX_ARMOR_REDUCTION,
+    Math.max(0, Math.floor(armorLevel)) * VEHICLE_ARMOR_STEP,
+  );
 }
 
 /** Same rule as for structures: only real damage lowers the sale value. */

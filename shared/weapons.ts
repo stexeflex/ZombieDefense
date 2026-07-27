@@ -4,12 +4,14 @@ export type WeaponType =
   | 'rifle'
   | 'shotgun'
   | 'nailgun'
+  | 'magnum'
   | 'sniper'
   | 'acid'
   | 'lmg'
   | 'flamer'
   | 'cryo'
   | 'rocket'
+  | 'firerocket'
   | 'tesla'
   | 'laser'
   | 'railgun'
@@ -39,6 +41,11 @@ export interface WeaponConfig {
   chainRange?: number;
   burn?: number;
   burnSeconds?: number;
+  /** Radius of the acid puddle an impact leaves on the ground. */
+  acidRadius?: number;
+  /** Damage per second that puddle deals to everything standing in it. */
+  acidDps?: number;
+  acidSeconds?: number;
   /** Share of speed a hit takes away, 0.5 leaves half the pace. */
   slow?: number;
   slowSeconds?: number;
@@ -133,6 +140,23 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     ammoCost: 115,
     description: 'Schwere Nägel durchbohren mehrere Gegner',
   },
+  magnum: {
+    label: 'Schwere Magnum',
+    short: 'MA',
+    cost: 1550,
+    damage: 112,
+    fireDelay: 500,
+    magazine: 6,
+    reserve: 54,
+    reload: 1500,
+    speed: 1250,
+    pellets: 1,
+    spread: 0.014,
+    pierce: 0,
+    range: 780,
+    ammoCost: 125,
+    description: 'Schlägt hart zu, bleibt aber im ersten Gegner stecken',
+  },
   sniper: {
     label: 'Scharfschützengewehr',
     short: 'SR',
@@ -154,7 +178,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     label: 'Säurewerfer',
     short: 'SW',
     cost: 2000,
-    damage: 42,
+    damage: 46,
     fireDelay: 420,
     magazine: 12,
     reserve: 72,
@@ -165,11 +189,12 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     pierce: 0,
     range: 650,
     ammoCost: 155,
-    splashRadius: 90,
-    splashDamage: 85,
-    burn: 24,
-    burnSeconds: 3,
-    description: 'Säure zerplatzt in Gruppen und frisst weiter',
+    splashRadius: 80,
+    splashDamage: 55,
+    acidRadius: 96,
+    acidDps: 30,
+    acidSeconds: 4.5,
+    description: 'Zerplatzt und lässt grüne Säurelachen zurück',
   },
   lmg: {
     label: 'Maschinengewehr',
@@ -244,6 +269,27 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     splashRadius: 155,
     splashDamage: 210,
     description: 'Räumt Gruppen mit einem Schuss ab',
+  },
+  firerocket: {
+    label: 'Feuer-Raketenwerfer',
+    short: 'FR',
+    cost: 3600,
+    damage: 85,
+    fireDelay: 900,
+    magazine: 5,
+    reserve: 35,
+    reload: 2500,
+    speed: 620,
+    pellets: 1,
+    spread: 0.012,
+    pierce: 0,
+    range: 1250,
+    ammoCost: 250,
+    splashRadius: 140,
+    splashDamage: 150,
+    burn: 34,
+    burnSeconds: 4,
+    description: 'Brandrakete zerplatzt in einer Feuerwolke, die weiterfrisst',
   },
   tesla: {
     label: 'Blitzstreuer',
@@ -347,12 +393,14 @@ export const WEAPON_ORDER: WeaponType[] = [
   'rifle',
   'shotgun',
   'nailgun',
+  'magnum',
   'sniper',
   'acid',
   'lmg',
   'flamer',
   'cryo',
   'rocket',
+  'firerocket',
   'tesla',
   'laser',
   'railgun',

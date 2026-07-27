@@ -56,6 +56,7 @@ export class WaveSystem {
     state.projectiles.clear();
     state.defenses.clear();
     state.vehicles.clear();
+    state.drones.clear();
     state.hazards.clear();
     state.bossName = '';
     state.bossHealth = 0;

@@ -9,6 +9,8 @@ import {
   DASH_SECONDS,
   DASH_SHIELD_PER_HIT,
   DASH_SPEED,
+  DEFEAT_REWARD_BONUS,
+  DEFEAT_REWARD_SHARE,
   DEFENSES,
   DEFENSE_REACH,
   EMPTY_PERKS,
@@ -29,8 +31,7 @@ import {
   TURRET_ORDER,
   UPGRADE_MAX_LEVEL,
   VEHICLES,
-  VEHICLE_MAX_PROTECTION,
-  VEHICLE_MELEE_BLEED,
+  VEHICLE_MAX_ARMOR_REDUCTION,
   VEHICLE_ORDER,
   VEHICLE_RAM_SELF,
   VEHICLE_WRECK_DAMAGE,
@@ -69,9 +70,9 @@ import {
   upgradeLevelCost,
   upgradeMaxLevel,
   upgradeUnlocked,
+  vehicleArmorReduction,
   vehicleGunDamage,
   vehicleMaxHealth,
-  vehicleProtection,
   vehicleRamDamage,
   vehicleSellValue,
   vehicleTopSpeed,
@@ -114,6 +115,23 @@ describe('map campaign', () => {
     expect(lateDefeat).toBeGreaterThan(map.reward / 2);
     expect(bossDefeat).toBeGreaterThan(lateDefeat);
     expect(bossDefeat).toBeLessThan(victory);
+  });
+
+  it('pays a fifth more for a lost campaign run than the bare progress', () => {
+    for (const map of MAPS) {
+      for (const wave of [1, Math.round(map.waves.length / 2), map.waves.length]) {
+        const bare = (15 + wave * 12) * map.moneyScale;
+        const progress = Math.min(1, wave / map.waves.length);
+        const withoutBonus = bare + map.reward * DEFEAT_REWARD_SHARE * progress * progress;
+        expect(campaignRunReward(map, wave, false)).toBe(
+          Math.round(withoutBonus * (1 + DEFEAT_REWARD_BONUS)),
+        );
+      }
+      // Winning is untouched — the consolation is only for a lost run.
+      expect(campaignRunReward(map, map.waves.length, true)).toBe(
+        Math.round((15 + map.waves.length * 12) * map.moneyScale + map.reward),
+      );
+    }
   });
 
   it('pays a meaningful survival bonus for deep endless runs', () => {
@@ -244,8 +262,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists sixteen weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(16);
+  it('lists eighteen weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(18);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -268,12 +286,46 @@ describe('weapon balance', () => {
     expect(WEAPONS.flamer.range).toBeLessThan(WEAPONS.sniper.range);
     expect(WEAPONS.nailgun.pierce).toBeGreaterThan(WEAPONS.rifle.pierce);
     expect(WEAPONS.acid.splashRadius).toBeGreaterThan(0);
-    expect(WEAPONS.acid.burn).toBeGreaterThan(0);
     expect(WEAPONS.railgun.pierce).toBeGreaterThan(WEAPONS.laser.pierce);
     expect(WEAPONS.gravity.pull).toBeGreaterThan(0);
     expect(WEAPONS.gravity.slow).toBeGreaterThan(0);
     expect(WEAPONS.nova.pellets).toBeGreaterThan(1);
     expect(WEAPONS.nova.splashRadius).toBeGreaterThan(0);
+  });
+
+  it('lets acid leave puddles instead of setting anything on fire', () => {
+    expect(WEAPONS.acid.burn).toBeUndefined();
+    expect(WEAPONS.acid.acidRadius!).toBeGreaterThan(WEAPONS.acid.splashRadius!);
+    expect(WEAPONS.acid.acidDps!).toBeGreaterThan(0);
+    expect(WEAPONS.acid.acidSeconds!).toBeGreaterThan(2);
+    // The puddle carries the weapon: the burst alone is weaker than before.
+    expect(WEAPONS.acid.splashDamage!).toBeLessThan(
+      WEAPONS.acid.acidDps! * WEAPONS.acid.acidSeconds!,
+    );
+  });
+
+  it('turns the old fire burst into its own rocket launcher', () => {
+    const rocket = WEAPONS.rocket;
+    const fire = WEAPONS.firerocket;
+    expect(fire.cost).toBeGreaterThan(rocket.cost);
+    expect(fire.splashRadius!).toBeGreaterThan(0);
+    expect(fire.burn!).toBeGreaterThan(0);
+    expect(fire.burnSeconds!).toBeGreaterThan(2);
+    // It trades the plain rocket's burst for damage that keeps ticking.
+    expect(fire.damage + fire.splashDamage!).toBeLessThan(rocket.damage + rocket.splashDamage!);
+    expect(fire.acidRadius).toBeUndefined();
+  });
+
+  it('gives the magnum a hard punch that stops at the first body', () => {
+    const magnum = WEAPONS.magnum;
+    expect(magnum.pierce).toBe(0);
+    expect(magnum.splashRadius).toBeUndefined();
+    // Mid-priced, so it sits between the cheap sprayers and the endgame gear.
+    expect(magnum.cost).toBeGreaterThan(WEAPONS.shotgun.cost);
+    expect(magnum.cost).toBeLessThan(WEAPONS.lmg.cost);
+    // Hits harder per shot than anything cheaper, without out-damaging them.
+    expect(magnum.damage).toBeGreaterThan(WEAPONS.nailgun.damage);
+    expect(dps('magnum')).toBeLessThan(dps('nailgun'));
   });
 
   it('lets the frost cannon brake instead of burn', () => {
@@ -288,9 +340,9 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers six barricades and twelve turrets', () => {
+  it('offers six barricades and thirteen turrets', () => {
     expect(BARRICADE_ORDER).toHaveLength(6);
-    expect(TURRET_ORDER).toHaveLength(12);
+    expect(TURRET_ORDER).toHaveLength(13);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
   });
@@ -326,14 +378,43 @@ describe('defenses', () => {
     expect(DEFENSES.frost.slow).toBeGreaterThan(0);
     expect(DEFENSES.scatter.pellets).toBeGreaterThan(1);
     expect(DEFENSES.acid.splashRadius).toBeGreaterThan(0);
-    expect(DEFENSES.acid.burn).toBeGreaterThan(0);
+    expect(DEFENSES.acid.burn).toBeUndefined();
+    expect(DEFENSES.acid.acidDps!).toBeGreaterThan(0);
     expect(DEFENSES.shotgun.pellets!).toBeGreaterThan(DEFENSES.scatter.pellets!);
-    expect(DEFENSES.drone.targets).toBe(3);
+    expect(DEFENSES.triple.targets).toBe(3);
     expect(DEFENSES.plasma.cost).toBeGreaterThan(DEFENSES.laser.cost);
     expect(DEFENSES.plasma.damage! / DEFENSES.plasma.fireDelay!).toBeGreaterThan(
       (DEFENSES.laser.damage! / DEFENSES.laser.fireDelay!) * 3,
     );
     expect(DEFENSES.plasma.pierce!).toBeGreaterThan(DEFENSES.laser.pierce!);
+  });
+
+  it('keeps the three barrels on the tower and the drones in the hangar', () => {
+    const triple = DEFENSES.triple;
+    const hangar = DEFENSES.drone;
+    // The tower with the three barrels shoots by itself, the hangar does not.
+    expect(triple.drones).toBeUndefined();
+    expect(hangar.targets).toBeUndefined();
+    expect(hangar.drones!).toBeGreaterThan(1);
+    expect(hangar.droneSpeed!).toBeGreaterThan(0);
+    expect(hangar.droneRange!).toBeLessThan(hangar.range!);
+    expect(hangar.cost).toBeGreaterThan(triple.cost);
+
+    // The extra price buys reach and legs, not raw damage: three drones stay
+    // just under the three barrels they cost more than.
+    const hangarDps = (hangar.damage! * hangar.drones!) / hangar.fireDelay!;
+    const tripleDps = (triple.damage! * triple.targets!) / triple.fireDelay!;
+    expect(hangarDps).toBeGreaterThan(tripleDps * 0.8);
+    expect(hangarDps).toBeLessThan(tripleDps);
+  });
+
+  it('gives the triple-shot tower the buff it needed to stay worth its price', () => {
+    const triple = DEFENSES.triple;
+    // Beats the rocket tower it sits next to in the shop on every count.
+    expect(triple.damage! * triple.targets!).toBeGreaterThan(DEFENSES.launcher.damage!);
+    expect(triple.fireDelay!).toBeLessThan(DEFENSES.launcher.fireDelay!);
+    expect(triple.range!).toBeGreaterThan(DEFENSES.launcher.range!);
+    expect(triple.pierce!).toBeGreaterThan(0);
   });
 
   it('gives both new barricades a distinct last-resort role', () => {
@@ -455,19 +536,13 @@ describe('vehicles', () => {
     for (const type of VEHICLE_ORDER) {
       // Nothing on wheels beats the burst of a dash …
       expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED * DASH_SPEED);
-      // … and the heavy hulls pay for their armour with pace.
-      if (VEHICLES[type].protection >= 0.7) {
+      // … and the largest hulls pay for their durability with pace.
+      if (VEHICLES[type].health >= VEHICLES.apc.health) {
         expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED);
       }
     }
     expect(VEHICLES.quad.speed).toBeGreaterThan(PLAYER_BASE_SPEED);
-    // More armour costs pace, every single step of the way.
-    const byProtection = [...VEHICLE_ORDER].sort(
-      (a, b) => VEHICLES[a].protection - VEHICLES[b].protection,
-    );
-    expect(VEHICLES[byProtection[0]].speed).toBeGreaterThan(
-      VEHICLES[byProtection[byProtection.length - 1]].speed,
-    );
+    expect(VEHICLES.quad.speed).toBeGreaterThan(VEHICLES.tank.speed);
   });
 
   it('gives every vehicle one thing the others do not have', () => {
@@ -482,18 +557,13 @@ describe('vehicles', () => {
     for (const type of VEHICLE_ORDER) expect(VEHICLES[type].perk.length).toBeGreaterThan(0);
   });
 
-  it('protects the crew without ever making it untouchable', () => {
-    for (const type of VEHICLE_ORDER) {
-      expect(vehicleProtection(type, 0)).toBe(VEHICLES[type].protection);
-      expect(vehicleProtection(type, 40)).toBeGreaterThan(vehicleProtection(type, 0));
-      expect(vehicleProtection(type, UPGRADE_MAX_LEVEL * 10)).toBeLessThanOrEqual(
-        VEHICLE_MAX_PROTECTION,
-      );
-    }
-    expect(VEHICLE_MAX_PROTECTION).toBeLessThan(1);
-    // Ramming grinds the hull down, so it can never replace a wall of turrets.
+  it('lets armour strengthen the hull while vehicles still wear down', () => {
+    expect(vehicleArmorReduction(0)).toBe(0);
+    expect(vehicleArmorReduction(40)).toBe(VEHICLE_MAX_ARMOR_REDUCTION);
+    expect(vehicleArmorReduction(UPGRADE_MAX_LEVEL * 10)).toBe(VEHICLE_MAX_ARMOR_REDUCTION);
+    expect(VEHICLE_MAX_ARMOR_REDUCTION).toBeLessThan(1);
+    // Ramming and wrecks keep a vehicle from replacing a wall of turrets.
     expect(VEHICLE_RAM_SELF).toBeGreaterThan(0);
-    expect(VEHICLE_MELEE_BLEED).toBeGreaterThan(0);
     expect(VEHICLE_WRECK_DAMAGE).toBeGreaterThan(0);
   });
 

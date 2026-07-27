@@ -24,12 +24,14 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   rifle: 48,
   shotgun: 46,
   nailgun: 48,
+  magnum: 40,
   sniper: 58,
   acid: 44,
   lmg: 52,
   flamer: 40,
   cryo: 44,
   rocket: 50,
+  firerocket: 54,
   tesla: 42,
   laser: 48,
   railgun: 62,
@@ -313,6 +315,15 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     ctx.fillStyle = '#d8dfdb';
     for (let x = 12; x < 32; x += 6) ctx.fillRect(x, 4, 2, 4);
   },
+  magnum: (ctx) => {
+    fillRounded(ctx, 6, 10, 20, 9, 3, '#4a5049', '#151a16', 1.5);
+    fillRounded(ctx, 24, 11, 22, 7, 3, '#c3ccc5', '#151a16', 1.5);
+    circle(ctx, 22, 14.5, 6, '#8f9d96', '#151a16', 1.5);
+    circle(ctx, 22, 14.5, 2, '#202722');
+    fillRounded(ctx, 8, 17, 9, 15, 3, '#3a2a20', '#1a120c', 1.5);
+    ctx.fillStyle = '#e6ecdf';
+    ctx.fillRect(44, 12, 3, 5);
+  },
   sniper: (ctx) => {
     fillRounded(ctx, 0, 11, 54, 7, 2, '#3a463f', '#121a16', 1.5);
     fillRounded(ctx, 50, 12, 22, 5, 2, '#b3c1b9', '#121a16', 1.5);
@@ -353,6 +364,15 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     fillRounded(ctx, 54, 10, 12, 10, 4, '#20281f');
     fillRounded(ctx, 18, 2, 12, 8, 2, '#57665a');
     circle(ctx, 8, 15, 4, '#242c22');
+  },
+  firerocket: (ctx) => {
+    fillRounded(ctx, 2, 7, 54, 16, 7, '#5a3524', '#1c0f08', 2);
+    fillRounded(ctx, 52, 10, 14, 10, 4, '#2a1810');
+    fillRounded(ctx, 16, 1, 14, 8, 2, '#7a4a2c');
+    // fuel bottle under the tube
+    fillRounded(ctx, 10, 21, 20, 9, 4, '#8f5a2a', '#241407', 1.5);
+    circle(ctx, 8, 15, 4.5, '#ff8f4a', '#ffd489', 1.5);
+    circle(ctx, 62, 15, 3.5, '#ffb347');
   },
   tesla: (ctx) => {
     fillRounded(ctx, 4, 10, 30, 10, 3, '#2b3a4a', '#101820', 1.5);
@@ -719,13 +739,25 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     circle(ctx, 44, 9, 3, '#ff8f5a');
     circle(ctx, 44, 18, 3, '#ff8f5a');
   },
-  drone: (ctx) => {
-    fillRounded(ctx, 0, 5, 22, 17, 6, '#263b3a', '#0d1716', 2);
+  triple: (ctx) => {
+    fillRounded(ctx, 0, 5, 22, 17, 6, '#33422d', '#111811', 2);
     for (const y of [5, 13, 21]) {
-      fillRounded(ctx, 19, y, 27, 5, 2, '#527b78', '#142523', 1.5);
-      circle(ctx, 47, y + 2.5, 4, '#4ce0d5', '#c5fff9', 1.2);
+      fillRounded(ctx, 19, y, 27, 5, 2, '#6d8a5c', '#182114', 1.5);
+      circle(ctx, 47, y + 2.5, 3.5, '#c9f7a8', '#f0ffd8', 1.2);
     }
-    circle(ctx, 9, 13, 5, '#1a2927', '#4ce0d5', 2);
+    circle(ctx, 9, 13, 5, '#1c2718', '#a8d98a', 2);
+  },
+  /**
+   * The hangar keeps no gun of its own, only a landing pad. Painted as the
+   * "gun" sprite anyway so it turns towards whatever the drones are hunting.
+   */
+  drone: (ctx) => {
+    fillRounded(ctx, 4, 6, 26, 15, 6, '#1d3230', '#0a1413', 2);
+    ctx.fillStyle = '#4ce0d5';
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(10, 12, 14, 3);
+    ctx.globalAlpha = 1;
+    circle(ctx, 34, 13.5, 4, '#0e1c1b', '#4ce0d5', 1.5);
   },
   flame: (ctx) => {
     fillRounded(ctx, 0, 5, 20, 16, 6, '#7a3324', '#1d0f0b', 2);
@@ -806,6 +838,61 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     circle(ctx, 11, 14, 5, '#16243a', '#7eeaff', 2);
   },
 };
+
+// ------------------------------------------------------------------- drones
+
+/** The flying hull of a hunter drone, nose pointing right like every sprite. */
+function paintDroneBody(): Painter {
+  return (ctx, w, h) => {
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + 11, cy);
+    ctx.lineTo(cx - 4, cy - 8);
+    ctx.lineTo(cx - 8, cy);
+    ctx.lineTo(cx - 4, cy + 8);
+    ctx.closePath();
+    ctx.fillStyle = '#2b4a48';
+    ctx.fill();
+    ctx.strokeStyle = '#0b1514';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // arms out to the rotors
+    ctx.strokeStyle = '#1b302f';
+    ctx.lineWidth = 3;
+    for (const [x, y] of [
+      [-9, -9],
+      [-9, 9],
+      [7, -9],
+      [7, 9],
+    ]) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + x, cy + y);
+      ctx.stroke();
+    }
+    circle(ctx, cx + 5, cy, 2.6, '#4ce0d5');
+    circle(ctx, cx - 4, cy, 2, '#0e1c1b');
+  };
+}
+
+/** One rotor disc; two of them counter-rotate under the drone. */
+function paintDroneRotor(): Painter {
+  return (ctx, w, h) => {
+    const cx = w / 2;
+    const cy = h / 2;
+    circle(ctx, cx, cy, w / 2 - 1, 'rgba(76, 224, 213, 0.12)');
+    ctx.strokeStyle = 'rgba(197, 255, 249, 0.7)';
+    ctx.lineWidth = 2;
+    for (let index = 0; index < 2; index += 1) {
+      const angle = (Math.PI / 2) * index;
+      ctx.beginPath();
+      ctx.moveTo(cx - Math.cos(angle) * (w / 2 - 2), cy - Math.sin(angle) * (h / 2 - 2));
+      ctx.lineTo(cx + Math.cos(angle) * (w / 2 - 2), cy + Math.sin(angle) * (h / 2 - 2));
+      ctx.stroke();
+    }
+  };
+}
 
 // ----------------------------------------------------------------- vehicles
 
@@ -1244,6 +1331,7 @@ export function createGameTextures(scene: Phaser.Scene) {
     acid: '#b8ff71',
     tesla: '#9fdcff',
     launcher: '#ff8f5a',
+    triple: '#c9f7a8',
     drone: '#4ce0d5',
     laser: '#ff8fd8',
     plasma: '#7eeaff',
@@ -1267,6 +1355,9 @@ export function createGameTextures(scene: Phaser.Scene) {
   for (const [type, painter] of Object.entries(VEHICLE_GUN_PAINTERS)) {
     make(scene, `vehicle-gun-${type}`, 62, 26, painter!);
   }
+
+  make(scene, 'drone-body', 30, 30, paintDroneBody());
+  make(scene, 'drone-rotor', 14, 14, paintDroneRotor());
 
   for (const [kind, painter] of Object.entries(OBSTACLE_PAINTERS)) {
     const size = OBSTACLE_TEXTURE_SIZE[kind as ObstacleKind];

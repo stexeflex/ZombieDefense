@@ -28,14 +28,15 @@ Aufruf kann das Laden deshalb kurz dauern.
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
 - dreizehn Zombiearten plus zehn Bosse
-- sechzehn Waffen von der Pistole bis zur Nova-Kanone, darunter Railgun und
+- achtzehn Waffen von der Pistole bis zur Nova-Kanone, darunter Railgun und
   Gravitationswerfer für teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- sechs Barrikaden und zwölf Türme vom günstigen MG bis zur Plasma-Bastion
+- sechs Barrikaden und dreizehn Türme vom günstigen MG bis zur Plasma-Bastion,
+  inklusive Drohnenhangar mit drei fliegenden Jagddrohnen
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
-  mehrere Spieler; drinnen kommt deutlich weniger Schaden an, dafür geht der
-  Dash verloren
+  mehrere Spieler; die Hülle macht Insassen unverwundbar, dafür geht der Dash
+  verloren
 - Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
@@ -106,12 +107,14 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 | Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner              |
 | Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz                |
 | Nagelwerfer          | 1400  | schwere Nägel durchbohren mehrere Gegner           |
+| Schwere Magnum       | 1550  | harter Einzeltreffer, durchschlägt niemanden       |
 | Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner              |
-| Säurewerfer          | 2000  | ätzender Flächenschaden über Zeit                  |
+| Säurewerfer          | 2000  | zerplatzt und lässt grüne Säurelachen liegen       |
 | Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                              |
 | Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand            |
 | Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner   |
 | Raketenwerfer        | 3300  | Sprengschaden im Umkreis                           |
+| Feuer-Raketenwerfer  | 3600  | Feuerexplosion, die weiterbrennt                   |
 | Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner              |
 | Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner             |
 | Railgun              | 5700  | Magnetgeschoss durchbohrt bis zu vierzehn Gegner   |
@@ -120,20 +123,21 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 
 ### Türme
 
-| Turm               | Preis | Besonderheit                                      |
-| ------------------ | ----- | ------------------------------------------------- |
-| MG-Turm            | 700   | Dauerfeuer auf mittlere Distanz                   |
-| Brandturm          | 1000  | kurze Reichweite, setzt ganze Gruppen in Brand    |
-| Frostturm          | 1200  | friert Reihen ein und bremst sie stark            |
-| Schrottschleuder   | 1350  | breite, günstige Schrottsalve                     |
-| Scharfschützenturm | 1500  | weite Reichweite, durchschlägt Reihen             |
-| Schrotflinten-Turm | 1650  | acht schwere Kugeln auf kurze Distanz             |
-| Säureturm          | 1750  | ätzender Flächenschaden über Zeit                 |
-| Blitzturm          | 1900  | Blitz springt auf drei Nachbarn über              |
-| Raketenturm        | 2200  | Sprengraketen gegen Gruppen                       |
-| Drohnenzentrale    | 2750  | bekämpft drei verschiedene Ziele gleichzeitig     |
-| Laserturm          | 3200  | Endgame: durchschlägt Reihen auf weite Distanz    |
-| Plasma-Bastion     | 6800  | Luxus-Endgame, deutlich stärker als der Laserturm |
+| Turm                | Preis | Besonderheit                                      |
+| ------------------- | ----- | ------------------------------------------------- |
+| MG-Turm             | 700   | Dauerfeuer auf mittlere Distanz                   |
+| Brandturm           | 1000  | kurze Reichweite, setzt ganze Gruppen in Brand    |
+| Frostturm           | 1200  | friert Reihen ein und bremst sie stark            |
+| Schrottschleuder    | 1350  | breite, günstige Schrottsalve                     |
+| Scharfschützenturm  | 1500  | weite Reichweite, durchschlägt Reihen             |
+| Schrotflinten-Turm  | 1650  | acht schwere Kugeln auf kurze Distanz             |
+| Säureturm           | 1750  | ätzender Flächenschaden über Zeit                 |
+| Blitzturm           | 1900  | Blitz springt auf drei Nachbarn über              |
+| Raketenturm         | 2200  | Sprengraketen gegen Gruppen                       |
+| Dreifachschuss-Turm | 2750  | drei gebuffte Läufe bekämpfen verschiedene Ziele  |
+| Laserturm           | 3200  | Endgame: durchschlägt Reihen auf weite Distanz    |
+| Drohnenhangar       | 3600  | drei fliegende Jagddrohnen verfolgen Gegner       |
+| Plasma-Bastion      | 6800  | Luxus-Endgame, deutlich stärker als der Laserturm |
 
 ### Fahrzeuge
 
@@ -141,23 +145,24 @@ Fahrzeuge werden wie Bauten in der Bauphase gekauft und abgestellt. Mit `E`
 steigt man ein und wieder aus; wer zuerst einsteigt, fährt. Alle an Bord zielen
 und schießen weiter mit ihrer eigenen Waffe.
 
-| Fahrzeug          | Preis | Plätze | Leben | Schutz | Besonderheit                            |
-| ----------------- | ----- | ------ | ----- | ------ | --------------------------------------- |
-| Quad              | 700   | 1      | 520   | 30 %   | schnellstes Fahrzeug, Nitro auf `Space` |
-| Geländewagen      | 1200  | 2      | 980   | 45 %   | Allrounder mit gutem Tempo              |
-| Mannschaftswagen  | 1900  | 4      | 1400  | 55 %   | heilt die Besatzung während der Fahrt   |
-| Kampf-Pickup      | 2400  | 2      | 1120  | 45 %   | MG feuert selbstständig                 |
-| Werkstattwagen    | 3000  | 3      | 1600  | 55 %   | repariert Bauten, liefert Munition      |
-| Schützenpanzer    | 4200  | 4      | 2900  | 70 %   | Bordkanone, langsamer als zu Fuß        |
-| Kampfpanzer       | 6800  | 2      | 4400  | 80 %   | Sprengkanone, walzt alles nieder        |
+| Fahrzeug         | Preis | Plätze | Leben | Besonderheit                            |
+| ---------------- | ----- | ------ | ----- | --------------------------------------- |
+| Quad             | 700   | 1      | 520   | schnellstes Fahrzeug, Nitro auf `Space` |
+| Geländewagen     | 1200  | 2      | 980   | Allrounder mit gutem Tempo              |
+| Mannschaftswagen | 1900  | 4      | 1400  | heilt die Besatzung während der Fahrt   |
+| Kampf-Pickup     | 2400  | 2      | 1120  | MG feuert selbstständig                 |
+| Werkstattwagen   | 3000  | 3      | 1600  | repariert Bauten, liefert Munition      |
+| Schützenpanzer   | 4200  | 4      | 2900  | Bordkanone, langsamer als zu Fuß        |
+| Kampfpanzer      | 6800  | 2      | 4400  | Sprengkanone, walzt alles nieder        |
 
-Der Schutz ist der Anteil jedes Treffers, den die Hülle für die Besatzung
-schluckt; mit dem Upgrade _Innenraumschutz_ steigt er, endet aber immer bei
-85 %. Bezahlt wird das mit dem Dash: Am Steuer gibt es kein Ausweichen mehr,
-nur das Quad macht aus der Ladung ein Nitro. Zombies gehen auf die Hülle los
-statt auf die Besatzung, Überfahren kostet auch die Karosserie Leben, und
-repariert wird erst wieder in der nächsten Bauphase. Geht die Hülle hoch,
-fliegen alle heraus und nehmen Schaden.
+Solange das Fahrzeug noch steht, sind alle Insassen vollständig
+unverwundbar. Das bisherige Upgrade _Innenraumschutz_ heißt deshalb jetzt
+_Hüllenpanzerung_ und reduziert den Schaden am Fahrzeug selbst. Bezahlt wird
+der sichere Innenraum mit dem Dash: Am Steuer gibt es kein Ausweichen mehr,
+nur das Quad macht aus der Ladung ein Nitro. Zombies gehen auf die Hülle los,
+Überfahren kostet auch die Karosserie Leben, und repariert wird erst wieder in
+der nächsten Bauphase. Geht die Hülle hoch, fliegen alle heraus und nehmen
+Wrackschaden.
 
 ## Voraussetzungen
 
@@ -201,19 +206,19 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 
 ## Steuerung
 
-| Taste                    | Aktion                                           |
-| ------------------------ | ------------------------------------------------ |
-| `WASD` oder Pfeiltasten  | Bewegen                                          |
-| `Leertaste` oder `Shift` | Dash — schluckt einen Großteil des Schadens      |
-| Maus                     | Zielen                                           |
-| Linke Maustaste          | Schießen                                         |
-| `R`                      | Nachladen; beim Platzieren Barrikade drehen      |
-| `1`–`9` oder Mausrad     | Waffe aus dem Arsenal wählen                     |
-| `G`                      | Granate zum Mauszeiger werfen                    |
-| `E`                      | in ein Fahrzeug ein- und wieder aussteigen       |
-| `F`                      | markiertes Objekt reparieren (nur Bauphase)      |
-| `V`                      | markiertes Objekt verkaufen (nur Bauphase)       |
-| Rechtsklick              | ausgewählten Bau abwählen                        |
+| Taste                    | Aktion                                      |
+| ------------------------ | ------------------------------------------- |
+| `WASD` oder Pfeiltasten  | Bewegen                                     |
+| `Leertaste` oder `Shift` | Dash — schluckt einen Großteil des Schadens |
+| Maus                     | Zielen                                      |
+| Linke Maustaste          | Schießen                                    |
+| `R`                      | Nachladen; beim Platzieren Barrikade drehen |
+| `1`–`9` oder Mausrad     | Waffe aus dem Arsenal wählen                |
+| `G`                      | Granate zum Mauszeiger werfen               |
+| `E`                      | in ein Fahrzeug ein- und wieder aussteigen  |
+| `F`                      | markiertes Objekt reparieren (nur Bauphase) |
+| `V`                      | markiertes Objekt verkaufen (nur Bauphase)  |
+| Rechtsklick              | ausgewählten Bau abwählen                   |
 
 Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange er
 läuft, schluckt er 40 % jedes Treffers — der blaue Ring zeigt an, wann das gilt.
@@ -267,7 +272,7 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
 - **Stufen-Upgrades** – Leben, Panzerung, Tempo, Waffenschaden, Nachladen,
   Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
-  Fahrzeugpanzerung, Innenraumschutz, Motorleistung, Rammschaden, Bordwaffen,
+  Fahrzeugpanzerung, Hüllenpanzerung, Motorleistung, Rammschaden, Bordwaffen,
   Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schadensreduktion,
   Dash-Schaden und Dash-Schild
 - **Besondere Vorteile** – günstigere erste Waffe, erste Barrikaden, erster

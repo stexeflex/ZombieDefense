@@ -110,6 +110,10 @@ export class ProjectileState extends Schema {
   chainRange = 0;
   burn = 0;
   burnSeconds = 0;
+  /** Acid puddle left where this shot bursts. */
+  acidRadius = 0;
+  acidDps = 0;
+  acidSeconds = 0;
   slow = 0;
   slowSeconds = 0;
   pull = 0;
@@ -140,6 +144,8 @@ export class VehicleState extends Schema {
   @type('number') rotation = 0;
   @type('number') health = 100;
   @type('number') maxHealth = 100;
+  /** Damage reduction baked in when the owner places this vehicle. */
+  armor = 0;
   /** What selling pays right now, based on original price and current health. */
   @type('number') refund = 0;
   /** Session ids on board, the first one is driving. */
@@ -153,6 +159,25 @@ export class VehicleState extends Schema {
   ramCooldowns = new Map<string, number>();
   /** Fractional rounds and health the aura effects hand out over time. */
   resupplyRest = 0;
+}
+
+/**
+ * A drone of a hangar. It flies on its own and shoots, but nothing can hurt it:
+ * it lives and dies with the building that launched it.
+ */
+export class DroneState extends Schema {
+  @type('string') id = '';
+  @type('string') ownerId = '';
+  @type('number') x = 0;
+  @type('number') y = 0;
+  @type('number') rotation = 0;
+  /** Building this drone belongs to; it is removed with it. */
+  hangarId = '';
+  /** Which of the hangar's drones this is, so they spread out and pick apart. */
+  slot = 0;
+  cooldown = 0;
+  /** Own angle on the circle it flies, so the three never overlap. */
+  phase = 0;
 }
 
 /**
@@ -199,5 +224,6 @@ export class GameState extends Schema {
   @type({ map: ProjectileState }) projectiles = new MapSchema<ProjectileState>();
   @type({ map: DefenseState }) defenses = new MapSchema<DefenseState>();
   @type({ map: VehicleState }) vehicles = new MapSchema<VehicleState>();
+  @type({ map: DroneState }) drones = new MapSchema<DroneState>();
   @type({ map: HazardState }) hazards = new MapSchema<HazardState>();
 }

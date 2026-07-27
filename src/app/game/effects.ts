@@ -132,7 +132,10 @@ export class EffectLayer {
         break;
       case 'explosion': {
         const radius = event.r ?? 100;
-        const energyBlast = event.s === 'gravity' || event.s === 'nova';
+        // Acid does not burn, it splatters — so it gets the cold particles and
+        // no smoke, and nobody mistakes it for a fire blast any more.
+        const acidBurst = event.s === 'acid' || event.s === 'turret_acid';
+        const energyBlast = event.s === 'gravity' || event.s === 'nova' || acidBurst;
         this.burst(
           energyBlast ? 'energy' : 'flame',
           Math.min(26, 10 + radius / 8),
@@ -140,9 +143,10 @@ export class EffectLayer {
           event.y,
         );
         if (!energyBlast) this.burst('smoke', Math.min(20, 8 + radius / 10), event.x, event.y);
-        this.burst('shard', 10, event.x, event.y);
-        const color =
-          event.s === 'gravity'
+        this.burst('shard', acidBurst ? 4 : 10, event.x, event.y);
+        const color = acidBurst
+          ? 0xb8ff45
+          : event.s === 'gravity'
             ? 0xa67cff
             : event.s === 'nova'
               ? 0xff9ee0
@@ -150,12 +154,14 @@ export class EffectLayer {
                 ? 0xff4f6b
                 : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
-        this.audio.play('explosion', 0.9);
-        this.scene.cameras.main.shake(220, Math.min(0.014, 0.004 + radius / 22000));
+        this.audio.play(acidBurst ? 'shot-flame' : 'explosion', acidBurst ? 0.5 : 0.9);
+        if (!acidBurst) {
+          this.scene.cameras.main.shake(220, Math.min(0.014, 0.004 + radius / 22000));
+        }
         break;
       }
       case 'burn':
-        this.burst('flame', 4, event.x, event.y);
+        this.burst(event.s === 'acid' ? 'energy' : 'flame', 4, event.x, event.y);
         break;
       case 'chain':
         this.bolts.push({

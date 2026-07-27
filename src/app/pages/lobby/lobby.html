@@ -477,7 +477,13 @@
                     [disabled]="changingLobby()"
                     (click)="returnToLobby()"
                   >
-                    {{ changingLobby() ? 'Gold wird gesichert …' : 'Zurück zur Lobby' }}
+                    {{
+                      leaveStep() === 'saving'
+                        ? 'Gold wird gesichert …'
+                        : leaveStep() === 'opening'
+                          ? 'Lobby wird geöffnet …'
+                          : 'Zurück zur Lobby'
+                    }}
                   </button>
                   <button
                     class="ghost-button"
@@ -575,6 +581,10 @@
               </div>
 
               @if (shopTab() === 'weapons') {
+                <p class="shop-hint">
+                  Gekaufte Waffen bleiben im Arsenal. Verkaufen gibt den Kaufpreis zurück, abzüglich
+                  der fehlenden Munition — nachkaufen ist also nie billiger als auffüllen.
+                </p>
                 <div class="shop-scroll">
                   @if (game.canBuyAmmo()) {
                     <button
@@ -619,26 +629,27 @@
                         <strong>
                           {{
                             game.player()?.weapon === weapon.type
-                              ? 'Aktiv'
+                              ? 'Ausgerüstet'
                               : owns(weapon.type)
-                                ? 'Wechseln'
+                                ? 'Ausrüsten'
                                 : '$ ' + weaponPrice(weapon.type)
                           }}
                         </strong>
                       </button>
                       @if (owns(weapon.type)) {
                         <button
-                          class="ghost-button"
+                          class="sell-item"
                           type="button"
-                          style="
-                            width: 100%;
-                            padding: 6px 10px;
-                            text-align: right;
-                            font-size: 0.54rem;
-                          "
+                          [class.armed]="saleArmed() === weapon.type"
                           (click)="sellWeapon(weapon.type)"
                         >
-                          <span>Waffe verkaufen</span>
+                          <span>
+                            {{
+                              saleArmed() === weapon.type
+                                ? '↩ Wirklich verkaufen?'
+                                : '✖ ' + weapon.label + ' verkaufen'
+                            }}
+                          </span>
                           <strong>+$ {{ weaponRefund(weapon.type) }}</strong>
                         </button>
                       }
@@ -701,11 +712,11 @@
                         <b>{{ vehicle.label }}</b>
                         <small>
                           {{ vehicle.seats }} {{ vehicle.seats === 1 ? 'Platz' : 'Plätze' }} ·
-                          {{ vehicleHealth(vehicle.type) }} HP · −{{
-                            protectionPercent(vehicle.type)
-                          }}
-                          % Schaden
+                          {{ vehicleHealth(vehicle.type) }} HP · Insassen unverwundbar
                         </small>
+                        @if (vehicleArmorPercent() > 0) {
+                          <small>−{{ vehicleArmorPercent() }} % Hüllenschaden</small>
+                        }
                         <small class="vehicle-perk">★ {{ vehicle.perk }}</small>
                       </span>
                       <strong>$ {{ vehiclePrice(vehicle.type) }}</strong>

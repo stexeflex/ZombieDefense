@@ -17,8 +17,9 @@ export type DefenseType =
   | 'acid'
   | 'tesla'
   | 'launcher'
-  | 'drone'
+  | 'triple'
   | 'laser'
+  | 'drone'
   | 'plasma';
 
 export interface DefenseConfig {
@@ -48,10 +49,19 @@ export interface DefenseConfig {
   chainRange?: number;
   burn?: number;
   burnSeconds?: number;
+  /** Acid puddle an impact leaves behind; only zombies stand in it. */
+  acidRadius?: number;
+  acidDps?: number;
+  acidSeconds?: number;
   pellets?: number;
   spread?: number;
   /** How many different zombies this turret attacks per volley. */
   targets?: number;
+  /** Flying drones this building keeps in the air; it has no gun of its own. */
+  drones?: number;
+  /** How fast a drone flies and how far it shoots from where it hovers. */
+  droneSpeed?: number;
+  droneRange?: number;
   description: string;
 }
 
@@ -181,7 +191,7 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     health: 390,
     width: 48,
     height: 48,
-    damage: 18,
+    damage: 19,
     fireDelay: 0.95,
     range: 340,
     speed: 720,
@@ -230,16 +240,17 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     health: 350,
     width: 48,
     height: 48,
-    damage: 20,
-    fireDelay: 0.8,
+    damage: 22,
+    fireDelay: 0.85,
     range: 500,
     speed: 580,
     pierce: 0,
-    splashRadius: 95,
-    splashDamage: 65,
-    burn: 18,
-    burnSeconds: 3.2,
-    description: 'Verspritzt ätzende Säure über ganze Gruppen',
+    splashRadius: 84,
+    splashDamage: 44,
+    acidRadius: 92,
+    acidDps: 22,
+    acidSeconds: 4,
+    description: 'Ätzt grüne Lachen in den Boden, die weiter fressen',
   },
   tesla: {
     label: 'Blitzturm',
@@ -275,21 +286,21 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     splashDamage: 125,
     description: 'Sprengraketen gegen ganze Gruppen',
   },
-  drone: {
-    label: 'Drohnenzentrale',
-    short: '⬡',
+  triple: {
+    label: 'Dreifachschuss-Turm',
+    short: '⋮',
     kind: 'turret',
     cost: 2750,
-    health: 420,
+    health: 460,
     width: 52,
     height: 52,
-    damage: 42,
-    fireDelay: 0.68,
-    range: 680,
+    damage: 52,
+    fireDelay: 0.6,
+    range: 730,
     speed: 1150,
-    pierce: 1,
+    pierce: 2,
     targets: 3,
-    description: 'Drei Jagddrohnen nehmen gleichzeitig verschiedene Ziele unter Feuer',
+    description: 'Drei Läufe nehmen gleichzeitig drei verschiedene Ziele unter Feuer',
   },
   laser: {
     label: 'Laserturm',
@@ -305,6 +316,24 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     speed: 2500,
     pierce: 5,
     description: 'Endgame: durchschlägt ganze Reihen auf weite Distanz',
+  },
+  drone: {
+    label: 'Drohnenhangar',
+    short: '⬡',
+    kind: 'turret',
+    cost: 3600,
+    health: 480,
+    width: 54,
+    height: 54,
+    damage: 48,
+    fireDelay: 0.6,
+    range: 640,
+    speed: 1000,
+    pierce: 0,
+    drones: 3,
+    droneSpeed: 260,
+    droneRange: 300,
+    description: 'Startet drei Drohnen, die selbst losfliegen und Gegner jagen',
   },
   plasma: {
     label: 'Plasma-Bastion',
@@ -341,8 +370,9 @@ export const TURRET_ORDER: DefenseType[] = [
   'acid',
   'tesla',
   'launcher',
-  'drone',
+  'triple',
   'laser',
+  'drone',
   'plasma',
 ];
 

@@ -9,7 +9,6 @@ import {
 import type { ZombieState } from '../state/game-state.js';
 import type { GameWorld } from './world.js';
 
-const MAX_HAZARDS = 44;
 /** How often a burning or toxic pool applies its damage. */
 const POOL_TICK = 0.25;
 /** Above this many bodies on the field, nobody calls in more. */
@@ -222,7 +221,6 @@ export class AbilitySystem {
   }
 
   private spawnHazard(options: Parameters<GameWorld['spawnHazard']>[0]) {
-    if (this.world.state.hazards.size >= MAX_HAZARDS) return;
     this.world.spawnHazard(options);
   }
 
@@ -231,6 +229,21 @@ export class AbilitySystem {
     const finished: string[] = [];
     this.world.state.hazards.forEach((hazard, id) => {
       hazard.life -= delta;
+      // Acid belongs to the squad: it eats zombies and leaves everyone else be.
+      if (hazard.kind === 'acid') {
+        hazard.tick -= delta;
+        if (hazard.tick <= 0) {
+          hazard.tick = POOL_TICK;
+          const victims = [...this.world.state.zombies.entries()].filter(
+            ([, zombie]) =>
+              Math.hypot(zombie.x - hazard.x, zombie.y - hazard.y) <= hazard.r + zombie.radius,
+          );
+          for (const [zombieId, zombie] of victims) {
+            this.world.damageZombie(zombieId, zombie, hazard.damage * POOL_TICK, hazard.ownerId);
+          }
+          this.world.pushFx({ k: 'burn', x: hazard.x, y: hazard.y, r: hazard.r, s: hazard.kind });
+        }
+      }
       if (hazard.kind === 'lava' || hazard.kind === 'poison') {
         hazard.tick -= delta;
         if (hazard.tick <= 0) {

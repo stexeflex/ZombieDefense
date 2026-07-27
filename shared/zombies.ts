@@ -32,7 +32,12 @@ export type ZombieRank = 'trash' | 'elite' | 'mini' | 'boss';
 /** How often a summoner may call in its full pack before it runs dry. */
 export const SUMMON_CYCLES = 5;
 
-export type HazardKind = 'warning' | 'lava' | 'poison' | 'pull';
+/**
+ * Ground effects. `lava` and `poison` belong to the enemy and eat the squad,
+ * `acid` is the puddle the squad's own acid gear leaves behind and only hurts
+ * zombies.
+ */
+export type HazardKind = 'warning' | 'lava' | 'poison' | 'pull' | 'acid';
 
 /**
  * Everything a boss can do, as plain data. Each entry gets its own timer, so a
@@ -75,7 +80,14 @@ export type ZombieAbility =
       range: number;
     }
   /** Drags players in or shoves them away. */
-  | { kind: 'vortex'; every: number; radius: number; force: number; duration: number; push: boolean }
+  | {
+      kind: 'vortex';
+      every: number;
+      radius: number;
+      force: number;
+      duration: number;
+      push: boolean;
+    }
   /** Leaves burning or toxic ground behind. */
   | {
       kind: 'puddle';

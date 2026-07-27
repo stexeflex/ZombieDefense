@@ -23,6 +23,7 @@ import {
   snapDefense,
   vehicleFootprint,
   type DefenseSnapshot,
+  type DroneSnapshot,
   type GameMap,
   type GameSnapshot,
   type HazardSnapshot,
@@ -43,6 +44,7 @@ import {
   PROJECTILE_STYLE,
   type BaseView,
   type DefenseView,
+  type DroneView,
   type HazardView,
   type PlayerView,
   type ProjectileView,
@@ -57,6 +59,7 @@ export class ArenaScene extends Phaser.Scene {
   private readonly zombies = new Map<string, ZombieView>();
   private readonly defenses = new Map<string, DefenseView>();
   private readonly vehicles = new Map<string, VehicleView>();
+  private readonly drones = new Map<string, DroneView>();
   private readonly projectiles = new Map<string, ProjectileView>();
   private readonly hazards = new Map<string, HazardView>();
   private readonly subscriptions = new Subscription();
@@ -222,6 +225,7 @@ export class ArenaScene extends Phaser.Scene {
     this.updateSpectatorCamera(deltaMs, input);
     this.animateZombies(deltaMs);
     this.moveDefenseViews(deltaMs);
+    this.moveDroneViews(deltaMs);
     this.moveProjectiles(deltaMs);
     this.animateHazards(deltaMs);
     this.updatePointer();
@@ -617,6 +621,12 @@ export class ArenaScene extends Phaser.Scene {
       snapshot.vehicles ?? {},
       (vehicle) => this.createVehicle(vehicle),
       (view, vehicle) => this.updateVehicle(view, vehicle),
+    );
+    this.syncEntities(
+      this.drones,
+      snapshot.drones ?? {},
+      (drone) => this.createDrone(drone),
+      (view, drone) => this.updateDrone(view, drone),
     );
     this.syncEntities(
       this.projectiles,
@@ -1161,6 +1171,58 @@ export class ArenaScene extends Phaser.Scene {
     view.gun.setRotation(view.gunAngle);
   }
 
+  // ------------------------------------------------------------------ drones
+
+  private createDrone(drone: DroneSnapshot): DroneView {
+    const shadow = this.add.ellipse(6, 14, 22, 12, 0x000000, 0.3);
+    const rotors = [
+      this.add.image(-7, -8, 'drone-rotor'),
+      this.add.image(-7, 8, 'drone-rotor'),
+      this.add.image(6, -8, 'drone-rotor'),
+      this.add.image(6, 8, 'drone-rotor'),
+    ];
+    const body = this.add.image(0, 0, 'drone-body');
+    const actor = this.add.container(0, 0, [...rotors, body]);
+    // Above everything on the ground — a drone is the only thing that flies.
+    const root = this.add.container(drone.x, drone.y, [shadow, actor]).setDepth(24);
+    return {
+      root,
+      actor,
+      body,
+      rotors,
+      rotation: drone.rotation,
+      targetRotation: drone.rotation,
+      spin: 0,
+      bob: Math.random() * Math.PI * 2,
+      targetX: drone.x,
+      targetY: drone.y,
+    };
+  }
+
+  private updateDrone(view: DroneView, drone: DroneSnapshot) {
+    view.targetRotation = drone.rotation;
+  }
+
+  private moveDroneViews(deltaMs: number) {
+    const delta = Math.min(deltaMs, 60) / 1000;
+    const smoothing = 1 - Math.exp(-14 * delta);
+    for (const view of this.drones.values()) {
+      view.root.x = Phaser.Math.Linear(view.root.x, view.targetX, smoothing);
+      view.root.y = Phaser.Math.Linear(view.root.y, view.targetY, smoothing);
+      view.rotation = Phaser.Math.Angle.RotateTo(view.rotation, view.targetRotation, 10 * delta);
+      view.actor.setRotation(view.rotation);
+      // Blurred rotors and a slow hover keep it reading as airborne.
+      view.spin += delta * 34;
+      view.bob += delta * 3.4;
+      for (let index = 0; index < view.rotors.length; index += 1) {
+        const rotor = view.rotors[index];
+        rotor.setRotation(index % 2 === 0 ? view.spin : -view.spin);
+        rotor.setScale(0.9 + Math.sin(view.spin * 2 + index) * 0.06);
+      }
+      view.actor.setScale(1 + Math.sin(view.bob) * 0.04);
+    }
+  }
+
   // ----------------------------------------------------------------- hazards
 
   private createHazard(hazard: HazardSnapshot): HazardView {
@@ -1257,11 +1319,16 @@ export class ArenaScene extends Phaser.Scene {
     for (const view of this.projectiles.values()) {
       view.root.x = Phaser.Math.Linear(view.root.x, view.targetX, amount);
       view.root.y = Phaser.Math.Linear(view.root.y, view.targetY, amount);
-      if (view.kind === 'rocket' || view.kind === 'turret_launcher') {
+      if (view.kind === 'rocket' || view.kind === 'firerocket' || view.kind === 'turret_launcher') {
         view.smoke -= deltaMs;
         if (view.smoke <= 0) {
           view.smoke = 55;
-          this.effects.burst('smoke', 1, view.root.x, view.root.y);
+          this.effects.burst(
+            view.kind === 'firerocket' ? 'flame' : 'smoke',
+            1,
+            view.root.x,
+            view.root.y,
+          );
         }
       }
       if (view.kind === 'flamer' || view.kind === 'turret_flame') {

@@ -16,8 +16,8 @@ import {
   dashReduction,
   findMap,
   reserveCapacity,
+  vehicleArmorReduction,
   vehicleMaxHealth,
-  vehicleProtection,
   type DefenseType,
   type VehicleType,
   type WeaponType,
@@ -30,6 +30,9 @@ import { GameCanvas } from '../../game/game-canvas';
 import { UpgradeShop } from '../../shared/upgrade-shop';
 
 type ShopTab = 'weapons' | 'barricades' | 'turrets' | 'vehicles';
+
+/** How long an armed sell button waits for the confirming second click. */
+const SALE_CONFIRM_MS = 4000;
 
 @Component({
   selector: 'app-lobby',
@@ -52,7 +55,12 @@ export class Lobby implements OnInit, OnDestroy {
   readonly shopTab = signal<ShopTab>('weapons');
   readonly upgradesOpen = signal(false);
   readonly combatPanelCollapsed = signal(false);
-  readonly changingLobby = signal(false);
+  /** Which half of leaving a run is running right now, for the button label. */
+  readonly leaveStep = signal<'idle' | 'saving' | 'opening'>('idle');
+  readonly changingLobby = computed(() => this.leaveStep() !== 'idle');
+  /** Weapon whose sell button is waiting for the confirming second click. */
+  readonly saleArmed = signal<WeaponType | null>(null);
+  private saleTimer?: number;
   readonly fullscreen = signal(false);
   readonly fullscreenSupported =
     typeof document !== 'undefined' &&
@@ -107,6 +115,7 @@ export class Lobby implements OnInit, OnDestroy {
   ngOnDestroy() {
     document.removeEventListener('fullscreenchange', this.syncFullscreenState);
     window.removeEventListener('beforeunload', this.creditRewardBeforeUnload);
+    this.disarmSale();
     void this.game.disconnect();
   }
 
@@ -183,9 +192,9 @@ export class Lobby implements OnInit, OnDestroy {
     return this.vehiclePrice(type) < VEHICLES[type].cost;
   }
 
-  /** What the hull swallows for its crew, including the bought upgrade. */
-  protectionPercent(type: VehicleType) {
-    return Math.round(vehicleProtection(type, this.progress.upgrades().vehicleArmor) * 100);
+  /** Permanent armour keeps this share of incoming damage off every hull. */
+  vehicleArmorPercent() {
+    return Math.round(vehicleArmorReduction(this.progress.upgrades().vehicleArmor) * 100);
   }
 
   /** The hull this player actually gets, upgrades included. */
@@ -289,14 +298,34 @@ export class Lobby implements OnInit, OnDestroy {
     return this.game.player()?.weaponRefunds?.[weapon] ?? 0;
   }
 
+  /**
+   * The first click only arms the sale, the second one goes through. A weapon
+   * can cost thousands, so it must not disappear on a stray click next to the
+   * button that equips it.
+   */
   sellWeapon(weapon: WeaponType) {
-    this.game.sellWeapon(weapon);
+    if (this.saleArmed() === weapon) {
+      this.disarmSale();
+      this.game.sellWeapon(weapon);
+      return;
+    }
+    this.disarmSale();
+    this.saleArmed.set(weapon);
+    this.audio.play('ui');
+    this.saleTimer = window.setTimeout(() => this.saleArmed.set(null), SALE_CONFIRM_MS);
   }
 
   /** Buying puts a new weapon in the arsenal, a second click just equips it. */
   weaponAction(weapon: WeaponType) {
+    this.disarmSale();
     if (this.owns(weapon)) this.game.switchWeapon(weapon);
     else this.game.buyWeapon(weapon);
+  }
+
+  private disarmSale() {
+    if (this.saleTimer !== undefined) window.clearTimeout(this.saleTimer);
+    this.saleTimer = undefined;
+    this.saleArmed.set(null);
   }
 
   playerHealth(playerId: string) {
@@ -313,17 +342,31 @@ export class Lobby implements OnInit, OnDestroy {
   }
 
   async leave() {
-    if (this.changingLobby()) return;
-    this.changingLobby.set(true);
-    await this.game.settleRunReward();
-    await this.router.navigateByUrl('/');
+    if (this.leaveStep() !== 'idle') return;
+    this.leaveStep.set('saving');
+    try {
+      await this.game.settleRunReward();
+      await this.router.navigateByUrl('/');
+    } finally {
+      this.leaveStep.set('idle');
+    }
   }
 
+  /**
+   * Securing the gold and opening the new lobby are two waits, and only the
+   * first one is about money — so the button says which one it is instead of
+   * claiming forever that it is still saving.
+   */
   async returnToLobby() {
-    if (this.changingLobby()) return;
-    this.changingLobby.set(true);
-    await this.game.returnToLobby(this.lobbyCode(), this.name);
-    this.changingLobby.set(false);
+    if (this.leaveStep() !== 'idle') return;
+    this.leaveStep.set('saving');
+    try {
+      await this.game.returnToLobby(this.lobbyCode(), this.name, () =>
+        this.leaveStep.set('opening'),
+      );
+    } finally {
+      this.leaveStep.set('idle');
+    }
   }
 
   private readonly syncFullscreenState = () => {

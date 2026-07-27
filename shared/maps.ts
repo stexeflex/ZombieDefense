@@ -4,16 +4,7 @@ import { buildWaves, type WavePlan } from './waves.js';
 import type { ZombieType } from './zombies.js';
 
 export type ObstacleKind =
-  | 'car'
-  | 'container'
-  | 'crate'
-  | 'rock'
-  | 'barrel'
-  | 'tree'
-  | 'wall'
-  | 'sandbag'
-  | 'pipe'
-  | 'ruin';
+  'car' | 'container' | 'crate' | 'rock' | 'barrel' | 'tree' | 'wall' | 'sandbag' | 'pipe' | 'ruin';
 
 export type DecorKind = 'puddle' | 'crack' | 'grass' | 'bones' | 'blood' | 'rubble' | 'marking';
 
@@ -66,6 +57,8 @@ export interface GameMap {
 
 /** A failed campaign run can earn up to this share of the map's victory reward. */
 export const DEFEAT_REWARD_SHARE = 0.6;
+/** Consolation on top of everything a lost campaign run earned. */
+export const DEFEAT_REWARD_BONUS = 0.2;
 /** Endless starts paying a survival bonus once the planned-map length is behind you. */
 export const ENDLESS_REWARD_RAMP_WAVE = 10;
 
@@ -74,16 +67,16 @@ export const ENDLESS_REWARD_RAMP_WAVE = 10;
  *
  * Reaching later waves pays a growing part of the map reward even on defeat,
  * while beating the boss still grants the full reward. Squaring the progress
- * keeps deliberately restarting early from becoming worthwhile.
+ * keeps deliberately restarting early from becoming worthwhile. A lost run also
+ * gets a flat bonus on top, so an evening that ends badly is still worth gold.
  */
 export function campaignRunReward(map: GameMap, reachedWave: number, victory: boolean) {
   const wave = Math.max(0, Math.floor(reachedWave));
   const baseGold = (15 + wave * 12) * map.moneyScale;
   const progress = Math.min(1, wave / Math.max(1, map.waves.length));
-  const mapGold = victory
-    ? map.reward
-    : map.reward * DEFEAT_REWARD_SHARE * progress * progress;
-  return Math.round(baseGold + mapGold);
+  const mapGold = victory ? map.reward : map.reward * DEFEAT_REWARD_SHARE * progress * progress;
+  const gold = baseGold + mapGold;
+  return Math.round(victory ? gold : gold * (1 + DEFEAT_REWARD_BONUS));
 }
 
 /**

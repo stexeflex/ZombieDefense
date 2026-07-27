@@ -228,8 +228,9 @@ for (const type of [
   'acid',
   'tesla',
   'launcher',
-  'drone',
+  'triple',
   'laser',
+  'drone',
   'plasma',
 ]) {
   const room = makeRoom('crater');
@@ -268,6 +269,210 @@ for (const type of [
     after < before,
     `(${after}/${before})`,
   );
+}
+
+console.log('\n== Säure, Feuer und Magnum ==');
+{
+  // Der Säurewerfer zündet nichts mehr an, er lässt Lachen liegen.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  room.state.hazards.clear();
+  makeInvincible(player);
+  player.x = 1200;
+  player.y = 800;
+  player.weapon = 'acid';
+
+  const target = room.systems.world.spawnZombie('normal', { x: 1500, y: 800 });
+  target.health = 40000;
+  target.maxHealth = 40000;
+  for (let tick = 0; tick < 16; tick += 1) {
+    target.x = 1500;
+    target.y = 800;
+    player.ammo = 9999;
+    player.reserveAmmo = 9999;
+    player.reloading = 0;
+    runtime.input = { ...IDLE, shoot: true, aimX: 1500, aimY: 800 };
+    room.update(50);
+  }
+  const pool = [...room.state.hazards.values()].find((hazard) => hazard.kind === 'acid');
+  check('Säure hinterlässt grüne Lachen', Boolean(pool), `(${room.state.hazards.size})`);
+  check('Säure entzündet niemanden mehr', target.burning === 0, `(${target.burning})`);
+
+  runtime.input = { ...IDLE };
+  room.state.projectiles.clear();
+  const beforePool = target.health;
+  for (let tick = 0; tick < 20; tick += 1) {
+    target.x = pool ? pool.x : 1500;
+    target.y = pool ? pool.y : 800;
+    room.update(50);
+  }
+  check(
+    'Die Lache frisst weiter, ohne dass jemand schießt',
+    target.health < beforePool,
+    `(${Math.round(beforePool - target.health)} Schaden)`,
+  );
+
+  // Es ist die eigene Säure: der Trupp darf ruhig hindurchlaufen.
+  room.state.zombies.clear();
+  room.state.projectiles.clear();
+  player.maxHealth = 500;
+  player.health = 500;
+  player.x = pool ? pool.x : 1500;
+  player.y = pool ? pool.y : 800;
+  step(room, 20);
+  check('Die eigene Säure tut dem Trupp nichts', player.health === 500, `(${player.health}/500)`);
+}
+{
+  // Die Feuerrakete macht genau das, was die Säure vorher gemacht hat.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  room.state.hazards.clear();
+  makeInvincible(player);
+  player.x = 1200;
+  player.y = 800;
+  player.weapon = 'firerocket';
+
+  const target = room.systems.world.spawnZombie('big', { x: 1500, y: 800 });
+  target.health = 40000;
+  target.maxHealth = 40000;
+  for (let tick = 0; tick < 30; tick += 1) {
+    target.x = 1500;
+    target.y = 800;
+    player.ammo = 9999;
+    player.reserveAmmo = 9999;
+    player.reloading = 0;
+    runtime.input = { ...IDLE, shoot: true, aimX: 1500, aimY: 800 };
+    room.update(50);
+  }
+  check('Feuerrakete setzt Gegner in Brand', target.burning > 0, `(${target.burning})`);
+  check('Feuerrakete trifft hart', target.health < target.maxHealth);
+  check(
+    'Feuerrakete lässt keine Säure liegen',
+    ![...room.state.hazards.values()].some((hazard) => hazard.kind === 'acid'),
+  );
+}
+{
+  // Zwei Gegner in einer Linie: die Magnum bleibt im ersten stecken.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  makeInvincible(player);
+  player.x = 1200;
+  player.y = 800;
+
+  const line = (weapon) => {
+    room.state.zombies.clear();
+    room.state.projectiles.clear();
+    const front = room.systems.world.spawnZombie('big', { x: 1400, y: 800 });
+    const back = room.systems.world.spawnZombie('big', { x: 1470, y: 800 });
+    for (const zombie of [front, back]) {
+      zombie.health = 1e6;
+      zombie.maxHealth = 1e6;
+    }
+    player.weapon = weapon;
+    player.fireCooldown = 0;
+    for (let tick = 0; tick < 24; tick += 1) {
+      front.x = 1400;
+      front.y = 800;
+      back.x = 1470;
+      back.y = 800;
+      player.ammo = 9999;
+      player.reserveAmmo = 9999;
+      player.reloading = 0;
+      runtime.input = { ...IDLE, shoot: true, aimX: 1400, aimY: 800 };
+      room.update(50);
+    }
+    return { front: 1e6 - front.health, back: 1e6 - back.health };
+  };
+
+  const magnum = line('magnum');
+  check(
+    'Magnum trifft den vorderen Gegner hart',
+    magnum.front > 200,
+    `(${Math.round(magnum.front)})`,
+  );
+  check('Magnum durchschlägt niemanden', magnum.back === 0, `(${Math.round(magnum.back)})`);
+  const nailgun = line('nailgun');
+  check(
+    'Zum Vergleich: der Nagelwerfer geht durch',
+    nailgun.back > 0,
+    `(${Math.round(nailgun.back)})`,
+  );
+}
+
+console.log('\n== Drohnenhangar ==');
+{
+  const room = makeRoom('crater');
+  const player = join(room, 'p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeDefense('p1', { type: 'drone', x: 1200, y: 900, rotation: 0 });
+  const hangar = [...room.state.defenses.values()][0];
+  room.update(50);
+  check(
+    'Der Hangar startet seine Drohnen',
+    room.state.drones.size === DEFENSES.drone.drones,
+    `(${room.state.drones.size}/${DEFENSES.drone.drones})`,
+  );
+
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  makeInvincible(player);
+  const pack = [];
+  for (let index = 0; index < 3; index += 1) {
+    const zombie = room.systems.world.spawnZombie('normal', { x: 1520, y: 740 + index * 60 });
+    zombie.health = 4000;
+    zombie.maxHealth = 4000;
+    pack.push(zombie);
+  }
+  const start = [...room.state.drones.values()].map((drone) => ({ x: drone.x, y: drone.y }));
+  const runtime = room.systems.world.runtime.get('p1');
+  for (let tick = 0; tick < 200; tick += 1) {
+    pack.forEach((zombie, index) => {
+      zombie.x = 1520;
+      zombie.y = 740 + index * 60;
+    });
+    runtime.input = { ...IDLE };
+    room.update(50);
+  }
+  const flown = [...room.state.drones.values()].map((drone, index) =>
+    Math.hypot(drone.x - start[index].x, drone.y - start[index].y),
+  );
+  check(
+    'Die Drohnen fliegen selbst los',
+    flown.every((distance) => distance > 120),
+    `(${flown.map((d) => Math.round(d)).join(', ')} px)`,
+  );
+  check(
+    'Die Drohnen bleiben an der Leine ihres Hangars',
+    [...room.state.drones.values()].every(
+      (drone) => Math.hypot(drone.x - hangar.x, drone.y - hangar.y) <= DEFENSES.drone.range + 200,
+    ),
+  );
+  check(
+    'Jede Drohne nimmt sich ein eigenes Ziel vor',
+    pack.every((zombie) => zombie.health < 4000),
+    `(${pack.map((z) => Math.round(z.health)).join(', ')} HP)`,
+  );
+
+  room.systems.world.destroyDefense(hangar);
+  room.update(50);
+  check('Mit dem Hangar verschwinden die Drohnen', room.state.drones.size === 0);
 }
 
 console.log('\n== Fahrzeuge ==');
@@ -379,12 +584,15 @@ console.log('\n== Fahrzeuge ==');
 
   player.maxHealth = 1000;
   player.health = 1000;
-  room.systems.world.damagePlayer(player, 100);
-  const through = 1000 - player.health;
+  const hullBeforeMelee = apc.health;
+  const landed = room.systems.world.damagePlayer(player, 100);
+  room.systems.world.hullMelee(apc, 100);
   check(
-    `Im Fahrzeug kommt nur ein Teil des Schadens an (${Math.round(through)} statt 100)`,
-    Math.abs(through - 100 * (1 - VEHICLES.apc.protection)) < 0.01,
+    'Im Fahrzeug ist die Besatzung vollständig unverwundbar',
+    landed === false && player.health === 1000,
+    `(${player.health}/1000 HP)`,
   );
+  check('Nahkampftreffer landen nur auf der Hülle', apc.health < hullBeforeMelee);
 
   room.systems.waves.startNextWave();
   room.systems.waves.spawnQueue = [];
@@ -1643,7 +1851,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
     `(${(ZOMBIES.omega.abilities ?? []).length})`,
   );
   check('Vier Mini-Bosse plus Brutling', MINI_BOSSES.length === 4);
-  check('Zwölf Türme', TURRET_ORDER.length === 12, `(${TURRET_ORDER.length})`);
+  check('Dreizehn Türme', TURRET_ORDER.length === 13, `(${TURRET_ORDER.length})`);
   const swarmWaves = MAPS.flatMap((map) => map.waves).filter((wave) => wave.kind === 'swarm');
   check('Schwarmwellen sind eingeplant', swarmWaves.length > 0, `(${swarmWaves.length})`);
 }

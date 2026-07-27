@@ -7,7 +7,6 @@ import {
   PLAYER_RADIUS,
   SUMMON_CYCLES,
   VEHICLES,
-  VEHICLE_MELEE_BLEED,
   VEHICLE_WRECK_DAMAGE,
   ZOMBIES,
   armorReduction,
@@ -17,7 +16,6 @@ import {
   endlessHealthScale,
   endlessSpeedScale,
   timedAbilities,
-  vehicleProtection,
   vehicleSellValue,
   type FxEvent,
   type GameMap,
@@ -73,6 +71,11 @@ export interface RuntimePlayer {
 }
 
 const MAX_FX_PER_SNAPSHOT = 56;
+/**
+ * Hard ceiling for ground effects. Acid the squad spits out is recycled first,
+ * so an emptied magazine can never swallow a boss warning ring.
+ */
+const MAX_HAZARDS = 60;
 
 export const EMPTY_INPUT: PlayerInput = {
   up: false,
@@ -198,6 +201,11 @@ export class GameWorld {
     damage: number;
     ownerId?: string;
   }) {
+    if (this.state.hazards.size >= MAX_HAZARDS) {
+      const spare = [...this.state.hazards.values()].find((entry) => entry.kind === 'acid');
+      if (!spare) return undefined;
+      this.state.hazards.delete(spare.id);
+    }
     const hazard = new HazardState();
     hazard.id = this.nextId('h');
     hazard.kind = options.kind;
@@ -382,13 +390,13 @@ export class GameWorld {
   /** Tells the caller whether the blow landed, so a dodge can look different. */
   damagePlayer(player: PlayerState, amount: number) {
     if (!player.alive) return false;
+    // While a seat and its hull still exist, every attack lands on the vehicle
+    // instead of the passenger. Wreck damage is applied only after everyone
+    // has been dropped out and their vehicleId has been cleared.
+    if (this.vehicleOf(player.id)) return false;
     const runtime = this.runtime.get(player.id);
     const upgrades = runtime?.upgrades ?? EMPTY_UPGRADES;
     let reduction = 1 - armorReduction(upgrades.armor);
-    // Sitting behind steel is the whole point of a vehicle: most of a blow
-    // stays in the hull instead of reaching the crew.
-    const vehicle = this.vehicleOf(player.id);
-    if (vehicle) reduction *= 1 - vehicleProtection(vehicle.type, upgrades.vehicleArmor);
     // A dash swallows a good part of every blow, and the levelled upgrade pushes
     // that up to the full immunity it used to hand out for nothing.
     if (player.dashing > 0) {
@@ -455,7 +463,7 @@ export class GameWorld {
 
   damageVehicle(vehicle: VehicleState, amount: number) {
     if (amount <= 0 || !this.state.vehicles.has(vehicle.id)) return;
-    vehicle.health -= amount;
+    vehicle.health -= amount * (1 - vehicle.armor);
     vehicle.refund = vehicleSellValue(vehicle.type, vehicle.health, vehicle.maxHealth);
     this.pushFx({ k: 'structure', x: vehicle.x, y: vehicle.y, s: vehicle.type });
     if (vehicle.health <= 0) this.wreckVehicle(vehicle);
@@ -516,16 +524,8 @@ export class GameWorld {
     player.y = vehicle.y;
   }
 
-  /**
-   * A blow against the hull: most of it stays in the steel, the rest rattles
-   * through to everyone on board.
-   */
+  /** A blow against the hull cannot reach the crew while the hull survives. */
   hullMelee(vehicle: VehicleState, damage: number) {
-    for (const id of vehicle.crew) {
-      const passenger = this.state.players.get(id);
-      if (!passenger) continue;
-      this.damagePlayer(passenger, damage * VEHICLE_MELEE_BLEED);
-    }
     this.damageVehicle(vehicle, damage);
   }
 

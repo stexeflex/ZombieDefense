@@ -27,6 +27,11 @@ import { ProgressService } from './progress.service';
 
 type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error';
 
+/** How long the browser waits for the server to confirm the payout. */
+const SETTLE_TIMEOUT = 1200;
+/** How long it waits for the socket to close before it moves on regardless. */
+const LEAVE_TIMEOUT = 1500;
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly progress = inject(ProgressService);
@@ -210,7 +215,12 @@ export class GameService {
     this.room = undefined;
     if (room) {
       room.removeAllListeners();
-      await room.leave(true).catch(() => undefined);
+      // A socket that never reports its close must not freeze the button that
+      // is waiting on this — the room is gone for us either way.
+      await Promise.race([
+        room.leave(true).catch(() => undefined),
+        new Promise((resolve) => setTimeout(resolve, LEAVE_TIMEOUT)),
+      ]);
     }
     this.audio.setTrack('none');
     this.snapshot.set(null);
@@ -237,10 +247,12 @@ export class GameService {
   /**
    * Leave the finished room alone and open a fresh lobby with the same code.
    * Other clients remain in their current room until they decide for
-   * themselves where to go.
+   * themselves where to go. `onSettled` fires as soon as the gold is safe, so
+   * the button can stop claiming it is still saving.
    */
-  async returnToLobby(lobbyCode: string, name: string) {
+  async returnToLobby(lobbyCode: string, name: string, onSettled?: () => void) {
     await this.settleRunReward();
+    onSettled?.();
     await this.disconnect(false);
     await this.connect(lobbyCode, name, true);
   }
@@ -276,8 +288,15 @@ export class GameService {
       const timeout = setTimeout(() => {
         this.creditVisibleRunReward();
         finish();
-      }, 1200);
-      room.send('leave_run');
+      }, SETTLE_TIMEOUT);
+      // A socket that is already gone can never answer, so the local snapshot
+      // pays out right away instead of leaving the caller hanging.
+      try {
+        room.send('leave_run');
+      } catch {
+        this.creditVisibleRunReward();
+        finish();
+      }
     });
   }
 

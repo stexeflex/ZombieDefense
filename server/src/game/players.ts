@@ -32,6 +32,21 @@ import {
 import type { DefenseState, PlayerState, ZombieState } from '../state/game-state.js';
 import type { GameWorld, RuntimePlayer } from './world.js';
 
+/**
+ * How thick a shot is. Anything not listed flies as a thin bullet — the wide
+ * ones are blobs, clouds and the railgun beam that visibly fills a lane.
+ */
+const PROJECTILE_RADIUS: Partial<Record<WeaponType, number>> = {
+  rocket: 8,
+  firerocket: 9,
+  gravity: 14,
+  nova: 7,
+  acid: 7,
+  flamer: 13,
+  cryo: 10,
+  railgun: 11,
+};
+
 /** Movement, shooting, reloading, dashing, grenades and picking each other up. */
 export class PlayerSystem {
   constructor(private readonly world: GameWorld) {}
@@ -405,26 +420,16 @@ export class PlayerSystem {
         );
         projectile.pierce = config.pierce;
         projectile.life = weaponLife(config);
-        projectile.radius =
-          player.weapon === 'rocket'
-            ? 8
-            : player.weapon === 'gravity'
-              ? 14
-              : player.weapon === 'nova'
-                ? 7
-                : player.weapon === 'acid'
-                  ? 7
-                  : player.weapon === 'flamer'
-                    ? 13
-                    : player.weapon === 'cryo'
-                      ? 10
-                      : 4;
+        projectile.radius = PROJECTILE_RADIUS[player.weapon] ?? 4;
         projectile.splashRadius = config.splashRadius ?? 0;
         projectile.splashDamage = (config.splashDamage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
         projectile.chain = config.chain ?? 0;
         projectile.chainRange = config.chainRange ?? 0;
         projectile.burn = config.burn ?? 0;
         projectile.burnSeconds = config.burnSeconds ?? 0;
+        projectile.acidRadius = config.acidRadius ?? 0;
+        projectile.acidDps = (config.acidDps ?? 0) * (1 + upgrades.weaponDamage * 0.02);
+        projectile.acidSeconds = config.acidSeconds ?? 0;
         projectile.slow = config.slow ?? 0;
         projectile.slowSeconds = config.slowSeconds ?? 0;
         projectile.pull = config.pull ?? 0;

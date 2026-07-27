@@ -141,6 +141,15 @@ export interface VehicleSnapshot {
   crew: string[];
 }
 
+/** A flying drone of a hangar; it has no health of its own. */
+export interface DroneSnapshot {
+  id: string;
+  ownerId: string;
+  x: number;
+  y: number;
+  rotation: number;
+}
+
 export interface HazardSnapshot {
   id: string;
   kind: HazardKind;
@@ -178,6 +187,7 @@ export interface GameSnapshot {
   projectiles: Record<string, ProjectileSnapshot>;
   defenses: Record<string, DefenseSnapshot>;
   vehicles: Record<string, VehicleSnapshot>;
+  drones: Record<string, DroneSnapshot>;
   hazards: Record<string, HazardSnapshot>;
   fx?: FxEvent[];
 }

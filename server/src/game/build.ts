@@ -17,6 +17,7 @@ import {
   distanceToVehicle,
   reserveCapacity,
   sellValue,
+  vehicleArmorReduction,
   vehicleMaxHealth,
   vehicleSellValue,
   weaponSellValue,
@@ -272,6 +273,7 @@ export class BuildSystem {
     vehicle.rotation = rotation;
     vehicle.maxHealth = vehicleMaxHealth(type, runtime.upgrades.vehicleHealth);
     vehicle.health = vehicle.maxHealth;
+    vehicle.armor = vehicleArmorReduction(runtime.upgrades.vehicleArmor);
     vehicle.refund = vehicleSellValue(type, vehicle.health, vehicle.maxHealth);
     player.money -= price;
     if (runtime.vehicleDiscounts > 0) runtime.vehicleDiscounts -= 1;

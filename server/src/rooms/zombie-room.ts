@@ -22,6 +22,7 @@ import {
 } from '../../../shared/game-types.js';
 import { AbilitySystem } from '../game/abilities.js';
 import { BuildSystem } from '../game/build.js';
+import { DroneSystem } from '../game/drones.js';
 import { PlayerSystem } from '../game/players.js';
 import { ProjectileSystem } from '../game/projectiles.js';
 import { TurretSystem } from '../game/turrets.js';
@@ -84,6 +85,7 @@ const VEHICLE_PRECISION: Record<string, number> = {
   health: 1,
   maxHealth: 1,
 };
+const DRONE_PRECISION: Record<string, number> = { x: 10, y: 10, rotation: 100 };
 const HAZARD_PRECISION: Record<string, number> = { x: 1, y: 1, r: 1, life: 100, maxLife: 100 };
 
 /**
@@ -98,6 +100,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   private zombieSystem!: ZombieSystem;
   private projectiles!: ProjectileSystem;
   private turrets!: TurretSystem;
+  private drones!: DroneSystem;
   private vehicles!: VehicleSystem;
   private build!: BuildSystem;
   private waves!: WaveSystem;
@@ -115,6 +118,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.zombieSystem = new ZombieSystem(this.world, this.abilities);
     this.projectiles = new ProjectileSystem(this.world);
     this.turrets = new TurretSystem(this.world);
+    this.drones = new DroneSystem(this.world);
     this.vehicles = new VehicleSystem(this.world);
     this.build = new BuildSystem(this.world, this.playerSystem);
     this.waves = new WaveSystem(
@@ -329,6 +333,9 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       // Driving is allowed between waves so the squad can park where it wants,
       // but the gun and the on-board gear stay quiet until the wave starts.
       this.vehicles.update(delta, false);
+      // Drones already circle their hangar while the squad builds, they just
+      // have nothing to hunt yet.
+      this.drones.update(delta, false);
     }
 
     this.snapshotElapsed += deltaMs;
@@ -349,6 +356,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.zombieSystem.update(delta);
     this.projectiles.update(delta);
     this.turrets.update(delta);
+    this.drones.update(delta, true);
     this.abilities.updateHazards(delta);
     this.playerSystem.updateRevives(delta);
     this.abilities.updateBossBar();
@@ -377,6 +385,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.compact(payload['projectiles'], PROJECTILE_PRECISION);
     this.compact(payload['defenses'], DEFENSE_PRECISION);
     this.compact(payload['vehicles'], VEHICLE_PRECISION);
+    this.compact(payload['drones'], DRONE_PRECISION);
     this.compact(payload['hazards'], HAZARD_PRECISION);
     if (this.world.fxQueue.length > 0) payload['fx'] = this.world.fxQueue;
     this.broadcast('snapshot', payload);
@@ -461,6 +470,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       players: this.playerSystem,
       abilities: this.abilities,
       vehicles: this.vehicles,
+      turrets: this.turrets,
+      drones: this.drones,
     };
   }
 }

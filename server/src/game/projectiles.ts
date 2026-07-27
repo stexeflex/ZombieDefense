@@ -98,6 +98,19 @@ export class ProjectileSystem {
   private detonate(projectile: ProjectileState, x: number, y: number) {
     const radius = projectile.splashRadius;
     this.world.pushFx({ k: 'explosion', x, y, r: radius, s: projectile.kind });
+    // Acid does not just burst, it stays: the puddle keeps eating whatever
+    // walks through it long after the shot is gone.
+    if (projectile.acidRadius > 0 && projectile.acidSeconds > 0) {
+      this.world.spawnHazard({
+        kind: 'acid',
+        x,
+        y,
+        r: projectile.acidRadius,
+        life: projectile.acidSeconds,
+        damage: projectile.acidDps,
+        ownerId: projectile.ownerId,
+      });
+    }
     const victims: Array<[string, ZombieState]> = [];
     this.world.state.zombies.forEach((zombie, id) => {
       const distance = Math.hypot(zombie.x - x, zombie.y - y);

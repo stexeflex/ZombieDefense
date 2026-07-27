@@ -84,6 +84,18 @@ export interface VehicleView extends BaseView {
   smoke: number;
 }
 
+export interface DroneView extends BaseView {
+  root: Phaser.GameObjects.Container;
+  actor: Phaser.GameObjects.Container;
+  body: Phaser.GameObjects.Image;
+  rotors: Phaser.GameObjects.Image[];
+  /** Own heading, so a drone banks instead of snapping on every snapshot. */
+  rotation: number;
+  targetRotation: number;
+  spin: number;
+  bob: number;
+}
+
 export interface ProjectileView extends BaseView {
   root: Phaser.GameObjects.Image;
   kind: string;
@@ -118,15 +130,17 @@ export const PROJECTILE_STYLE: Record<
   rifle: { texture: 'fx-spark', tint: 0xfff3c4, scaleX: 1.9, scaleY: 0.4 },
   shotgun: { texture: 'fx-spark', tint: 0xffd591, scaleX: 1.1, scaleY: 0.38 },
   nailgun: { texture: 'fx-shard', tint: 0xd8dfdb, scaleX: 1.7, scaleY: 0.48 },
+  magnum: { texture: 'fx-spark', tint: 0xffd08a, scaleX: 2.2, scaleY: 0.6 },
   sniper: { texture: 'fx-spark', tint: 0xd8fbff, scaleX: 3.4, scaleY: 0.42 },
-  acid: { texture: 'fx-energy', tint: 0xb8ff71, scaleX: 1.05, scaleY: 0.9 },
+  acid: { texture: 'fx-energy', tint: 0xb8ff71, scaleX: 1.15, scaleY: 1 },
   lmg: { texture: 'fx-spark', tint: 0xfff0b8, scaleX: 2.1, scaleY: 0.45 },
   flamer: { texture: 'fx-flame', tint: 0xffa04a, scaleX: 1.5, scaleY: 1.5 },
   cryo: { texture: 'fx-energy', tint: 0xaef0ff, scaleX: 1.3, scaleY: 1.1 },
   rocket: { texture: 'fx-glow', tint: 0xffb066, scaleX: 0.55, scaleY: 0.4 },
+  firerocket: { texture: 'fx-glow', tint: 0xff7a3a, scaleX: 0.7, scaleY: 0.55 },
   tesla: { texture: 'fx-energy', tint: 0x9fdcff, scaleX: 1.4, scaleY: 1.1 },
   laser: { texture: 'fx-spark', tint: 0xff8fd8, scaleX: 4.2, scaleY: 0.6 },
-  railgun: { texture: 'fx-spark', tint: 0xbaf7ff, scaleX: 6.4, scaleY: 0.7 },
+  railgun: { texture: 'fx-glow', tint: 0xbaf7ff, scaleX: 2.6, scaleY: 0.6 },
   gravity: { texture: 'fx-energy', tint: 0xa67cff, scaleX: 2.2, scaleY: 2.2 },
   nova: { texture: 'fx-energy', tint: 0xff9ee0, scaleX: 2.1, scaleY: 1.05 },
   turret_mg: { texture: 'fx-spark', tint: 0x9fe8ff, scaleX: 1.7, scaleY: 0.42 },
@@ -138,6 +152,7 @@ export const PROJECTILE_STYLE: Record<
   turret_acid: { texture: 'fx-energy', tint: 0xb8ff71, scaleX: 1.05, scaleY: 0.9 },
   turret_tesla: { texture: 'fx-energy', tint: 0x9fdcff, scaleX: 1.5, scaleY: 1.2 },
   turret_launcher: { texture: 'fx-glow', tint: 0xffb066, scaleX: 0.5, scaleY: 0.4 },
+  turret_triple: { texture: 'fx-spark', tint: 0xc9f7a8, scaleX: 2, scaleY: 0.46 },
   turret_drone: { texture: 'fx-energy', tint: 0x4ce0d5, scaleX: 1.8, scaleY: 0.48 },
   turret_laser: { texture: 'fx-spark', tint: 0xff8fd8, scaleX: 3.8, scaleY: 0.55 },
   turret_plasma: { texture: 'fx-energy', tint: 0x7eeaff, scaleX: 4.6, scaleY: 0.68 },
@@ -152,4 +167,6 @@ export const HAZARD_STYLE: Record<HazardKind, { tint: number; alpha: number }> =
   lava: { tint: 0xff7a2a, alpha: 0.55 },
   poison: { tint: 0x8dff6b, alpha: 0.45 },
   pull: { tint: 0x4ce0d5, alpha: 0.22 },
+  // The squad's own acid: a brighter, more chemical green than boss poison.
+  acid: { tint: 0xb8ff45, alpha: 0.5 },
 };
