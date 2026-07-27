@@ -39,6 +39,9 @@ import {
   defenseFootprint,
   discountedCost,
   distanceToDefense,
+  endlessDamageScale,
+  endlessHealthScale,
+  endlessSpeedScale,
   endlessWave,
   healthRegenPerSecond,
   magazineCapacity,
@@ -135,6 +138,16 @@ describe('map campaign', () => {
     expect(endlessWave(boss, 17).zombies).toEqual(endlessWave(boss, 17).zombies);
     // A late wave stays a fight instead of an hour of mopping up.
     expect(endlessWave(boss, 400).zombies.length).toBeLessThan(200);
+  });
+
+  it('ramps endless enemies after wave 30 and accounts for bigger squads', () => {
+    expect(endlessHealthScale(30, 2)).toBe(1);
+    expect(endlessDamageScale(30)).toBe(1);
+    expect(endlessSpeedScale(30)).toBe(1);
+    expect(endlessHealthScale(40, 2)).toBeGreaterThan(endlessHealthScale(40, 1));
+    expect(endlessHealthScale(50, 2)).toBeGreaterThan(endlessHealthScale(40, 2));
+    expect(endlessDamageScale(50)).toBeGreaterThan(endlessDamageScale(40));
+    expect(endlessSpeedScale(50)).toBeGreaterThan(endlessSpeedScale(40));
   });
 
   it('keeps the spawn area free of obstacles', () => {
@@ -242,9 +255,9 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers six barricades and nine turrets', () => {
+  it('offers six barricades and twelve turrets', () => {
     expect(BARRICADE_ORDER).toHaveLength(6);
-    expect(TURRET_ORDER).toHaveLength(9);
+    expect(TURRET_ORDER).toHaveLength(12);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
   });
@@ -281,6 +294,13 @@ describe('defenses', () => {
     expect(DEFENSES.scatter.pellets).toBeGreaterThan(1);
     expect(DEFENSES.acid.splashRadius).toBeGreaterThan(0);
     expect(DEFENSES.acid.burn).toBeGreaterThan(0);
+    expect(DEFENSES.shotgun.pellets!).toBeGreaterThan(DEFENSES.scatter.pellets!);
+    expect(DEFENSES.drone.targets).toBe(3);
+    expect(DEFENSES.plasma.cost).toBeGreaterThan(DEFENSES.laser.cost);
+    expect(DEFENSES.plasma.damage! / DEFENSES.plasma.fireDelay!).toBeGreaterThan(
+      (DEFENSES.laser.damage! / DEFENSES.laser.fireDelay!) * 3,
+    );
+    expect(DEFENSES.plasma.pierce!).toBeGreaterThan(DEFENSES.laser.pierce!);
   });
 
   it('gives both new barricades a distinct last-resort role', () => {

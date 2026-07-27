@@ -391,7 +391,12 @@
           </div>
 
           <div class="controls-hint">
-            <span><kbd>WASD</kbd> Bewegen</span>
+            <span
+              ><kbd>WASD</kbd>
+              {{
+                !game.player()?.alive && snapshot.phase === 'combat' ? 'Kamera bewegen' : 'Bewegen'
+              }}</span
+            >
             <span><kbd>Leertaste</kbd> {{ dashHint() }}</span>
             <span><kbd>Maus</kbd> Zielen &amp; schießen</span>
             @if (snapshot.phase === 'build') {
@@ -411,7 +416,10 @@
             <div class="downed-overlay">
               <span>✚</span>
               <h2>Du bist am Boden</h2>
-              <p>Ein Mitspieler muss kurz in deiner Nähe stehen.</p>
+              <p>
+                Bewege die Kamera frei mit WASD oder den Pfeiltasten.<br />
+                Ein Mitspieler muss zum Wiederbeleben kurz in deiner Nähe stehen.
+              </p>
             </div>
           }
 
@@ -595,7 +603,12 @@
                         <button
                           class="ghost-button"
                           type="button"
-                          style="width: 100%; padding: 6px 10px; text-align: right; font-size: 0.54rem"
+                          style="
+                            width: 100%;
+                            padding: 6px 10px;
+                            text-align: right;
+                            font-size: 0.54rem;
+                          "
                           (click)="sellWeapon(weapon.type)"
                         >
                           <span>Waffe verkaufen</span>

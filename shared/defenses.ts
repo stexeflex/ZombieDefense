@@ -13,10 +13,13 @@ export type DefenseType =
   | 'frost'
   | 'scatter'
   | 'marksman'
+  | 'shotgun'
   | 'acid'
   | 'tesla'
   | 'launcher'
-  | 'laser';
+  | 'drone'
+  | 'laser'
+  | 'plasma';
 
 export interface DefenseConfig {
   label: string;
@@ -47,6 +50,8 @@ export interface DefenseConfig {
   burnSeconds?: number;
   pellets?: number;
   spread?: number;
+  /** How many different zombies this turret attacks per volley. */
+  targets?: number;
   description: string;
 }
 
@@ -200,6 +205,23 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     pierce: 3,
     description: 'Weite Reichweite, durchschlägt Reihen',
   },
+  shotgun: {
+    label: 'Schrotflinten-Turm',
+    short: '✺',
+    kind: 'turret',
+    cost: 1650,
+    health: 430,
+    width: 50,
+    height: 50,
+    damage: 27,
+    fireDelay: 0.92,
+    range: 380,
+    speed: 840,
+    pierce: 0,
+    pellets: 8,
+    spread: 0.3,
+    description: 'Acht schwere Schrotkugeln zerreißen Gegner aus nächster Nähe',
+  },
   acid: {
     label: 'Säureturm',
     short: '☣',
@@ -253,6 +275,22 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     splashDamage: 125,
     description: 'Sprengraketen gegen ganze Gruppen',
   },
+  drone: {
+    label: 'Drohnenzentrale',
+    short: '⬡',
+    kind: 'turret',
+    cost: 2750,
+    health: 420,
+    width: 52,
+    height: 52,
+    damage: 42,
+    fireDelay: 0.68,
+    range: 680,
+    speed: 1150,
+    pierce: 1,
+    targets: 3,
+    description: 'Drei Jagddrohnen nehmen gleichzeitig verschiedene Ziele unter Feuer',
+  },
   laser: {
     label: 'Laserturm',
     short: '≡',
@@ -267,6 +305,21 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     speed: 2500,
     pierce: 5,
     description: 'Endgame: durchschlägt ganze Reihen auf weite Distanz',
+  },
+  plasma: {
+    label: 'Plasma-Bastion',
+    short: '◉',
+    kind: 'turret',
+    cost: 6800,
+    health: 700,
+    width: 58,
+    height: 58,
+    damage: 95,
+    fireDelay: 0.16,
+    range: 1120,
+    speed: 3200,
+    pierce: 11,
+    description: 'Luxus-Endgame: vernichtet mit Plasma ganze Reihen auf maximale Distanz',
   },
 };
 
@@ -284,10 +337,13 @@ export const TURRET_ORDER: DefenseType[] = [
   'frost',
   'scatter',
   'marksman',
+  'shotgun',
   'acid',
   'tesla',
   'launcher',
+  'drone',
   'laser',
+  'plasma',
 ];
 
 /** How far from the player a new structure may be placed. */

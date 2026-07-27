@@ -105,10 +105,13 @@ export const PROJECTILE_STYLE: Record<
   turret_frost: { texture: 'fx-energy', tint: 0xaef0ff, scaleX: 1.25, scaleY: 1 },
   turret_scatter: { texture: 'fx-shard', tint: 0xd4b16a, scaleX: 1.3, scaleY: 0.48 },
   turret_marksman: { texture: 'fx-spark', tint: 0xc9ffe0, scaleX: 3, scaleY: 0.45 },
+  turret_shotgun: { texture: 'fx-spark', tint: 0xffd591, scaleX: 1.25, scaleY: 0.42 },
   turret_acid: { texture: 'fx-energy', tint: 0xb8ff71, scaleX: 1.05, scaleY: 0.9 },
   turret_tesla: { texture: 'fx-energy', tint: 0x9fdcff, scaleX: 1.5, scaleY: 1.2 },
   turret_launcher: { texture: 'fx-glow', tint: 0xffb066, scaleX: 0.5, scaleY: 0.4 },
+  turret_drone: { texture: 'fx-energy', tint: 0x4ce0d5, scaleX: 1.8, scaleY: 0.48 },
   turret_laser: { texture: 'fx-spark', tint: 0xff8fd8, scaleX: 3.8, scaleY: 0.55 },
+  turret_plasma: { texture: 'fx-energy', tint: 0x7eeaff, scaleX: 4.6, scaleY: 0.68 },
 };
 
 /** Pool colours; warnings are drawn in red no matter what fires them. */

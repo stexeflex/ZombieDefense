@@ -9,6 +9,9 @@ import {
   ZOMBIES,
   armorReduction,
   dashReduction,
+  endlessDamageScale,
+  endlessHealthScale,
+  endlessSpeedScale,
   timedAbilities,
   type FxEvent,
   type GameMap,
@@ -133,6 +136,11 @@ export class GameWorld {
     return 1 + Math.min(0.5, Math.max(0, this.state.wave - 1) * 0.025);
   }
 
+  /** Shared late multiplier for melee, explosions and boss abilities. */
+  endlessDamageMultiplier() {
+    return this.state.endless ? endlessDamageScale(this.state.wave) : 1;
+  }
+
   // ----------------------------------------------------------------- spawning
 
   spawnZombie(type: ZombieType, at?: { x: number; y: number }) {
@@ -144,11 +152,16 @@ export class GameWorld {
     zombie.x = spawn.x;
     zombie.y = spawn.y;
     const waveScale = 1 + Math.max(0, this.state.wave - 1) * 0.07;
-    zombie.maxHealth = Math.round(config.health * waveScale * this.map.difficulty);
+    const endlessHealth = this.state.endless
+      ? endlessHealthScale(this.state.wave, this.state.players.size)
+      : 1;
+    zombie.maxHealth = Math.round(config.health * waveScale * this.map.difficulty * endlessHealth);
     zombie.health = zombie.maxHealth;
-    zombie.baseSpeed = config.speed * (1 + Math.min(0.3, this.state.wave * 0.012));
+    const endlessSpeed = this.state.endless ? endlessSpeedScale(this.state.wave) : 1;
+    zombie.baseSpeed = config.speed * (1 + Math.min(0.3, this.state.wave * 0.012)) * endlessSpeed;
     zombie.speed = zombie.baseSpeed;
-    zombie.damage = config.damage * this.damageScale() * this.waveDamageScale();
+    zombie.damage =
+      config.damage * this.damageScale() * this.waveDamageScale() * this.endlessDamageMultiplier();
     zombie.radius = config.radius;
     zombie.reward = config.reward;
     zombie.armor = config.armor ?? 0;
@@ -463,16 +476,20 @@ export class GameWorld {
   }
 
   nearestZombie(x: number, y: number, range: number, requireSight = false) {
-    let best: ZombieState | undefined;
-    let bestDistance = range;
+    return this.nearestZombies(x, y, range, 1, requireSight)[0];
+  }
+
+  /** Closest visible targets, used by turrets that can engage several enemies. */
+  nearestZombies(x: number, y: number, range: number, limit: number, requireSight = false) {
+    const candidates: Array<{ zombie: ZombieState; distance: number }> = [];
     this.state.zombies.forEach((zombie) => {
       const distance = Math.hypot(zombie.x - x, zombie.y - y);
-      if (distance > bestDistance) return;
+      if (distance > range) return;
       if (requireSight && !this.hasLineOfSight(x, y, zombie.x, zombie.y)) return;
-      bestDistance = distance;
-      best = zombie;
+      candidates.push({ zombie, distance });
     });
-    return best;
+    candidates.sort((a, b) => a.distance - b.distance);
+    return candidates.slice(0, Math.max(1, limit)).map(({ zombie }) => zombie);
   }
 
   everyoneReady() {

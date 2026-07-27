@@ -121,11 +121,40 @@ const ENDLESS_MINIS: ZombieType[] = ['brute', 'warden', 'stalker', 'mortar'];
 /** Bodies of the first generated wave and what each further one adds. */
 const ENDLESS_BASE = 26;
 const ENDLESS_STEP = 4;
+/** The early endless game stays familiar; the real survival ramp starts here. */
+export const ENDLESS_RAMP_WAVE = 30;
 /**
  * Ceiling on the horde size. Past it the pressure comes from enemies that scale
  * with the wave number, not from ever longer mop-up work.
  */
 const ENDLESS_CAP = 130;
+
+/**
+ * Turret damage grows with every additional structure, so a linear zombie
+ * curve eventually loses. Past wave 30 health grows exponentially instead.
+ * Bigger squads are blended in over fifteen waves because they can afford far
+ * more turrets without making the enjoyable opening noticeably harsher.
+ */
+export function endlessHealthScale(wave: number, playerCount = 1) {
+  const lateWaves = Math.max(0, Math.floor(wave) - ENDLESS_RAMP_WAVE);
+  if (lateWaves === 0) return 1;
+  const survivalGrowth = Math.min(100, 1.038 ** lateWaves);
+  const squadRamp = Math.min(1, lateWaves / 15);
+  const squadScale = 1 + Math.max(0, Math.floor(playerCount) - 1) * 0.5 * squadRamp;
+  return survivalGrowth * squadScale;
+}
+
+/** Late enemies must also remain dangerous instead of only becoming sponges. */
+export function endlessDamageScale(wave: number) {
+  const lateWaves = Math.max(0, Math.floor(wave) - ENDLESS_RAMP_WAVE);
+  return Math.min(8, 1.0225 ** lateWaves);
+}
+
+/** A gentle late speed ramp keeps huge turret nests from kiting forever. */
+export function endlessSpeedScale(wave: number) {
+  const lateWaves = Math.max(0, Math.floor(wave) - ENDLESS_RAMP_WAVE);
+  return 1 + Math.min(0.35, lateWaves * 0.007);
+}
 
 /**
  * A wave the endless mode makes up on the spot: mini bosses every third wave, a
@@ -153,7 +182,7 @@ export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
   }
   if (wave % 3 === 0) {
     const leaders = Array.from(
-      { length: Math.min(5, 1 + Math.floor(wave / 12)) },
+      { length: Math.min(8, 1 + Math.floor(wave / 10)) },
       (_, slot) => ENDLESS_MINIS[(wave + slot) % ENDLESS_MINIS.length],
     );
     return {

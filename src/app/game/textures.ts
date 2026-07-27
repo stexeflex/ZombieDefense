@@ -691,6 +691,14 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     circle(ctx, 44, 9, 3, '#ff8f5a');
     circle(ctx, 44, 18, 3, '#ff8f5a');
   },
+  drone: (ctx) => {
+    fillRounded(ctx, 0, 5, 22, 17, 6, '#263b3a', '#0d1716', 2);
+    for (const y of [5, 13, 21]) {
+      fillRounded(ctx, 19, y, 27, 5, 2, '#527b78', '#142523', 1.5);
+      circle(ctx, 47, y + 2.5, 4, '#4ce0d5', '#c5fff9', 1.2);
+    }
+    circle(ctx, 9, 13, 5, '#1a2927', '#4ce0d5', 2);
+  },
   flame: (ctx) => {
     fillRounded(ctx, 0, 5, 20, 16, 6, '#7a3324', '#1d0f0b', 2);
     fillRounded(ctx, 18, 9, 24, 8, 3, '#43504a', '#141d19', 2);
@@ -719,6 +727,14 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     }
     circle(ctx, 9, 13, 4, '#d4b16a');
   },
+  shotgun: (ctx) => {
+    fillRounded(ctx, 0, 4, 24, 19, 6, '#4b392d', '#17110d', 2);
+    fillRounded(ctx, 21, 6, 33, 7, 3, '#b9aaa0', '#28201b', 2);
+    fillRounded(ctx, 21, 15, 33, 7, 3, '#8f8279', '#28201b', 2);
+    fillRounded(ctx, 7, 1, 12, 6, 2, '#6e5140', '#24170f', 1.5);
+    circle(ctx, 52, 9.5, 2.5, '#ffd591');
+    circle(ctx, 52, 18.5, 2.5, '#ffd591');
+  },
   acid: (ctx) => {
     fillRounded(ctx, 0, 5, 22, 17, 6, '#294932', '#102016', 2);
     circle(ctx, 10, 13, 6, '#4fae5d', '#b8ff71', 2);
@@ -745,6 +761,21 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     fillRounded(ctx, 6, 2, 14, 6, 2, '#4a4361');
     circle(ctx, 52, 14, 4.5, '#ff8fd8');
     circle(ctx, 12, 14, 3, '#ffb8ea');
+  },
+  plasma: (ctx) => {
+    fillRounded(ctx, 0, 4, 27, 20, 7, '#25364d', '#0b111c', 2.5);
+    fillRounded(ctx, 24, 8, 30, 12, 5, '#536f91', '#101929', 2);
+    ctx.strokeStyle = '#7eeaff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(30, 6);
+    ctx.lineTo(48, 3);
+    ctx.lineTo(55, 13);
+    ctx.lineTo(48, 23);
+    ctx.lineTo(30, 20);
+    ctx.stroke();
+    circle(ctx, 53, 13, 6, '#72ddff', '#e2fbff', 2);
+    circle(ctx, 11, 14, 5, '#16243a', '#7eeaff', 2);
   },
 };
 
@@ -1051,10 +1082,13 @@ export function createGameTextures(scene: Phaser.Scene) {
     frost: '#aef0ff',
     scatter: '#d4b16a',
     marksman: '#8fffc1',
+    shotgun: '#ffd591',
     acid: '#b8ff71',
     tesla: '#9fdcff',
     launcher: '#ff8f5a',
+    drone: '#4ce0d5',
     laser: '#ff8fd8',
+    plasma: '#7eeaff',
   };
   for (const [type, painter] of Object.entries(TURRET_GUN_PAINTERS)) {
     const config = DEFENSES[type as DefenseType];

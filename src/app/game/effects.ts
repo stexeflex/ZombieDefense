@@ -227,22 +227,27 @@ export class EffectLayer {
 
   private muzzleFlash(event: FxEvent) {
     const angle = event.a ?? 0;
-    const weapon = event.s as WeaponType;
+    const source = event.s ?? '';
+    const weapon = source as WeaponType;
     const extra = WEAPON_MUZZLE[weapon] ? WEAPON_MUZZLE[weapon] - 26 : 12;
     const x = event.x + Math.cos(angle) * extra;
     const y = event.y + Math.sin(angle) * extra;
     const flash = this.scene.add
       .image(x, y, 'fx-glow')
       .setTint(
-        weapon === 'laser'
-          ? 0xff8fd8
-          : weapon === 'acid'
-            ? 0xb8ff71
-            : weapon === 'tesla'
-              ? 0x9fdcff
-              : weapon === 'cryo'
-                ? 0xaef0ff
-                : 0xffd489,
+        source === 'plasma'
+          ? 0x7eeaff
+          : source === 'drone'
+            ? 0x4ce0d5
+            : weapon === 'laser'
+              ? 0xff8fd8
+              : weapon === 'acid'
+                ? 0xb8ff71
+                : weapon === 'tesla'
+                  ? 0x9fdcff
+                  : weapon === 'cryo'
+                    ? 0xaef0ff
+                    : 0xffd489,
       )
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.42, 0.3)

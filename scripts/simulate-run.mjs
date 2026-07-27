@@ -30,6 +30,9 @@ const {
   ammoRefillCost,
   campaignRunReward,
   dashReduction,
+  endlessDamageScale,
+  endlessHealthScale,
+  endlessSpeedScale,
   healthRegenPerSecond,
   magazineCapacity,
   reserveCapacity,
@@ -211,7 +214,18 @@ console.log('\n== Verteidigungen ==');
 }
 
 console.log('\n== Besondere Türme wirken ==');
-for (const type of ['flame', 'frost', 'scatter', 'acid', 'tesla', 'laser']) {
+for (const type of [
+  'flame',
+  'frost',
+  'scatter',
+  'shotgun',
+  'acid',
+  'tesla',
+  'launcher',
+  'drone',
+  'laser',
+  'plasma',
+]) {
   const room = makeRoom('crater');
   const player = join(room, 'p1');
   room.systems.waves.startRun();
@@ -247,6 +261,34 @@ for (const type of ['flame', 'frost', 'scatter', 'acid', 'tesla', 'laser']) {
     `${DEFENSES[type].label} bekämpft Gegner (${Math.round(before - after)} Schaden)`,
     after < before,
     `(${after}/${before})`,
+  );
+}
+
+console.log('\n== Endlos-Skalierung ==');
+{
+  check('Bis Welle 30 bleibt die bekannte Balance', endlessHealthScale(30, 2) === 1);
+  check(
+    'Zwei Spieler erhöhen nach Welle 30 den Gegnerdruck',
+    endlessHealthScale(45, 2) > endlessHealthScale(45, 1),
+  );
+  check(
+    'Späte Gegner skalieren bei Leben, Schaden und Tempo weiter',
+    endlessHealthScale(60, 2) > endlessHealthScale(40, 2) &&
+      endlessDamageScale(60) > endlessDamageScale(40) &&
+      endlessSpeedScale(60) > endlessSpeedScale(40),
+  );
+
+  const room = makeRoom('outpost', { endless: true });
+  join(room, 'p1');
+  join(room, 'p2');
+  room.state.wave = 30;
+  const wave30 = room.systems.world.spawnZombie('normal', { x: 1200, y: 800 });
+  room.state.wave = 50;
+  const wave50 = room.systems.world.spawnZombie('normal', { x: 1300, y: 800 });
+  check(
+    'Die Serverwerte wenden die neue Kurve wirklich an',
+    wave50.maxHealth > wave30.maxHealth * 3 && wave50.damage > wave30.damage * 1.5,
+    `(Leben ${wave30.maxHealth} -> ${wave50.maxHealth}, Schaden ${wave30.damage.toFixed(1)} -> ${wave50.damage.toFixed(1)})`,
   );
 }
 
@@ -1269,7 +1311,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
     `(${(ZOMBIES.omega.abilities ?? []).length})`,
   );
   check('Vier Mini-Bosse plus Brutling', MINI_BOSSES.length === 4);
-  check('Neun Türme', TURRET_ORDER.length === 9, `(${TURRET_ORDER.length})`);
+  check('Zwölf Türme', TURRET_ORDER.length === 12, `(${TURRET_ORDER.length})`);
   const swarmWaves = MAPS.flatMap((map) => map.waves).filter((wave) => wave.kind === 'swarm');
   check('Schwarmwellen sind eingeplant', swarmWaves.length > 0, `(${swarmWaves.length})`);
 }

@@ -21,19 +21,18 @@ Aufruf kann das Laden deshalb kurz dauern.
 - **Endlosmodus** auf jeder freigeschalteten Karte: nach der letzten geplanten
   Welle geht es weiter, alle zehn Wellen kommt der Boss der Karte zurück
 - Dash auf der Leertaste: zwei Ladungen, kurzer Cooldown, schluckt 40 % des
-  Schadens — mit der Stufe *Dash-Schadensreduktion* bis zu 100 %
+  Schadens — mit der Stufe _Dash-Schadensreduktion_ bis zu 100 %
 - mit dem Klingendash schneidet der Dash durch Gegner und lädt dabei ein Schild,
   das Treffer schluckt und langsam wieder wegschmilzt
 - Kopfgeld wird **gleichmäßig geteilt**: jeder im Trupp bekommt denselben
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
 - dreizehn Zombiearten plus zehn Bosse
-- elf Waffen von der Pistole bis zur Laserkanone, darunter die Frostkanone, die
+- dreizehn Waffen von der Pistole bis zur Laserkanone, darunter die Frostkanone, die
   ganze Reihen auf halbes Tempo bremst
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- vier Barrikaden (Holz, Stachel, Stein, Stahl) und sechs Türme (MG, Brand,
-  Scharfschütze, Blitz, Rakete, Laser)
+- sechs Barrikaden und zwölf Türme vom günstigen MG bis zur Plasma-Bastion
 - Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
@@ -42,6 +41,7 @@ Aufruf kann das Laden deshalb kurz dauern.
   sind
 - am Wellenende wird der ganze Trupp geheilt und wieder aufgestellt
 - automatische Wiederbelebung gefallener Spieler durch kurzes Danebenstehen
+- freie WASD-/Pfeiltasten-Kamera, solange der eigene Spieler am Boden liegt
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
@@ -50,45 +50,45 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 ### Karten
 
-| Karte | Wellen | Härte | Endboss | Gold |
-|---|---|---|---|---|
-| Vorposten 07 | 10 | ×1 | Fleischkönig | 150 |
-| Industriehafen | 12 | ×1,45 | Brutmutter | 320 |
-| Militärbasis Nord | 14 | ×2 | Feldmarschall | 600 |
-| Krater-Quarantäne | 16 | ×2,8 | Artillerist | 1000 |
-| Metro Sektor 9 | 17 | ×3,6 | Sogfürst | 1500 |
-| Stahlwerk Kessel 3 | 18 | ×4,4 | Schlackenherr | 2100 |
-| Zitadelle Alpha | 20 | ×5,2 | Zerreißer | 3000 |
-| Nekropole | 22 | ×6 | Schwarmkönigin | 4200 |
-| Reaktorblock 4 | 24 | ×6,8 | Seuchenfürst | 5800 |
-| Abgrund-Kathedrale | 26 | ×7,6 | OMEGA | 9000 |
+| Karte              | Wellen | Härte | Endboss        | Gold |
+| ------------------ | ------ | ----- | -------------- | ---- |
+| Vorposten 07       | 10     | ×1    | Fleischkönig   | 150  |
+| Industriehafen     | 12     | ×1,45 | Brutmutter     | 320  |
+| Militärbasis Nord  | 14     | ×2    | Feldmarschall  | 600  |
+| Krater-Quarantäne  | 16     | ×2,8  | Artillerist    | 1000 |
+| Metro Sektor 9     | 17     | ×3,6  | Sogfürst       | 1500 |
+| Stahlwerk Kessel 3 | 18     | ×4,4  | Schlackenherr  | 2100 |
+| Zitadelle Alpha    | 20     | ×5,2  | Zerreißer      | 3000 |
+| Nekropole          | 22     | ×6    | Schwarmkönigin | 4200 |
+| Reaktorblock 4     | 24     | ×6,8  | Seuchenfürst   | 5800 |
+| Abgrund-Kathedrale | 26     | ×7,6  | OMEGA          | 9000 |
 
 ### Endlosmodus
 
 In der Lobby wählt der Host neben der Karte den Modus. **Endlos** spielt dieselbe
 Karte, hört aber nach ihrer letzten geplanten Welle nicht auf: Von da an baut der
 Server jede Welle selbst, mit Mini-Bossen in jeder dritten, einer Schwarmwelle in
-jeder fünften und dem Boss der Karte in jeder zehnten. Die Horde wächst weiter,
-Leben und Schaden der Gegner steigen mit der Wellennummer. Der Lohn richtet sich
-nach der erreichten Welle — freischalten lässt sich im Endlosmodus nichts, dafür
-bleibt die Kampagne da.
+jeder fünften und dem Boss der Karte in jeder zehnten. Ab Welle 30 ziehen Leben,
+Schaden und Tempo immer stärker an; größere Trupps erhöhen den Gegnerdruck
+zusätzlich. Der Lohn richtet sich nach der erreichten Welle — freischalten lässt
+sich im Endlosmodus nichts, dafür bleibt die Kampagne da.
 
 ### Bosse
 
 Jede Karte hat genau einen Endboss, und jeder kann etwas anderes:
 
-| Boss | Kann |
-|---|---|
-| Fleischkönig | Sturmangriff, Schockwelle, ruft Nachschub |
-| Brutmutter | zerfällt beim Sterben in Brutlinge, die selbst wieder zerfallen |
-| Feldmarschall | heilt sich und die ganze Horde, ruft Panzerträger |
-| Artillerist | Bombenhagel aus der Ferne, angekündigt mit roten Warnkreisen |
-| Sogfürst | saugt den Trupp zu sich und stößt ihn wieder weg |
-| Schlackenherr | hinterlässt brennende Lavapfützen |
-| Zerreißer | gewaltige Druckwelle, der rote Kreis ist die einzige Warnung |
-| Schwarmkönigin | endloser Nachschub, zerfällt beim Sterben |
-| Seuchenfürst | Giftpfützen und Heilschwaden für die Horde |
-| OMEGA | Druckwelle, Bombenhagel, Sog, Lava, Sturm — nur heilen kann es sich nicht |
+| Boss           | Kann                                                                      |
+| -------------- | ------------------------------------------------------------------------- |
+| Fleischkönig   | Sturmangriff, Schockwelle, ruft Nachschub                                 |
+| Brutmutter     | zerfällt beim Sterben in Brutlinge, die selbst wieder zerfallen           |
+| Feldmarschall  | heilt sich und die ganze Horde, ruft Panzerträger                         |
+| Artillerist    | Bombenhagel aus der Ferne, angekündigt mit roten Warnkreisen              |
+| Sogfürst       | saugt den Trupp zu sich und stößt ihn wieder weg                          |
+| Schlackenherr  | hinterlässt brennende Lavapfützen                                         |
+| Zerreißer      | gewaltige Druckwelle, der rote Kreis ist die einzige Warnung              |
+| Schwarmkönigin | endloser Nachschub, zerfällt beim Sterben                                 |
+| Seuchenfürst   | Giftpfützen und Heilschwaden für die Horde                                |
+| OMEGA          | Druckwelle, Bombenhagel, Sog, Lava, Sturm — nur heilen kann es sich nicht |
 
 Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 (gepanzert, ruft Verstärkung), Schlitzer (springt heran) und Mörserträger
@@ -96,30 +96,36 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 
 ### Waffen
 
-| Waffe | Preis | Besonderheit |
-|---|---|---|
-| Pistole | 0 | Startwaffe |
-| Maschinenpistole | 450 | sehr hohe Feuerrate |
-| Sturmgewehr | 900 | Allrounder, durchschlägt einen Gegner |
-| Schrotflinte | 1100 | acht Schrotkugeln auf kurze Distanz |
-| Scharfschützengewehr | 1700 | 215 Schaden, durchschlägt vier Gegner |
-| Maschinengewehr | 2300 | 100 Schuss Dauerfeuer |
-| Flammenwerfer | 2700 | kurze Reichweite, setzt Horden in Brand |
-| Frostkanone | 3000 | halbes Tempo für 2,4 s, durchschlägt zwei Gegner |
-| Raketenwerfer | 3300 | Sprengschaden im Umkreis |
-| Blitzstreuer | 3900 | Blitz springt auf vier weitere Gegner |
-| Laserkanone | 4800 | Dauerstrahl, durchschlägt sechs Gegner |
+| Waffe                | Preis | Besonderheit                                     |
+| -------------------- | ----- | ------------------------------------------------ |
+| Pistole              | 0     | Startwaffe                                       |
+| Maschinenpistole     | 450   | sehr hohe Feuerrate                              |
+| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner            |
+| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz              |
+| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner            |
+| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                            |
+| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand          |
+| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner |
+| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                         |
+| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner            |
+| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner           |
 
 ### Türme
 
-| Turm | Preis | Besonderheit |
-|---|---|---|
-| MG-Turm | 700 | Dauerfeuer auf mittlere Distanz |
-| Brandturm | 1000 | kurze Reichweite, setzt ganze Gruppen in Brand |
-| Scharfschützenturm | 1500 | weite Reichweite, durchschlägt Reihen |
-| Blitzturm | 1900 | Blitz springt auf drei Nachbarn über |
-| Raketenturm | 2200 | Sprengraketen gegen Gruppen |
-| Laserturm | 3200 | Endgame: durchschlägt Reihen auf weite Distanz |
+| Turm               | Preis | Besonderheit                                      |
+| ------------------ | ----- | ------------------------------------------------- |
+| MG-Turm            | 700   | Dauerfeuer auf mittlere Distanz                   |
+| Brandturm          | 1000  | kurze Reichweite, setzt ganze Gruppen in Brand    |
+| Frostturm          | 1200  | friert Reihen ein und bremst sie stark            |
+| Schrottschleuder   | 1350  | breite, günstige Schrottsalve                     |
+| Scharfschützenturm | 1500  | weite Reichweite, durchschlägt Reihen             |
+| Schrotflinten-Turm | 1650  | acht schwere Kugeln auf kurze Distanz             |
+| Säureturm          | 1750  | ätzender Flächenschaden über Zeit                 |
+| Blitzturm          | 1900  | Blitz springt auf drei Nachbarn über              |
+| Raketenturm        | 2200  | Sprengraketen gegen Gruppen                       |
+| Drohnenzentrale    | 2750  | bekämpft drei verschiedene Ziele gleichzeitig     |
+| Laserturm          | 3200  | Endgame: durchschlägt Reihen auf weite Distanz    |
+| Plasma-Bastion     | 6800  | Luxus-Endgame, deutlich stärker als der Laserturm |
 
 ## Voraussetzungen
 
@@ -163,18 +169,18 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 
 ## Steuerung
 
-| Taste | Aktion |
-|---|---|
-| `WASD` oder Pfeiltasten | Bewegen |
-| `Leertaste` oder `Shift` | Dash — schluckt einen Großteil des Schadens |
-| Maus | Zielen |
-| Linke Maustaste | Schießen |
-| `R` | Nachladen; beim Platzieren Barrikade drehen |
-| `1`–`9` oder Mausrad | Waffe aus dem Arsenal wählen |
-| `G` | Granate zum Mauszeiger werfen |
-| `F` | markierte Verteidigung reparieren (nur Bauphase) |
-| `V` | markierte Verteidigung verkaufen (nur Bauphase) |
-| Rechtsklick | ausgewählte Verteidigung abwählen |
+| Taste                    | Aktion                                           |
+| ------------------------ | ------------------------------------------------ |
+| `WASD` oder Pfeiltasten  | Bewegen                                          |
+| `Leertaste` oder `Shift` | Dash — schluckt einen Großteil des Schadens      |
+| Maus                     | Zielen                                           |
+| Linke Maustaste          | Schießen                                         |
+| `R`                      | Nachladen; beim Platzieren Barrikade drehen      |
+| `1`–`9` oder Mausrad     | Waffe aus dem Arsenal wählen                     |
+| `G`                      | Granate zum Mauszeiger werfen                    |
+| `F`                      | markierte Verteidigung reparieren (nur Bauphase) |
+| `V`                      | markierte Verteidigung verkaufen (nur Bauphase)  |
+| Rechtsklick              | ausgewählte Verteidigung abwählen                |
 
 Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange er
 läuft, schluckt er 40 % jedes Treffers — der blaue Ring zeigt an, wann das gilt.

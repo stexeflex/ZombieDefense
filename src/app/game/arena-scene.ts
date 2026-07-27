@@ -64,6 +64,8 @@ export class ArenaScene extends Phaser.Scene {
   private localDashLock = 0;
   private localDashX = 1;
   private localDashY = 0;
+  /** Alive players are followed; downed players get a freely movable camera. */
+  private cameraFollowingLocal = false;
   private crosshair!: Phaser.GameObjects.Container;
   private ghost!: Phaser.GameObjects.Image;
   private ghostRange!: Phaser.GameObjects.Arc;
@@ -103,11 +105,7 @@ export class ArenaScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x69f0ae, 0.35)
       .setVisible(false)
       .setDepth(29);
-    this.ghost = this.add
-      .image(0, 0, 'defense-wood')
-      .setAlpha(0.62)
-      .setVisible(false)
-      .setDepth(30);
+    this.ghost = this.add.image(0, 0, 'defense-wood').setAlpha(0.62).setVisible(false).setDepth(30);
     this.createFocusHighlight();
     this.bindInput();
 
@@ -204,6 +202,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const input = this.buildInput();
     this.movePlayerViews(deltaMs, input);
+    this.updateSpectatorCamera(deltaMs, input);
     this.animateZombies(deltaMs);
     this.moveDefenseViews(deltaMs);
     this.moveProjectiles(deltaMs);
@@ -258,9 +257,11 @@ export class ArenaScene extends Phaser.Scene {
     if (!me || !me.alive || (phase !== 'combat' && phase !== 'build')) return;
     if (me.dashCharges <= 0 || this.localDash > 0 || this.localDashLock > 0) return;
 
-    let dx = Number(this.keys['D'].isDown || this.keys['RIGHT'].isDown) -
+    let dx =
+      Number(this.keys['D'].isDown || this.keys['RIGHT'].isDown) -
       Number(this.keys['A'].isDown || this.keys['LEFT'].isDown);
-    let dy = Number(this.keys['S'].isDown || this.keys['DOWN'].isDown) -
+    let dy =
+      Number(this.keys['S'].isDown || this.keys['DOWN'].isDown) -
       Number(this.keys['W'].isDown || this.keys['UP'].isDown);
     if (dx === 0 && dy === 0) {
       const view = this.players.get(this.gameService.sessionId());
@@ -625,6 +626,7 @@ export class ArenaScene extends Phaser.Scene {
 
     if (player.id === this.gameService.sessionId()) {
       this.cameras.main.startFollow(root, true, 0.14, 0.14);
+      this.cameraFollowingLocal = true;
     }
 
     return {
@@ -769,7 +771,13 @@ export class ArenaScene extends Phaser.Scene {
       const casting = zombie.casting > 0;
       view.aura.setScale(zombie.charging > 0 || casting ? 1.18 : 1);
       const rank = ZOMBIES[zombie.type].rank;
-      const color = casting ? 0xffd166 : zombie.charging > 0 ? 0xffd166 : rank === 'elite' ? 0xffcc66 : 0xff4f6b;
+      const color = casting
+        ? 0xffd166
+        : zombie.charging > 0
+          ? 0xffd166
+          : rank === 'elite'
+            ? 0xffcc66
+            : 0xff4f6b;
       view.aura.setStrokeStyle(rank === 'elite' ? 2 : 3, color, rank === 'elite' ? 0.32 : 0.6);
     }
   }
@@ -818,7 +826,14 @@ export class ArenaScene extends Phaser.Scene {
   private createDefense(defense: DefenseSnapshot): DefenseView {
     const config = DEFENSES[defense.type];
     const turret = config.kind === 'turret';
-    const shadow = this.add.ellipse(3, 6, config.width * 1.05, config.height * 1.05, 0x000000, 0.34);
+    const shadow = this.add.ellipse(
+      3,
+      6,
+      config.width * 1.05,
+      config.height * 1.05,
+      0x000000,
+      0.34,
+    );
     const body = this.add
       .image(0, 0, turret ? `turret-base-${defense.type}` : `defense-${defense.type}`)
       .setDisplaySize(config.width, config.height);
@@ -883,9 +898,7 @@ export class ArenaScene extends Phaser.Scene {
       .setTint(style.tint)
       .setAlpha(style.alpha)
       .setVisible(!warning && hazard.kind !== 'pull');
-    const fill = this.add
-      .circle(0, 0, 1, style.tint, 0.28)
-      .setVisible(warning);
+    const fill = this.add.circle(0, 0, 1, style.tint, 0.28).setVisible(warning);
     const ring = this.add
       .circle(0, 0, hazard.r)
       .setStrokeStyle(warning ? 4 : 2, style.tint, warning ? 0.95 : 0.5);
@@ -988,6 +1001,44 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   // ------------------------------------------------------------ local motion
+
+  /**
+   * A downed player is not locked to their body. They can scout the whole
+   * battlefield with the regular movement keys until a teammate revives them.
+   */
+  private updateSpectatorCamera(deltaMs: number, input: PlayerInput) {
+    const localId = this.gameService.sessionId();
+    const player = this.snapshot?.players[localId];
+    const view = this.players.get(localId);
+    const canFreeLook = Boolean(player) && !player?.alive && this.snapshot?.phase === 'combat';
+
+    if (canFreeLook) {
+      const camera = this.cameras.main;
+      if (this.cameraFollowingLocal) {
+        camera.stopFollow();
+        this.cameraFollowingLocal = false;
+      }
+      let dx = Number(input.right) - Number(input.left);
+      let dy = Number(input.down) - Number(input.up);
+      const length = Math.hypot(dx, dy);
+      if (length === 0) return;
+      dx /= length;
+      dy /= length;
+      const distance = (820 * Math.min(deltaMs, 50)) / 1000;
+      const visibleWidth = camera.width / camera.zoom;
+      const visibleHeight = camera.height / camera.zoom;
+      camera.setScroll(
+        Phaser.Math.Clamp(camera.scrollX + dx * distance, 0, ARENA.width - visibleWidth),
+        Phaser.Math.Clamp(camera.scrollY + dy * distance, 0, ARENA.height - visibleHeight),
+      );
+      return;
+    }
+
+    if (player?.alive && view && !this.cameraFollowingLocal) {
+      this.cameras.main.startFollow(view.root, true, 0.14, 0.14);
+      this.cameraFollowingLocal = true;
+    }
+  }
 
   private movePlayerViews(deltaMs: number, input: PlayerInput) {
     const delta = Math.min(deltaMs, 50) / 1000;

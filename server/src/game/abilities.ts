@@ -68,7 +68,7 @@ export class AbilitySystem {
   }
 
   private slam(zombie: ZombieState, ability: AbilityOf<'slam'>) {
-    const damage = ability.damage * this.world.damageScale();
+    const damage = ability.damage * this.world.damageScale() * this.world.endlessDamageMultiplier();
     if (!ability.telegraph) {
       this.world.pushFx({ k: 'explosion', x: zombie.x, y: zombie.y, r: ability.radius, s: 'slam' });
       this.world.blast(zombie.x, zombie.y, ability.radius, damage, 1.5);
@@ -125,7 +125,7 @@ export class AbilitySystem {
     const targets = this.world.livingPlayers();
     if (targets.length === 0) return;
     zombie.casting = ability.telegraph;
-    const damage = ability.damage * this.world.damageScale();
+    const damage = ability.damage * this.world.damageScale() * this.world.endlessDamageMultiplier();
     for (let shot = 0; shot < ability.shots; shot += 1) {
       const target = targets[shot % targets.length];
       if (Math.hypot(target.x - zombie.x, target.y - zombie.y) > ability.range) continue;
@@ -175,7 +175,7 @@ export class AbilitySystem {
   }
 
   private puddle(zombie: ZombieState, ability: AbilityOf<'puddle'>) {
-    const dps = ability.dps * this.world.damageScale();
+    const dps = ability.dps * this.world.damageScale() * this.world.endlessDamageMultiplier();
     for (let index = 0; index < ability.count; index += 1) {
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * ability.spread;

@@ -361,7 +361,8 @@ export class ZombieSystem {
     const config = ZOMBIES[zombie.type];
     if (!config.explode) return;
     const radius = config.explode.radius;
-    const damage = config.explode.damage * this.world.damageScale();
+    const damage =
+      config.explode.damage * this.world.damageScale() * this.world.endlessDamageMultiplier();
     this.world.pushFx({ k: 'explosion', x: zombie.x, y: zombie.y, r: radius, s: 'exploder' });
     this.world.blast(zombie.x, zombie.y, radius, damage);
 
