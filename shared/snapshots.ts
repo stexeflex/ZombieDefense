@@ -114,7 +114,7 @@ export interface DefenseSnapshot {
   health: number;
   maxHealth: number;
   rotation: number;
-  /** What selling pays right now — the full price for a fresh build. */
+  /** What selling pays right now, based on original price and current health. */
   refund: number;
 }
 

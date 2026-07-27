@@ -383,7 +383,7 @@
             <span><kbd>Leertaste</kbd> {{ dashHint() }}</span>
             <span><kbd>Maus</kbd> Zielen &amp; schießen</span>
             @if (snapshot.phase === 'build') {
-              <span><kbd>R</kbd> Barrikade drehen</span>
+              <span><kbd>R</kbd> {{ game.selectedBuild() ? 'Bau drehen' : 'Nachladen' }}</span>
               <span><kbd>F</kbd> Reparieren</span>
               <span><kbd>V</kbd> Verkaufen</span>
             } @else {
@@ -430,9 +430,11 @@
                 }
                 <div class="gameover-actions">
                   @if (game.isHost()) {
-                    <button class="primary-button" type="button" (click)="game.restartRun()">Neuer Run</button>
+                    <button class="primary-button" type="button" (click)="game.returnToLobby()">
+                      Zurück zur Lobby
+                    </button>
                   } @else {
-                    <p>Der Host kann einen neuen Run starten.</p>
+                    <p>Warte, bis der Host euch zurück in die Lobby bringt.</p>
                   }
                   <button class="ghost-button" type="button" (click)="leave()">Zur Startseite</button>
                 </div>
@@ -611,7 +613,7 @@
                       <b>{{ focus.repairCost === 0 ? 'ganz' : '$ ' + focus.repairCost }}</b>
                     </button>
                     <button type="button" (click)="game.sellFocused()">
-                      <span><kbd>V</kbd> Verkaufen{{ focus.fresh ? ' (voller Preis)' : '' }}</span>
+                      <span><kbd>V</kbd> Verkaufen{{ focus.fullPrice ? ' (voller Preis)' : '' }}</span>
                       <b>+$ {{ focus.sellRefund }}</b>
                     </button>
                   </div>

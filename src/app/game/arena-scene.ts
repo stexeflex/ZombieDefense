@@ -187,7 +187,10 @@ export class ArenaScene extends Phaser.Scene {
     const selected = this.gameService.selectedBuild();
     if (rotateOrReload && this.snapshot?.phase === 'build' && selected) {
       this.gameService.rotateBuild();
-    } else if (rotateOrReload && this.snapshot?.phase === 'combat') {
+    } else if (
+      rotateOrReload &&
+      (this.snapshot?.phase === 'combat' || this.snapshot?.phase === 'build')
+    ) {
       this.reloadQueued = true;
       this.audio.play('reload', 0.7);
     }

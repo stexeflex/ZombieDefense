@@ -2,7 +2,6 @@ import {
   SHIELD_SHARE,
   endlessWave,
   reserveCapacity,
-  sellValue,
   startingMoney,
   type ZombieType,
 } from '../../../shared/game-types.js';
@@ -125,11 +124,6 @@ export class WaveSystem {
     this.spawnQueue = [...definition.zombies];
     this.spawnDelay = 0.3;
     state.waveKind = definition.kind;
-    // Everything standing has served its purpose now, so it only sells second
-    // hand from here on.
-    state.defenses.forEach((defense) => {
-      defense.refund = sellValue(defense.type, false);
-    });
     state.waveLabel = definition.label;
     state.statusText = this.waveStatus(definition.kind);
     state.players.forEach((player) => {
@@ -216,6 +210,33 @@ export class WaveSystem {
       mapId: this.world.map.id,
       wave: state.wave,
     });
+  }
+
+  /** Keep the room and squad together while returning to the pre-run lobby. */
+  returnToLobby() {
+    const state = this.world.state;
+    if (state.phase !== 'gameover') return;
+    state.phase = 'lobby';
+    state.wave = 0;
+    state.waveKind = 'normal';
+    state.waveLabel = 'Welle';
+    state.enemiesRemaining = 0;
+    state.zombies.clear();
+    state.projectiles.clear();
+    state.defenses.clear();
+    state.hazards.clear();
+    state.bossName = '';
+    state.bossHealth = 0;
+    state.bossMaxHealth = 0;
+    state.statusText = state.endless
+      ? `${this.world.map.name} · Endlos`
+      : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
+    state.players.forEach((player) => {
+      player.ready = false;
+      player.reloading = 0;
+      player.firing = 0;
+    });
+    this.onClearField();
   }
 
   checkDefeat() {

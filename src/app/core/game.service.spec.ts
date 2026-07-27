@@ -57,4 +57,15 @@ describe('GameService', () => {
     expect(service.ammoFull()).toBe(true);
     expect(sent).toEqual([]);
   });
+
+  it('returns the whole squad to the existing lobby after a run', () => {
+    const sent: string[] = [];
+    (service as unknown as { room: { send(type: string): void } }).room = {
+      send: (type) => sent.push(type),
+    };
+
+    service.returnToLobby();
+
+    expect(sent).toEqual(['return_lobby']);
+  });
 });

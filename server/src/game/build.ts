@@ -143,7 +143,7 @@ export class BuildSystem {
     const bonus = barricade ? 1 + runtime.upgrades.barricadeHealth * 0.02 : 1;
     defense.maxHealth = Math.round(config.health * bonus);
     defense.health = defense.maxHealth;
-    defense.refund = sellValue(type, true);
+    defense.refund = sellValue(type, defense.health, defense.maxHealth);
     player.money -= price;
     if (barricade && runtime.barricadeDiscounts > 0) runtime.barricadeDiscounts -= 1;
     if (!barricade && runtime.turretDiscounts > 0) runtime.turretDiscounts -= 1;
@@ -184,7 +184,8 @@ export class BuildSystem {
     const target = this.focusedDefense(sessionId, id);
     if (!player || !target) return;
     // Exactly the price the client shows on the highlighted structure.
-    player.money += target.refund;
+    const refund = sellValue(target.type, target.health, target.maxHealth);
+    player.money += refund;
     this.world.state.defenses.delete(target.id);
     this.world.pushFx({ k: 'wreck', x: target.x, y: target.y, s: target.type });
   }
@@ -199,6 +200,7 @@ export class BuildSystem {
     if (repair <= 0) return;
     player.money -= Math.ceil(repair * rate);
     target.health += repair;
+    target.refund = sellValue(target.type, target.health, target.maxHealth);
     this.world.pushFx({ k: 'structure', x: target.x, y: target.y, s: target.type });
   }
 }

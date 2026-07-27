@@ -38,8 +38,10 @@ export class PlayerSystem {
       this.tickTimers(player, runtime, delta, combat);
       if (!player.alive) return;
       this.move(player, runtime, delta);
+      if (runtime.input.reload && player.reloading === 0) {
+        this.beginReload(player, runtime.upgrades);
+      }
       if (!combat) return;
-      if (runtime.input.reload && player.reloading === 0) this.beginReload(player, runtime.upgrades);
       if (runtime.input.shoot && player.reloading === 0) this.shoot(player, runtime.upgrades);
       if (player.ammo <= 0 && player.reloading === 0) {
         if (player.reserveAmmo <= 0) this.fallBackToPistol(player, runtime);

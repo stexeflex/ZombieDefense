@@ -65,7 +65,7 @@ export class GameService {
       maxHealth: defense.maxHealth,
       repairCost: repairCost(defense, this.progress.perks().engineer ? ENGINEER_DISCOUNT : 0),
       sellRefund: defense.refund,
-      fresh: defense.refund >= DEFENSES[defense.type].cost,
+      fullPrice: defense.refund >= DEFENSES[defense.type].cost,
     };
   });
 
@@ -191,6 +191,11 @@ export class GameService {
   restartRun() {
     this.lastReward.set(null);
     this.room?.send('restart');
+  }
+
+  returnToLobby() {
+    this.lastReward.set(null);
+    this.room?.send('return_lobby');
   }
 
   sendInput(input: PlayerInput) {

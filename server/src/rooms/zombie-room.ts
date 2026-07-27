@@ -8,6 +8,7 @@ import {
   SHIELD_SHARE,
   findMap,
   reserveCapacity,
+  sellValue,
   startingMoney,
   upgradeMaxLevel,
   type DefenseType,
@@ -142,6 +143,11 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.onMessage('restart', (client) => {
       if (client.sessionId === this.state.hostSessionId && this.state.phase === 'gameover') {
         this.waves.startRun();
+      }
+    });
+    this.onMessage('return_lobby', (client) => {
+      if (client.sessionId === this.state.hostSessionId && this.state.phase === 'gameover') {
+        this.waves.returnToLobby();
       }
     });
     this.onMessage('loadout', (client, options: JoinOptions) => {
@@ -313,6 +319,9 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   // -------------------------------------------------------------- networking
 
   private broadcastSnapshot() {
+    this.state.defenses.forEach((defense) => {
+      defense.refund = sellValue(defense.type, defense.health, defense.maxHealth);
+    });
     if (this.clients.length === 0) {
       this.world.fxQueue.length = 0;
       return;

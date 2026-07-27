@@ -29,7 +29,7 @@ const {
   ammoRefillCost,
   dashReduction,
   reserveCapacity,
-  sellRefund,
+  sellValue,
   startingMoney,
   upgradeMaxLevel,
 } = await load('server/build/shared/game-types.js');
@@ -292,17 +292,19 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
     room.state.defenses.size === 1 && player.money === moneyOutOfReach,
   );
 
-  // Sobald die nächste Welle läuft, ist der Bau gebraucht.
+  // Eine neue Welle senkt den Wert nicht mehr pauschal.
   room.systems.waves.startNextWave();
-  check('Nach dem Wellenstart nur noch Teilerlös', remaining.refund === sellRefund('wood'));
+  check('Nach dem Wellenstart bleibt der Originalpreis', remaining.refund === wood.cost);
   room.systems.waves.finishWave();
+  remaining.health = remaining.maxHealth / 2;
+  const damagedRefund = sellValue('wood', remaining.health, remaining.maxHealth);
   player.x = remaining.x;
   player.y = remaining.y + 40;
   const beforeUsedSell = player.money;
   room.systems.build.sellDefense('p1', remaining.id);
   check(
-    'Älterer Bau zahlt den Teilerlös',
-    room.state.defenses.size === 0 && player.money === beforeUsedSell + sellRefund('wood'),
+    'Nur tatsächlicher Schaden senkt den Verkaufspreis',
+    room.state.defenses.size === 0 && player.money === beforeUsedSell + damagedRefund,
     `(${player.money - beforeUsedSell} $)`,
   );
 }
@@ -800,6 +802,13 @@ console.log('\n== Endlosmodus ==');
     `(${room.state.phase})`,
   );
   check('Und zählt die Wellen der Karte', room.state.totalWaves === map.waves.length);
+  room.systems.waves.returnToLobby();
+  check(
+    'Nach dem Run bleibt der Trupp in derselben Lobby',
+    room.state.phase === 'lobby' && room.state.players.get('p1') === player,
+  );
+  room.systems.waves.startRun();
+  check('Aus derselben Lobby startet der nächste Run', room.state.phase === 'combat');
 }
 
 console.log('\n== Arsenal ==');
@@ -818,6 +827,20 @@ console.log('\n== Arsenal ==');
     `(${[...player.owned].join()})`,
   );
   check('Zuletzt gekaufte Waffe ist in der Hand', player.weapon === 'rifle');
+
+  const runtime = room.systems.world.runtime.get('p1');
+  player.ammo = 5;
+  player.reserveAmmo = 10;
+  runtime.input = { ...IDLE, reload: true };
+  room.update(50);
+  check('Nachladen startet auch in der Bauphase', player.reloading > 0);
+  runtime.input = { ...IDLE };
+  step(room, 40);
+  check(
+    'Nachladen wird in der Bauphase abgeschlossen',
+    player.ammo === 15 && player.reserveAmmo === 0,
+    `(${player.ammo} / ${player.reserveAmmo})`,
+  );
 
   player.ammo = 7;
   room.systems.build.selectWeapon('p1', 'smg');

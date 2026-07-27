@@ -197,8 +197,6 @@ export const PLACE_RANGE = 380;
 export const DEFENSE_REACH = 92;
 /** Money per repaired hit point. */
 export const REPAIR_COST_PER_HP = 0.35;
-/** Share of the build price paid back when selling. */
-export const SELL_REFUND = 0.7;
 /** Distance at which the placement preview snaps flush against a neighbour. */
 export const SNAP_DISTANCE = 30;
 /** A hair of slack so two structures may sit flush without counting as overlap. */
@@ -320,15 +318,11 @@ export function repairCost(
   return Math.ceil(missing * REPAIR_COST_PER_HP * (1 - discount));
 }
 
-export function sellRefund(type: DefenseType) {
-  return Math.round(DEFENSES[type].cost * SELL_REFUND);
-}
-
 /**
- * A structure put down in the current build phase can be taken back for what it
- * cost, so a misplaced wall is not a punishment. From the next wave on, selling
- * pays the usual share.
+ * An undamaged structure always keeps its original shop value. Damage lowers
+ * that value in the same proportion, and repairing it restores the full value.
  */
-export function sellValue(type: DefenseType, fresh: boolean) {
-  return fresh ? DEFENSES[type].cost : sellRefund(type);
+export function sellValue(type: DefenseType, health: number, maxHealth: number) {
+  const condition = maxHealth > 0 ? Math.max(0, Math.min(1, health / maxHealth)) : 0;
+  return Math.round(DEFENSES[type].cost * condition);
 }

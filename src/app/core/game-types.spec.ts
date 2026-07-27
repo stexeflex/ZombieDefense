@@ -18,7 +18,6 @@ import {
   REPAIR_COST_PER_HP,
   REVIVE_RADIUS,
   REVIVE_SECONDS,
-  SELL_REFUND,
   SHIELD_DECAY,
   SHIELD_SHARE,
   START_MONEY,
@@ -41,7 +40,6 @@ import {
   endlessWave,
   repairCost,
   reserveCapacity,
-  sellRefund,
   sellValue,
   snapDefense,
   splitAbility,
@@ -313,21 +311,21 @@ describe('building rules', () => {
     ).toBeGreaterThan(DEFENSE_REACH);
   });
 
-  it('prices repair by missing health and sell by build price', () => {
+  it('prices repair by missing health', () => {
     expect(repairCost({ health: wood.health, maxHealth: wood.health })).toBe(0);
     expect(repairCost({ health: wood.health - 200, maxHealth: wood.health })).toBe(
       Math.ceil(200 * REPAIR_COST_PER_HP),
     );
-    expect(sellRefund('wood')).toBe(Math.round(wood.cost * SELL_REFUND));
-    for (const type of [...BARRICADE_ORDER, ...TURRET_ORDER]) {
-      expect(sellRefund(type)).toBeLessThan(DEFENSES[type].cost);
-    }
   });
 
-  it('pays back the full price for a structure placed just now', () => {
+  it('keeps the original sell price and only deducts actual damage', () => {
     for (const type of [...BARRICADE_ORDER, ...TURRET_ORDER]) {
-      expect(sellValue(type, true)).toBe(DEFENSES[type].cost);
-      expect(sellValue(type, false)).toBe(sellRefund(type));
+      const defense = DEFENSES[type];
+      expect(sellValue(type, defense.health, defense.health)).toBe(defense.cost);
+      expect(sellValue(type, defense.health / 2, defense.health)).toBe(
+        Math.round(defense.cost / 2),
+      );
+      expect(sellValue(type, 0, defense.health)).toBe(0);
     }
   });
 

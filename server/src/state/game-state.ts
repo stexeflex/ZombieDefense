@@ -118,7 +118,7 @@ export class DefenseState extends Schema {
   @type('number') health = 100;
   @type('number') maxHealth = 100;
   @type('number') rotation = 0;
-  /** What selling pays: the full price until the next wave starts. */
+  /** What selling pays right now, based on original price and current health. */
   @type('number') refund = 0;
   cooldown = 0;
 }
