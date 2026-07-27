@@ -16,6 +16,7 @@ import {
   type WeaponType,
 } from '../../../../shared/game-types';
 import { AudioService } from '../../core/audio.service';
+import { DisplayService } from '../../core/display.service';
 import { GameService } from '../../core/game.service';
 import { ProgressService } from '../../core/progress.service';
 import { GameCanvas } from '../../game/game-canvas';
@@ -34,6 +35,7 @@ export class Lobby implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   readonly game = inject(GameService);
   readonly audio = inject(AudioService);
+  readonly display = inject(DisplayService);
   readonly progress = inject(ProgressService);
   readonly origin = location.origin;
 
@@ -97,6 +99,11 @@ export class Lobby implements OnInit, OnDestroy {
   setVolume(event: Event) {
     const input = event.target as HTMLInputElement;
     this.audio.setVolume(Number(input.value) / 100);
+  }
+
+  setUiScale(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.display.setUiScale(Number(input.value));
   }
 
   async toggleFullscreen() {

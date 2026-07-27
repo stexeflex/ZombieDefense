@@ -1028,7 +1028,7 @@ kbd {
   width: 100%;
 }
 
-/* --- Topbar: Audio und Vollbild -------------------------------------- */
+/* --- Topbar: Audio, UI-Größe und Vollbild ---------------------------- */
 
 .topbar-right {
   justify-self: end;
@@ -1091,7 +1091,8 @@ kbd {
   opacity: 0.35;
 }
 
-.volume-control {
+.volume-control,
+.scale-control {
   height: 30px;
   display: flex;
   align-items: center;
@@ -1101,7 +1102,8 @@ kbd {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.volume-control input {
+.volume-control input,
+.scale-control input {
   width: clamp(58px, 6vw, 86px);
   height: 18px;
   margin: 0;
@@ -1109,12 +1111,19 @@ kbd {
   cursor: pointer;
 }
 
-.volume-control output {
+.volume-control output,
+.scale-control output {
   min-width: 3ch;
   color: var(--muted);
   font-family: var(--mono);
   font-size: 0.55rem;
   text-align: right;
+}
+
+.scale-control > span {
+  color: var(--acid);
+  font-size: 0.55rem;
+  font-weight: 900;
 }
 
 .fullscreen-button {
@@ -1600,15 +1609,19 @@ kbd {
     display: none;
   }
 
-  .volume-control {
+  .volume-control,
+  .scale-control {
     padding-inline: 6px;
   }
 
-  .volume-control input {
-    width: 54px;
+  .volume-control input,
+  .scale-control input {
+    width: 46px;
   }
 
-  .volume-control output {
+  .volume-control output,
+  .scale-control output,
+  .scale-control > span {
     display: none;
   }
 

@@ -58,6 +58,20 @@
         >
           ♪
         </button>
+        <label class="scale-control" title="Größe von Schrift und Oberfläche">
+          <span aria-hidden="true">Aa</span>
+          <input
+            type="range"
+            min="85"
+            max="140"
+            step="5"
+            [value]="display.uiScale()"
+            (input)="setUiScale($event)"
+            aria-label="UI-Größe"
+            [attr.aria-valuetext]="display.uiScale() + ' Prozent'"
+          />
+          <output>{{ display.uiScale() }}%</output>
+        </label>
         <button
           type="button"
           class="fullscreen-button"
@@ -466,25 +480,27 @@
 
               @if (shopTab() === 'weapons') {
                 <div class="shop-scroll">
-                  <button
-                    class="shop-item ammo-item"
-                    type="button"
-                    [disabled]="(game.player()?.money ?? 0) < ammoCost() || game.ammoFull()"
-                    (click)="game.buyAmmo()"
-                  >
-                    <span class="item-icon">AM</span>
-                    <span>
-                      <b>Munition · {{ weaponName(game.player()?.weapon) }}</b>
-                      <small>
-                        {{
-                          game.ammoFull()
-                            ? 'Vorrat ist voll'
-                            : 'Vorrat auffüllen (' + game.player()?.reserveAmmo + ' Schuss)'
-                        }}
-                      </small>
-                    </span>
-                    <strong>{{ game.ammoFull() ? 'Voll' : '$ ' + ammoCost() }}</strong>
-                  </button>
+                  @if (game.canBuyAmmo()) {
+                    <button
+                      class="shop-item ammo-item"
+                      type="button"
+                      [disabled]="(game.player()?.money ?? 0) < ammoCost() || game.ammoFull()"
+                      (click)="game.buyAmmo()"
+                    >
+                      <span class="item-icon">AM</span>
+                      <span>
+                        <b>Munition · {{ weaponName(game.player()?.weapon) }}</b>
+                        <small>
+                          {{
+                            game.ammoFull()
+                              ? 'Vorrat ist voll'
+                              : 'Vorrat auffüllen (' + game.player()?.reserveAmmo + ' Schuss)'
+                          }}
+                        </small>
+                      </span>
+                      <strong>{{ game.ammoFull() ? 'Voll' : '$ ' + ammoCost() }}</strong>
+                    </button>
+                  }
                   @for (weapon of weapons; track weapon.type) {
                     <button
                       class="shop-item"

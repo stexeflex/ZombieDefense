@@ -107,7 +107,14 @@ export class GameService {
   readonly ammoFull = computed(() => {
     const player = this.player();
     if (!player) return false;
+    if (player.weapon === 'pistol') return true;
     return player.reserveAmmo >= reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo);
+  });
+
+  /** The pistol is the endless fallback and therefore never needs bought ammunition. */
+  readonly canBuyAmmo = computed(() => {
+    const player = this.player();
+    return Boolean(player && player.weapon !== 'pistol');
   });
 
   /** What a weapon costs this player right now, starter perk included. */
@@ -249,7 +256,7 @@ export class GameService {
   }
 
   buyAmmo() {
-    if (this.ammoFull()) return;
+    if (!this.canBuyAmmo() || this.ammoFull()) return;
     this.audio.play('reload');
     this.room?.send('buy_ammo');
   }

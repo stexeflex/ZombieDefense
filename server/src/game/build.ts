@@ -84,7 +84,9 @@ export class BuildSystem {
   buyAmmo(sessionId: string) {
     const player = this.world.state.players.get(sessionId);
     const runtime = this.world.runtime.get(sessionId);
-    if (!player || !runtime || this.world.state.phase !== 'build') return;
+    if (!player || !runtime || this.world.state.phase !== 'build' || player.weapon === 'pistol') {
+      return;
+    }
     const config = WEAPONS[player.weapon];
     const capacity = reserveCapacity(player.weapon, runtime.upgrades.reserveAmmo);
     const cost = Math.round(config.ammoCost * this.world.map.moneyScale);

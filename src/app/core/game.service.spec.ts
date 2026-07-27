@@ -33,4 +33,28 @@ describe('GameService', () => {
     expect(service.selectedBuild()).toBeNull();
     expect(service.placementRotation()).toBe(0);
   });
+
+  it('never sends an ammo purchase for the infinite pistol', () => {
+    const sent: string[] = [];
+    service.sessionId.set('player-1');
+    service.snapshot.set({
+      ...snapshotWith('build'),
+      players: {
+        'player-1': {
+          weapon: 'pistol',
+          owned: ['pistol'],
+          reserveAmmo: 0,
+        },
+      },
+    } as unknown as GameSnapshot);
+    (service as unknown as { room: { send(type: string): void } }).room = {
+      send: (type) => sent.push(type),
+    };
+
+    service.buyAmmo();
+
+    expect(service.canBuyAmmo()).toBe(false);
+    expect(service.ammoFull()).toBe(true);
+    expect(sent).toEqual([]);
+  });
 });
