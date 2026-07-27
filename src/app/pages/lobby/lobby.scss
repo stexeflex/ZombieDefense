@@ -1028,7 +1028,7 @@ kbd {
   width: 100%;
 }
 
-/* --- Topbar: Audio ---------------------------------------------------- */
+/* --- Topbar: Audio und Vollbild -------------------------------------- */
 
 .topbar-right {
   justify-self: end;
@@ -1059,10 +1059,12 @@ kbd {
 
 .audio-controls {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
 .audio-controls button {
+  flex: 0 0 auto;
   width: 30px;
   height: 30px;
   display: grid;
@@ -1077,6 +1079,46 @@ kbd {
 .audio-controls button.off {
   color: var(--muted-2);
   opacity: 0.55;
+}
+
+.audio-controls button.active {
+  border-color: rgba(105, 240, 174, 0.55);
+  color: var(--acid);
+  background: rgba(105, 240, 174, 0.08);
+}
+
+.audio-controls button:disabled {
+  opacity: 0.35;
+}
+
+.volume-control {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.volume-control input {
+  width: clamp(58px, 6vw, 86px);
+  height: 18px;
+  margin: 0;
+  accent-color: var(--acid);
+  cursor: pointer;
+}
+
+.volume-control output {
+  min-width: 3ch;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  text-align: right;
+}
+
+.fullscreen-button {
+  font-size: 1rem !important;
 }
 
 /* --- Kartenauswahl ---------------------------------------------------- */
@@ -1547,6 +1589,26 @@ kbd {
   .lobby-code small,
   .lobby-code span,
   .controls-hint {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 7px;
+  }
+
+  .server-state {
+    display: none;
+  }
+
+  .volume-control {
+    padding-inline: 6px;
+  }
+
+  .volume-control input {
+    width: 54px;
+  }
+
+  .volume-control output {
     display: none;
   }
 

@@ -42,6 +42,12 @@ export class Lobby implements OnInit, OnDestroy {
   readonly lobbyCode = signal('');
   readonly shopTab = signal<ShopTab>('weapons');
   readonly upgradesOpen = signal(false);
+  readonly fullscreen = signal(false);
+  readonly fullscreenSupported =
+    typeof document !== 'undefined' &&
+    document.fullscreenEnabled &&
+    typeof document.documentElement.requestFullscreen === 'function';
+  readonly volumePercent = computed(() => Math.round(this.audio.volume() * 100));
   readonly players = computed(() => Object.values(this.game.snapshot()?.players ?? {}));
   readonly readyCount = computed(() => this.players().filter((player) => player.ready).length);
   readonly maps = MAPS;
@@ -68,6 +74,8 @@ export class Lobby implements OnInit, OnDestroy {
   name = localStorage.getItem('zombie-defense-name') ?? '';
 
   ngOnInit() {
+    this.syncFullscreenState();
+    document.addEventListener('fullscreenchange', this.syncFullscreenState);
     const code = (this.route.snapshot.paramMap.get('code') ?? '')
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '')
@@ -82,7 +90,23 @@ export class Lobby implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    document.removeEventListener('fullscreenchange', this.syncFullscreenState);
     void this.game.disconnect();
+  }
+
+  setVolume(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.audio.setVolume(Number(input.value) / 100);
+  }
+
+  async toggleFullscreen() {
+    if (!this.fullscreenSupported) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch {
+      this.syncFullscreenState();
+    }
   }
 
   async join() {
@@ -226,4 +250,8 @@ export class Lobby implements OnInit, OnDestroy {
   leave() {
     void this.router.navigateByUrl('/');
   }
+
+  private readonly syncFullscreenState = () => {
+    this.fullscreen.set(Boolean(document.fullscreenElement));
+  };
 }

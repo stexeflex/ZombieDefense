@@ -406,7 +406,9 @@ export class AudioService {
 
   private readNumber(key: string, fallback: number) {
     if (typeof localStorage === 'undefined') return fallback;
-    const stored = Number(localStorage.getItem(key));
-    return Number.isFinite(stored) && stored > 0 ? Math.min(1, stored) : fallback;
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const stored = Number(raw);
+    return Number.isFinite(stored) && stored >= 0 ? Math.min(1, stored) : fallback;
   }
 }

@@ -32,16 +32,48 @@
           [class.off]="!audio.enabled()"
           (click)="audio.toggleSound()"
           [attr.aria-label]="audio.enabled() ? 'Sound aus' : 'Sound an'"
+          [attr.title]="audio.enabled() ? 'Sound ausschalten' : 'Sound einschalten'"
         >
           {{ audio.enabled() ? '🔊' : '🔇' }}
         </button>
+        <label class="volume-control" title="Gesamtlautstärke">
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            [value]="volumePercent()"
+            (input)="setVolume($event)"
+            aria-label="Gesamtlautstärke"
+            [attr.aria-valuetext]="volumePercent() + ' Prozent'"
+          />
+          <output>{{ volumePercent() }}%</output>
+        </label>
         <button
           type="button"
           [class.off]="!audio.musicEnabled()"
           (click)="audio.toggleMusic()"
           [attr.aria-label]="audio.musicEnabled() ? 'Musik aus' : 'Musik an'"
+          [attr.title]="audio.musicEnabled() ? 'Musik ausschalten' : 'Musik einschalten'"
         >
           ♪
+        </button>
+        <button
+          type="button"
+          class="fullscreen-button"
+          [class.active]="fullscreen()"
+          [disabled]="!fullscreenSupported"
+          (click)="toggleFullscreen()"
+          [attr.aria-label]="fullscreen() ? 'Vollbild beenden' : 'Vollbild öffnen'"
+          [attr.title]="
+            fullscreenSupported
+              ? fullscreen()
+                ? 'Vollbild beenden (Esc)'
+                : 'Vollbild öffnen'
+              : 'Vollbild wird von diesem Browser nicht unterstützt'
+          "
+        >
+          ⛶
         </button>
       </div>
 
