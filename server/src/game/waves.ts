@@ -71,6 +71,7 @@ export class WaveSystem {
       player.weapon = 'pistol';
       player.owned.clear();
       player.owned.push('pistol');
+      player.weaponRefunds.clear();
       player.ammo = this.players.magazineSize('pistol', upgrades);
       player.reserveAmmo = reserveCapacity('pistol', upgrades.reserveAmmo);
       player.grenades = this.players.maxGrenades(this.world.perksOf(id));
@@ -93,6 +94,7 @@ export class WaveSystem {
         runtime.wasDashing = false;
         runtime.dashHits.clear();
         runtime.stowed.clear();
+        runtime.weaponPurchasePrices.clear();
         runtime.wasFiring = false;
         runtime.pushX = 0;
         runtime.pushY = 0;
@@ -137,7 +139,8 @@ export class WaveSystem {
   private waveStatus(kind: string) {
     const state = this.world.state;
     const map = this.world.map;
-    if (kind === 'boss') return state.endless ? `BOSS · Welle ${state.wave}` : `ENDBOSS · ${map.name}`;
+    if (kind === 'boss')
+      return state.endless ? `BOSS · Welle ${state.wave}` : `ENDBOSS · ${map.name}`;
     if (kind === 'mini') return `Welle ${state.wave} · Mini-Boss`;
     if (kind === 'swarm') return `Welle ${state.wave} · SCHWARM`;
     if (state.endless) return `Welle ${state.wave} · Endlos`;

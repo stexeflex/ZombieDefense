@@ -3,7 +3,9 @@ export type WeaponType =
   | 'smg'
   | 'rifle'
   | 'shotgun'
+  | 'nailgun'
   | 'sniper'
+  | 'acid'
   | 'lmg'
   | 'flamer'
   | 'cryo'
@@ -109,6 +111,23 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     ammoCost: 110,
     description: 'Brutal auf kurze Distanz',
   },
+  nailgun: {
+    label: 'Nagelwerfer',
+    short: 'NW',
+    cost: 1400,
+    damage: 42,
+    fireDelay: 180,
+    magazine: 24,
+    reserve: 168,
+    reload: 1600,
+    speed: 1050,
+    pellets: 1,
+    spread: 0.025,
+    pierce: 3,
+    range: 820,
+    ammoCost: 115,
+    description: 'Schwere Nägel durchbohren mehrere Gegner',
+  },
   sniper: {
     label: 'Scharfschützengewehr',
     short: 'SR',
@@ -125,6 +144,27 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     range: 1700,
     ammoCost: 130,
     description: 'Durchschlägt ganze Reihen',
+  },
+  acid: {
+    label: 'Säurewerfer',
+    short: 'SW',
+    cost: 2000,
+    damage: 42,
+    fireDelay: 420,
+    magazine: 12,
+    reserve: 72,
+    reload: 1900,
+    speed: 600,
+    pellets: 1,
+    spread: 0.035,
+    pierce: 0,
+    range: 650,
+    ammoCost: 155,
+    splashRadius: 90,
+    splashDamage: 85,
+    burn: 24,
+    burnSeconds: 3,
+    description: 'Säure zerplatzt in Gruppen und frisst weiter',
   },
   lmg: {
     label: 'Maschinengewehr',
@@ -243,7 +283,9 @@ export const WEAPON_ORDER: WeaponType[] = [
   'smg',
   'rifle',
   'shotgun',
+  'nailgun',
   'sniper',
+  'acid',
   'lmg',
   'flamer',
   'cryo',
@@ -255,6 +297,10 @@ export const WEAPON_ORDER: WeaponType[] = [
 /** Upper limit for carried spare ammunition, one full resupply. */
 export function reserveCapacity(weapon: WeaponType, reserveLevel = 0) {
   return Math.round(WEAPONS[weapon].reserve * (1 + reserveLevel * 0.02));
+}
+
+export function magazineCapacity(weapon: WeaponType, magazineLevel = 0) {
+  return Math.max(1, Math.round(WEAPONS[weapon].magazine * (1 + magazineLevel * 0.02)));
 }
 
 /**
@@ -271,6 +317,30 @@ export function ammoRefillCost(
   if (weapon === 'pistol') return 0;
   const missing = Math.max(0, reserveCapacity(weapon, reserveLevel) - currentReserve);
   return Math.ceil((missing * WEAPONS[weapon].ammoCost * moneyScale) / WEAPONS[weapon].reserve);
+}
+
+/**
+ * A sold weapon pays back what this player actually spent, minus the value of
+ * every missing round in magazine and reserve. Buying it again can therefore
+ * never be a cheaper ammunition refill, even after a starter discount.
+ */
+export function weaponSellValue(
+  weapon: WeaponType,
+  purchasePrice: number,
+  currentAmmo: number,
+  currentReserve: number,
+  magazineLevel = 0,
+  reserveLevel = 0,
+  moneyScale = 1,
+) {
+  if (weapon === 'pistol') return 0;
+  const fullLoad = magazineCapacity(weapon, magazineLevel) + reserveCapacity(weapon, reserveLevel);
+  const rounds = Math.max(0, currentAmmo) + Math.max(0, currentReserve);
+  const missing = Math.max(0, fullLoad - rounds);
+  const ammoValue = Math.ceil(
+    (missing * WEAPONS[weapon].ammoCost * moneyScale) / WEAPONS[weapon].reserve,
+  );
+  return Math.max(0, Math.floor(purchasePrice) - ammoValue);
 }
 
 export function weaponLife(weapon: WeaponConfig) {

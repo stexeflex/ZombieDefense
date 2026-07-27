@@ -3,12 +3,17 @@ import type { MapObstacle } from './maps.js';
 
 export type DefenseType =
   | 'wood'
+  | 'wire'
   | 'stone'
   | 'spike'
+  | 'blastwall'
   | 'steel'
   | 'mg'
   | 'flame'
+  | 'frost'
+  | 'scatter'
   | 'marksman'
+  | 'acid'
   | 'tesla'
   | 'launcher'
   | 'laser';
@@ -25,6 +30,10 @@ export interface DefenseConfig {
   thorns?: number;
   /** slows zombies that attack it */
   slow?: number;
+  slowSeconds?: number;
+  /** explodes when enemies destroy it */
+  blastRadius?: number;
+  blastDamage?: number;
   damage?: number;
   fireDelay?: number;
   range?: number;
@@ -36,6 +45,8 @@ export interface DefenseConfig {
   chainRange?: number;
   burn?: number;
   burnSeconds?: number;
+  pellets?: number;
+  spread?: number;
   description: string;
 }
 
@@ -49,6 +60,19 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     width: 58,
     height: 26,
     description: 'Billig und schnell ersetzt',
+  },
+  wire: {
+    label: 'Stacheldraht',
+    short: '≋',
+    kind: 'barricade',
+    cost: 230,
+    health: 460,
+    width: 64,
+    height: 20,
+    thorns: 16,
+    slow: 0.5,
+    slowSeconds: 1.8,
+    description: 'Verheddert Angreifer und hält sie auf halbem Tempo',
   },
   spike: {
     label: 'Stachelwall',
@@ -71,6 +95,18 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     height: 30,
     slow: 0.25,
     description: 'Massiv, bremst Angreifer',
+  },
+  blastwall: {
+    label: 'Sprengwand',
+    short: '✹',
+    kind: 'barricade',
+    cost: 540,
+    health: 1450,
+    width: 64,
+    height: 32,
+    blastRadius: 150,
+    blastDamage: 240,
+    description: 'Detoniert beim Zerbrechen mitten in der Horde',
   },
   steel: {
     label: 'Stahlbarrikade',
@@ -115,6 +151,40 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     burnSeconds: 2.4,
     description: 'Kurze Reichweite, setzt ganze Gruppen in Brand',
   },
+  frost: {
+    label: 'Frostturm',
+    short: '❄',
+    kind: 'turret',
+    cost: 1200,
+    health: 350,
+    width: 46,
+    height: 46,
+    damage: 22,
+    fireDelay: 0.38,
+    range: 460,
+    speed: 680,
+    pierce: 2,
+    slow: 0.48,
+    slowSeconds: 2.2,
+    description: 'Friert Reihen ein und halbiert fast ihr Tempo',
+  },
+  scatter: {
+    label: 'Schrottschleuder',
+    short: '✣',
+    kind: 'turret',
+    cost: 1350,
+    health: 390,
+    width: 48,
+    height: 48,
+    damage: 18,
+    fireDelay: 0.95,
+    range: 340,
+    speed: 720,
+    pierce: 0,
+    pellets: 6,
+    spread: 0.24,
+    description: 'Feuert eine breite Schrottsalve auf kurze Distanz',
+  },
   marksman: {
     label: 'Scharfschützenturm',
     short: '⌾',
@@ -129,6 +199,25 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     speed: 1800,
     pierce: 3,
     description: 'Weite Reichweite, durchschlägt Reihen',
+  },
+  acid: {
+    label: 'Säureturm',
+    short: '☣',
+    kind: 'turret',
+    cost: 1750,
+    health: 350,
+    width: 48,
+    height: 48,
+    damage: 20,
+    fireDelay: 0.8,
+    range: 500,
+    speed: 580,
+    pierce: 0,
+    splashRadius: 95,
+    splashDamage: 65,
+    burn: 18,
+    burnSeconds: 3.2,
+    description: 'Verspritzt ätzende Säure über ganze Gruppen',
   },
   tesla: {
     label: 'Blitzturm',
@@ -181,11 +270,21 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
   },
 };
 
-export const BARRICADE_ORDER: DefenseType[] = ['wood', 'spike', 'stone', 'steel'];
+export const BARRICADE_ORDER: DefenseType[] = [
+  'wood',
+  'wire',
+  'spike',
+  'stone',
+  'blastwall',
+  'steel',
+];
 export const TURRET_ORDER: DefenseType[] = [
   'mg',
   'flame',
+  'frost',
+  'scatter',
   'marksman',
+  'acid',
   'tesla',
   'launcher',
   'laser',
@@ -310,10 +409,7 @@ export function distanceToDefense(x: number, y: number, defense: PlacedDefense) 
   );
 }
 
-export function repairCost(
-  defense: { health: number; maxHealth: number },
-  discount = 0,
-) {
+export function repairCost(defense: { health: number; maxHealth: number }, discount = 0) {
   const missing = Math.max(0, defense.maxHealth - defense.health);
   return Math.ceil(missing * REPAIR_COST_PER_HP * (1 - discount));
 }

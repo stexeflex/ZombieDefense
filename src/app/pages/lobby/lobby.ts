@@ -63,7 +63,9 @@ export class Lobby implements OnInit, OnDestroy {
   readonly barricades = BARRICADE_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
   readonly turrets = TURRET_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
 
-  readonly activeMap = computed(() => findMap(this.game.snapshot()?.mapId ?? this.game.preferredMap()));
+  readonly activeMap = computed(() =>
+    findMap(this.game.snapshot()?.mapId ?? this.game.preferredMap()),
+  );
   readonly endless = computed(() => this.game.snapshot()?.endless ?? this.game.preferredEndless());
   readonly boss = computed(() => {
     const snapshot = this.game.snapshot();
@@ -250,6 +252,14 @@ export class Lobby implements OnInit, OnDestroy {
 
   owns(weapon: WeaponType) {
     return this.game.player()?.owned.includes(weapon) ?? false;
+  }
+
+  weaponRefund(weapon: WeaponType) {
+    return this.game.player()?.weaponRefunds?.[weapon] ?? 0;
+  }
+
+  sellWeapon(weapon: WeaponType) {
+    this.game.sellWeapon(weapon);
   }
 
   /** Buying puts a new weapon in the arsenal, a second click just equips it. */

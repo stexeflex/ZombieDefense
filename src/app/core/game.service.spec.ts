@@ -58,6 +58,30 @@ describe('GameService', () => {
     expect(sent).toEqual([]);
   });
 
+  it('only sells a paid weapon that belongs to the player', () => {
+    const sent: Array<[string, unknown]> = [];
+    service.sessionId.set('player-1');
+    service.snapshot.set({
+      ...snapshotWith('build'),
+      players: {
+        'player-1': {
+          weapon: 'rifle',
+          owned: ['pistol', 'rifle'],
+          weaponRefunds: { rifle: 700 },
+        },
+      },
+    } as unknown as GameSnapshot);
+    (service as unknown as { room: { send(type: string, payload?: unknown): void } }).room = {
+      send: (type, payload) => sent.push([type, payload]),
+    };
+
+    service.sellWeapon('pistol');
+    service.sellWeapon('laser');
+    service.sellWeapon('rifle');
+
+    expect(sent).toEqual([['sell_weapon', 'rifle']]);
+  });
+
   it('returns the whole squad to the existing lobby after a run', () => {
     const sent: string[] = [];
     (service as unknown as { room: { send(type: string): void } }).room = {

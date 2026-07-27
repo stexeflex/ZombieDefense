@@ -164,6 +164,9 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.onMessage('switch_weapon', (client, weapon: WeaponType) =>
       this.build.selectWeapon(client.sessionId, weapon),
     );
+    this.onMessage('sell_weapon', (client, weapon: WeaponType) =>
+      this.build.sellWeapon(client.sessionId, weapon),
+    );
     this.onMessage('buy_ammo', (client) => this.build.buyAmmo(client.sessionId));
     this.onMessage(
       'place',
@@ -215,6 +218,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       wasDashing: false,
       dashHits: new Set(),
       stowed: new Map(),
+      weaponPurchasePrices: new Map(),
       wasFiring: false,
       weaponDiscounts: 0,
       barricadeDiscounts: 0,
@@ -322,6 +326,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.state.defenses.forEach((defense) => {
       defense.refund = sellValue(defense.type, defense.health, defense.maxHealth);
     });
+    this.state.players.forEach((player) => this.build.syncWeaponRefunds(player.id));
     if (this.clients.length === 0) {
       this.world.fxQueue.length = 0;
       return;
@@ -381,10 +386,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
 
   private cleanPerks(perks?: Partial<PermanentPerks>): PermanentPerks {
     return Object.fromEntries(
-      Object.keys(EMPTY_PERKS).map((key) => [
-        key,
-        Boolean(perks?.[key as keyof PermanentPerks]),
-      ]),
+      Object.keys(EMPTY_PERKS).map((key) => [key, Boolean(perks?.[key as keyof PermanentPerks])]),
     ) as unknown as PermanentPerks;
   }
 

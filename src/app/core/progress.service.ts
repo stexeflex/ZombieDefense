@@ -32,6 +32,12 @@ export interface PerkDefinition {
 }
 
 export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
+  {
+    key: 'healthRegen',
+    label: 'Lebensregeneration',
+    description: '+0,25 Leben pro Sekunde',
+    icon: '+',
+  },
   { key: 'startMoney', label: 'Startkapital', description: '+$ 50 Startgeld', icon: '$' },
   { key: 'maxHealth', label: 'Maximales Leben', description: '+2 % Leben', icon: '♥' },
   { key: 'armor', label: 'Panzerung', description: '−1 % Schaden (max. −35 %)', icon: '⛨' },

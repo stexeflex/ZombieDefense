@@ -48,6 +48,8 @@ export interface RuntimePlayer {
   dashHits: Set<string>;
   /** Magazine and spare rounds of every weapon that is not in hand. */
   stowed: Map<WeaponType, AmmoStore>;
+  /** Actual shop price paid for each weapon, including a starter discount. */
+  weaponPurchasePrices: Map<WeaponType, number>;
   wasFiring: boolean;
   /** Discounted purchases the starter perks still have left this run. */
   weaponDiscounts: number;
@@ -280,9 +282,7 @@ export class GameWorld {
     }
     if (!avoidPlayers) return true;
     return this.livingPlayers().every(
-      (player) =>
-        Math.hypot(player.x - entryX, player.y - entryY) >=
-        radius + PLAYER_RADIUS + 180,
+      (player) => Math.hypot(player.x - entryX, player.y - entryY) >= radius + PLAYER_RADIUS + 180,
     );
   }
 
@@ -401,9 +401,33 @@ export class GameWorld {
       this.pushFx({ k: 'structure', x: defense.x, y: defense.y, s: defense.type });
       if (defense.health <= 0) broken.push(defense);
     });
-    for (const defense of broken) {
-      this.pushFx({ k: 'wreck', x: defense.x, y: defense.y, s: defense.type });
-      this.state.defenses.delete(defense.id);
+    for (const defense of broken) this.destroyDefense(defense);
+  }
+
+  /** Enemy damage breaks a structure and triggers any last-resort effect it has. */
+  destroyDefense(defense: DefenseState) {
+    if (!this.state.defenses.has(defense.id)) return;
+    this.state.defenses.delete(defense.id);
+    this.pushFx({ k: 'wreck', x: defense.x, y: defense.y, s: defense.type });
+    const config = DEFENSES[defense.type];
+    if (!config.blastRadius || !config.blastDamage) return;
+
+    this.pushFx({
+      k: 'explosion',
+      x: defense.x,
+      y: defense.y,
+      r: config.blastRadius,
+      s: defense.type,
+    });
+    const victims = [...this.state.zombies.entries()].filter(
+      ([, zombie]) =>
+        Math.hypot(zombie.x - defense.x, zombie.y - defense.y) <=
+        config.blastRadius! + zombie.radius,
+    );
+    for (const [id, zombie] of victims) {
+      const distance = Math.hypot(zombie.x - defense.x, zombie.y - defense.y);
+      const falloff = Math.max(0.35, 1 - distance / (config.blastRadius + zombie.radius));
+      this.damageZombie(id, zombie, config.blastDamage * falloff, defense.ownerId);
     }
   }
 
@@ -558,13 +582,7 @@ export class GameWorld {
     return this.obstacleHitAt(x1, y1, x2, y2) !== undefined;
   }
 
-  private segmentEntersRect(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    rect: MapObstacle,
-  ) {
+  private segmentEntersRect(x1: number, y1: number, x2: number, y2: number, rect: MapObstacle) {
     const left = rect.x - rect.w / 2;
     const right = rect.x + rect.w / 2;
     const top = rect.y - rect.h / 2;

@@ -13,6 +13,7 @@ import {
   distanceToDefense,
   reserveCapacity,
   sellValue,
+  weaponSellValue,
   type DefenseType,
   type WeaponType,
 } from '../../../shared/game-types.js';
@@ -65,11 +66,13 @@ export class BuildSystem {
     if (runtime.weaponDiscounts > 0) runtime.weaponDiscounts -= 1;
     this.syncDiscounts(player, runtime);
     player.owned.push(weapon);
+    runtime.weaponPurchasePrices.set(weapon, price);
     runtime.stowed.set(weapon, {
       ammo: this.players.magazineSize(weapon, runtime.upgrades),
       reserveAmmo: reserveCapacity(weapon, runtime.upgrades.reserveAmmo),
     });
     this.players.equipWeapon(player, runtime, weapon);
+    this.syncWeaponRefunds(sessionId);
   }
 
   selectWeapon(sessionId: string, weapon: WeaponType) {
@@ -80,6 +83,59 @@ export class BuildSystem {
     if (phase !== 'build' && phase !== 'combat') return;
     if (!player.owned.includes(weapon)) return;
     this.players.equipWeapon(player, runtime, weapon);
+  }
+
+  /** Sale values are authoritative because inactive weapons keep ammo server-side. */
+  syncWeaponRefunds(sessionId: string) {
+    const player = this.world.state.players.get(sessionId);
+    const runtime = this.world.runtime.get(sessionId);
+    if (!player || !runtime) return;
+    player.weaponRefunds.clear();
+    for (const weapon of player.owned as Iterable<WeaponType>) {
+      if (weapon === 'pistol') continue;
+      const stored =
+        weapon === player.weapon
+          ? { ammo: player.ammo, reserveAmmo: player.reserveAmmo }
+          : runtime.stowed.get(weapon);
+      if (!stored) continue;
+      const purchasePrice = runtime.weaponPurchasePrices.get(weapon) ?? WEAPONS[weapon].cost;
+      player.weaponRefunds.set(
+        weapon,
+        weaponSellValue(
+          weapon,
+          purchasePrice,
+          stored.ammo,
+          stored.reserveAmmo,
+          runtime.upgrades.magazineSize,
+          runtime.upgrades.reserveAmmo,
+          this.world.map.moneyScale,
+        ),
+      );
+    }
+  }
+
+  sellWeapon(sessionId: string, weapon: WeaponType) {
+    const player = this.world.state.players.get(sessionId);
+    const runtime = this.world.runtime.get(sessionId);
+    if (
+      !player ||
+      !runtime ||
+      this.world.state.phase !== 'build' ||
+      weapon === 'pistol' ||
+      !(weapon in WEAPONS) ||
+      !player.owned.includes(weapon)
+    ) {
+      return;
+    }
+    this.syncWeaponRefunds(sessionId);
+    const refund = player.weaponRefunds.get(weapon) ?? 0;
+    if (player.weapon === weapon) this.players.equipWeapon(player, runtime, 'pistol');
+    const index = player.owned.indexOf(weapon);
+    if (index >= 0) player.owned.splice(index, 1);
+    runtime.stowed.delete(weapon);
+    runtime.weaponPurchasePrices.delete(weapon);
+    player.weaponRefunds.delete(weapon);
+    player.money += refund;
   }
 
   buyAmmo(sessionId: string) {
@@ -98,6 +154,7 @@ export class BuildSystem {
     if (cost <= 0 || player.money < cost || player.reserveAmmo >= capacity) return;
     player.money -= cost;
     player.reserveAmmo = capacity;
+    this.syncWeaponRefunds(sessionId);
   }
 
   // ------------------------------------------------------------------- build
@@ -194,7 +251,8 @@ export class BuildSystem {
     const player = this.world.state.players.get(sessionId);
     const target = this.focusedDefense(sessionId, id);
     if (!player || !target) return;
-    const rate = REPAIR_COST_PER_HP * (this.world.perksOf(sessionId).engineer ? 1 - ENGINEER_DISCOUNT : 1);
+    const rate =
+      REPAIR_COST_PER_HP * (this.world.perksOf(sessionId).engineer ? 1 - ENGINEER_DISCOUNT : 1);
     const missing = target.maxHealth - target.health;
     const repair = Math.min(missing, Math.floor(player.money / rate));
     if (repair <= 0) return;

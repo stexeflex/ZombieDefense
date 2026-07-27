@@ -132,12 +132,12 @@
           <h1>Wählt euren<br />Sektor.</h1>
           <p>
             @if (snapshot.endless) {
-              Endlosmodus: Nach der letzten geplanten Welle geht es weiter, bis
-              der Trupp fällt. Alle zehn Wellen kommt der Boss der Karte zurück
-              — freischalten lässt sich hier nichts.
+              Endlosmodus: Nach der letzten geplanten Welle geht es weiter, bis der Trupp fällt.
+              Alle zehn Wellen kommt der Boss der Karte zurück — freischalten lässt sich hier
+              nichts.
             } @else {
-              Teile den Lobby-Link mit bis zu drei Freunden. Jede Karte endet mit
-              einem Endboss und schaltet die nächste, härtere Karte frei.
+              Teile den Lobby-Link mit bis zu drei Freunden. Jede Karte endet mit einem Endboss und
+              schaltet die nächste, härtere Karte frei.
             }
           </p>
 
@@ -234,11 +234,15 @@
 
           <div class="share-box">
             <span>{{ origin }}/lobby/{{ lobbyCode() }}</span>
-            <button type="button" (click)="copyLink()">{{ copied() ? 'Kopiert' : 'Kopieren' }}</button>
+            <button type="button" (click)="copyLink()">
+              {{ copied() ? 'Kopiert' : 'Kopieren' }}
+            </button>
           </div>
 
           <button class="upgrade-entry" type="button" (click)="upgradesOpen.set(true)">
-            <span><b>◆ {{ progress.gold() }} Gold</b> ausgeben</span>
+            <span
+              ><b>◆ {{ progress.gold() }} Gold</b> ausgeben</span
+            >
             <small>Upgrades gelten sofort für diesen Run</small>
           </button>
 
@@ -258,9 +262,7 @@
     } @else {
       <section
         class="game-layout"
-        [class.combat-panel-collapsed]="
-          snapshot.phase === 'combat' && combatPanelCollapsed()
-        "
+        [class.combat-panel-collapsed]="snapshot.phase === 'combat' && combatPanelCollapsed()"
       >
         <div class="game-stage">
           <app-game-canvas />
@@ -289,7 +291,9 @@
                           : 'Welle'
               }}
             </span>
-            <strong>{{ snapshot.wave }}<em>/{{ totalLabel() }}</em></strong>
+            <strong
+              >{{ snapshot.wave }}<em>/{{ totalLabel() }}</em></strong
+            >
             @if (snapshot.phase === 'combat') {
               <small>{{ snapshot.enemiesRemaining }} Gegner</small>
             } @else if (snapshot.phase === 'build') {
@@ -311,7 +315,9 @@
             <div class="health-block">
               <div class="hud-label">
                 <span>Gesundheit</span>
-                <b>{{ game.player()?.health | number: '1.0-0' }} / {{ game.player()?.maxHealth }}</b>
+                <b
+                  >{{ game.player()?.health | number: '1.0-0' }} / {{ game.player()?.maxHealth }}</b
+                >
               </div>
               <div class="health-track">
                 <span
@@ -328,10 +334,16 @@
               }
             </div>
             <div class="ammo-block">
-              <small>{{ weaponShort(game.player()?.weapon) }} · {{ weaponName(game.player()?.weapon) }}</small>
+              <small
+                >{{ weaponShort(game.player()?.weapon) }} ·
+                {{ weaponName(game.player()?.weapon) }}</small
+              >
               <strong>
                 {{ game.player()?.ammo
-                }}<span>/ {{ game.player()?.weapon === 'pistol' ? '∞' : game.player()?.reserveAmmo }}</span>
+                }}<span
+                  >/
+                  {{ game.player()?.weapon === 'pistol' ? '∞' : game.player()?.reserveAmmo }}</span
+                >
               </strong>
               @if (game.player()?.reloading) {
                 <em>Nachladen …</em>
@@ -406,7 +418,9 @@
           @if (snapshot.phase === 'gameover') {
             <div class="gameover-overlay">
               <section>
-                <p class="eyebrow">{{ game.lastReward()?.victory ? 'Sektor gesichert' : 'Trupp gefallen' }}</p>
+                <p class="eyebrow">
+                  {{ game.lastReward()?.victory ? 'Sektor gesichert' : 'Trupp gefallen' }}
+                </p>
                 <h2>
                   {{
                     game.lastReward()?.victory
@@ -417,9 +431,15 @@
                   }}
                 </h2>
                 <div class="run-stats">
-                  <span><b>{{ snapshot.wave }}</b> / {{ totalLabel() }} Wellen</span>
-                  <span><b>{{ game.player()?.kills }}</b> Abschüsse</span>
-                  <span><b>+{{ game.lastReward()?.gold ?? 0 }}</b> permanentes Gold</span>
+                  <span
+                    ><b>{{ snapshot.wave }}</b> / {{ totalLabel() }} Wellen</span
+                  >
+                  <span
+                    ><b>{{ game.player()?.kills }}</b> Abschüsse</span
+                  >
+                  <span
+                    ><b>+{{ game.lastReward()?.gold ?? 0 }}</b> permanentes Gold</span
+                  >
                 </div>
                 @if (game.lastReward()?.victory) {
                   @if (nextMapName()) {
@@ -436,7 +456,9 @@
                   } @else {
                     <p>Warte, bis der Host euch zurück in die Lobby bringt.</p>
                   }
-                  <button class="ghost-button" type="button" (click)="leave()">Zur Startseite</button>
+                  <button class="ghost-button" type="button" (click)="leave()">
+                    Zur Startseite
+                  </button>
                 </div>
               </section>
             </div>
@@ -494,13 +516,25 @@
               </header>
 
               <div class="shop-tabs">
-                <button type="button" [class.active]="shopTab() === 'weapons'" (click)="shopTab.set('weapons')">
+                <button
+                  type="button"
+                  [class.active]="shopTab() === 'weapons'"
+                  (click)="shopTab.set('weapons')"
+                >
                   Waffen
                 </button>
-                <button type="button" [class.active]="shopTab() === 'barricades'" (click)="shopTab.set('barricades')">
+                <button
+                  type="button"
+                  [class.active]="shopTab() === 'barricades'"
+                  (click)="shopTab.set('barricades')"
+                >
                   Barrikaden
                 </button>
-                <button type="button" [class.active]="shopTab() === 'turrets'" (click)="shopTab.set('turrets')">
+                <button
+                  type="button"
+                  [class.active]="shopTab() === 'turrets'"
+                  (click)="shopTab.set('turrets')"
+                >
                   Türme
                 </button>
               </div>
@@ -529,29 +563,46 @@
                     </button>
                   }
                   @for (weapon of weapons; track weapon.type) {
-                    <button
-                      class="shop-item"
-                      type="button"
-                      [class.selected]="game.player()?.weapon === weapon.type"
-                      [class.deal]="!owns(weapon.type) && weaponDeal(weapon.type)"
-                      [disabled]="
-                        (!owns(weapon.type) && (game.player()?.money ?? 0) < weaponPrice(weapon.type)) ||
-                        game.player()?.weapon === weapon.type
-                      "
-                      (click)="weaponAction(weapon.type)"
-                    >
-                      <span class="item-icon">{{ weapon.short }}</span>
-                      <span><b>{{ weapon.label }}</b><small>{{ weapon.description }}</small></span>
-                      <strong>
-                        {{
+                    <div class="weapon-shop-entry">
+                      <button
+                        class="shop-item"
+                        type="button"
+                        [class.selected]="game.player()?.weapon === weapon.type"
+                        [class.deal]="!owns(weapon.type) && weaponDeal(weapon.type)"
+                        [disabled]="
+                          (!owns(weapon.type) &&
+                            (game.player()?.money ?? 0) < weaponPrice(weapon.type)) ||
                           game.player()?.weapon === weapon.type
-                            ? 'Aktiv'
-                            : owns(weapon.type)
-                              ? 'Wechseln'
-                              : '$ ' + weaponPrice(weapon.type)
-                        }}
-                      </strong>
-                    </button>
+                        "
+                        (click)="weaponAction(weapon.type)"
+                      >
+                        <span class="item-icon">{{ weapon.short }}</span>
+                        <span
+                          ><b>{{ weapon.label }}</b
+                          ><small>{{ weapon.description }}</small></span
+                        >
+                        <strong>
+                          {{
+                            game.player()?.weapon === weapon.type
+                              ? 'Aktiv'
+                              : owns(weapon.type)
+                                ? 'Wechseln'
+                                : '$ ' + weaponPrice(weapon.type)
+                          }}
+                        </strong>
+                      </button>
+                      @if (owns(weapon.type)) {
+                        <button
+                          class="ghost-button"
+                          type="button"
+                          style="width: 100%; padding: 6px 10px; text-align: right; font-size: 0.54rem"
+                          (click)="sellWeapon(weapon.type)"
+                        >
+                          <span>Waffe verkaufen</span>
+                          <strong>+$ {{ weaponRefund(weapon.type) }}</strong>
+                        </button>
+                      }
+                    </div>
                   }
                 </div>
               } @else if (shopTab() === 'barricades') {
@@ -566,7 +617,10 @@
                       (click)="selectBuild(defense.type)"
                     >
                       <span class="item-icon">{{ defense.short }}</span>
-                      <span><b>{{ defense.label }}</b><small>{{ defense.health }} HP · {{ defense.description }}</small></span>
+                      <span
+                        ><b>{{ defense.label }}</b
+                        ><small>{{ defense.health }} HP · {{ defense.description }}</small></span
+                      >
                       <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
                   }
@@ -583,7 +637,10 @@
                       (click)="selectBuild(defense.type)"
                     >
                       <span class="item-icon">{{ defense.short }}</span>
-                      <span><b>{{ defense.label }}</b><small>{{ defense.description }}</small></span>
+                      <span
+                        ><b>{{ defense.label }}</b
+                        ><small>{{ defense.description }}</small></span
+                      >
                       <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
                   }
@@ -613,15 +670,17 @@
                       <b>{{ focus.repairCost === 0 ? 'ganz' : '$ ' + focus.repairCost }}</b>
                     </button>
                     <button type="button" (click)="game.sellFocused()">
-                      <span><kbd>V</kbd> Verkaufen{{ focus.fullPrice ? ' (voller Preis)' : '' }}</span>
+                      <span
+                        ><kbd>V</kbd> Verkaufen{{ focus.fullPrice ? ' (voller Preis)' : '' }}</span
+                      >
                       <b>+$ {{ focus.sellRefund }}</b>
                     </button>
                   </div>
                 </div>
               } @else {
                 <p class="focus-hint">
-                  Stell dich neben eine Barrikade oder einen Turm, um sie zu reparieren
-                  oder zu verkaufen.
+                  Stell dich neben eine Barrikade oder einen Turm, um sie zu reparieren oder zu
+                  verkaufen.
                 </p>
               }
 
@@ -644,8 +703,7 @@
               <small>{{ activeMap().subtitle }}</small>
               <h2>{{ snapshot.statusText }}</h2>
               <p>
-                Bleibt zusammen. Gefallene Freunde können innerhalb der Welle
-                wiederbelebt werden.
+                Bleibt zusammen. Gefallene Freunde können innerhalb der Welle wiederbelebt werden.
               </p>
               <div>
                 <span>Wellenfortschritt</span>

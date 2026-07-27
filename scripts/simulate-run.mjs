@@ -30,10 +30,13 @@ const {
   ammoRefillCost,
   campaignRunReward,
   dashReduction,
+  healthRegenPerSecond,
+  magazineCapacity,
   reserveCapacity,
   sellValue,
   startingMoney,
   upgradeMaxLevel,
+  weaponSellValue,
 } = await load('server/build/shared/game-types.js');
 
 const failures = [];
@@ -174,12 +177,22 @@ console.log('\n== Verteidigungen ==');
   room.systems.waves.startRun();
   room.systems.waves.finishWave();
   player.money = 1e6;
-  player.x = 1186;
+  player.x = 1200;
   player.y = 1150;
 
   const types = Object.keys(DEFENSES);
-  types.forEach((type, index) => {
-    room.systems.build.placeDefense('p1', { type, x: 880 + index * 68, y: 1150, rotation: 0 });
+  types.forEach((type) => {
+    const before = room.state.defenses.size;
+    for (let row = 0; row < 7 && room.state.defenses.size === before; row += 1) {
+      for (let column = 0; column < 9 && room.state.defenses.size === before; column += 1) {
+        room.systems.build.placeDefense('p1', {
+          type,
+          x: 920 + column * 70,
+          y: 940 + row * 70,
+          rotation: 0,
+        });
+      }
+    }
   });
   check(
     'Jede Verteidigung lässt sich bauen',
@@ -197,8 +210,8 @@ console.log('\n== Verteidigungen ==');
   check('Zombies werden bekämpft', room.state.zombies.size < 25, `(${room.state.zombies.size})`);
 }
 
-console.log('\n== Neue Türme wirken ==');
-for (const type of ['flame', 'tesla', 'laser']) {
+console.log('\n== Besondere Türme wirken ==');
+for (const type of ['flame', 'frost', 'scatter', 'acid', 'tesla', 'laser']) {
   const room = makeRoom('crater');
   const player = join(room, 'p1');
   room.systems.waves.startRun();
@@ -311,6 +324,36 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
   );
 }
 
+console.log('\n== Neue Barrikaden ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  room.systems.waves.startRun();
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 1150;
+  room.systems.build.placeDefense('p1', {
+    type: 'blastwall',
+    x: 1200,
+    y: 1050,
+    rotation: 0,
+  });
+  const wall = [...room.state.defenses.values()][0];
+  const zombie = room.systems.world.spawnZombie('normal', { x: 1220, y: 1050 });
+  zombie.health = 1000;
+  zombie.maxHealth = 1000;
+  const before = zombie.health;
+  room.systems.world.damageStructures(wall.x, wall.y, 12, wall.maxHealth + 1);
+  check('Sprengwand verschwindet beim Zerbrechen', room.state.defenses.size === 0);
+  check(
+    'Sprengwand trifft die Horde bei ihrer Detonation',
+    zombie.health < before,
+    `(${Math.round(before - zombie.health)} Schaden)`,
+  );
+  check('Stacheldraht bremst stärker als Stein', DEFENSES.wire.slow > DEFENSES.stone.slow);
+}
+
 console.log('\n== Freie Ecken und sichere Zombie-Einstiege ==');
 {
   const room = makeRoom('outpost');
@@ -329,8 +372,7 @@ console.log('\n== Freie Ecken und sichere Zombie-Einstiege ==');
   check(
     'Zombies betreten die Karte von außerhalb',
     spawns.every(
-      (spawn) =>
-        spawn.x < 0 || spawn.x > ARENA.width || spawn.y < 0 || spawn.y > ARENA.height,
+      (spawn) => spawn.x < 0 || spawn.x > ARENA.width || spawn.y < 0 || spawn.y > ARENA.height,
     ),
   );
   check(
@@ -383,6 +425,13 @@ console.log('\n== Besondere Vorteile ==');
     'Zweite Waffe kostet wieder voll',
     beforeSecond - player.money === WEAPONS.rifle.cost,
     `(${beforeSecond - player.money})`,
+  );
+  const beforeDiscountSale = player.money;
+  room.systems.build.sellWeapon('p1', 'smg');
+  check(
+    'Rabattwaffe zahlt beim Verkauf nur den echten Kaufpreis zurück',
+    player.money === beforeDiscountSale + paid,
+    `(+${player.money - beforeDiscountSale} statt +${paid})`,
   );
 
   const beforeWall = player.money;
@@ -608,7 +657,11 @@ console.log('\n== Frostkanone bremst ==');
   // Der Frost taut wieder auf, sonst stünde die Horde für immer still.
   runtime.input = { ...IDLE };
   step(room, Math.ceil((WEAPONS.cryo.slowSeconds * 1000) / 50) + 4);
-  check('Frost taut wieder auf', zombie.chilled === 0 && zombie.speed >= walking, `(${zombie.speed})`);
+  check(
+    'Frost taut wieder auf',
+    zombie.chilled === 0 && zombie.speed >= walking,
+    `(${zombie.speed})`,
+  );
 
   // Stacheldraht bremst schwächer, darf den stärkeren Frost nicht aufheben.
   room.systems.world.chillZombie(zombie, 0.5, 2);
@@ -742,6 +795,26 @@ console.log('\n== Upgrades aus der Lobby ==');
   check('Mitten im Run zählt kein Nachkauf', player.maxHealth === 120, `(${player.maxHealth})`);
 }
 
+console.log('\n== Lebensregeneration ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1', { upgrades: { healthRegen: 10 } });
+  room.systems.waves.startRun();
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  player.health = 50;
+  const expected = 50 + healthRegenPerSecond(10) * 4;
+  room.systems.players.update(4);
+  check(
+    'Stufen regenerieren im Kampf Leben pro Sekunde',
+    player.health === expected,
+    `(${player.health} statt ${expected})`,
+  );
+  player.health = player.maxHealth - 1;
+  room.systems.players.update(4);
+  check('Regeneration stoppt bei maximalem Leben', player.health === player.maxHealth);
+}
+
 console.log('\n== Wellenende heilt den Trupp ==');
 {
   const room = makeRoom('outpost');
@@ -812,7 +885,11 @@ console.log('\n== Endlosmodus ==');
     room.systems.waves.spawnQueue.length > 0,
     `(${room.systems.waves.spawnQueue.length} in der Warteschlange)`,
   );
-  check('Der Status sagt Endlos', room.state.statusText.includes('Endlos'), `(${room.state.statusText})`);
+  check(
+    'Der Status sagt Endlos',
+    room.state.statusText.includes('Endlos'),
+    `(${room.state.statusText})`,
+  );
 
   // Ein Endlos-Run schaltet nichts frei, egal wie weit er kommt.
   player.health = 0;
@@ -952,6 +1029,37 @@ console.log('\n== Arsenal ==');
     player.money === money - expectedAmmoCost && player.reserveAmmo === reserveCapacity('rifle'),
     `(${player.reserveAmmo} Schuss, $ ${money - player.money})`,
   );
+
+  player.ammo = 0;
+  player.reserveAmmo = 0;
+  const beforeWeaponSale = player.money;
+  const expectedWeaponRefund = weaponSellValue(
+    'rifle',
+    WEAPONS.rifle.cost,
+    0,
+    0,
+    0,
+    0,
+    room.systems.world.map.moneyScale,
+  );
+  room.systems.build.sellWeapon('p1', 'rifle');
+  check(
+    'Leere Waffe verkauft sich nur abzüglich fehlender Munition',
+    player.money === beforeWeaponSale + expectedWeaponRefund &&
+      !player.owned.includes('rifle') &&
+      player.weapon === 'pistol',
+    `(+${player.money - beforeWeaponSale} $)`,
+  );
+  const afterWeaponSale = player.money;
+  room.systems.build.buyWeapon('p1', 'rifle');
+  check(
+    'Verkaufen und neu kaufen umgeht keine Munitionskosten',
+    player.money === afterWeaponSale - WEAPONS.rifle.cost &&
+      player.ammo === magazineCapacity('rifle') &&
+      player.reserveAmmo === reserveCapacity('rifle') &&
+      player.money < beforeWeaponSale,
+    `(${beforeWeaponSale - player.money} $ Kosten)`,
+  );
 }
 
 console.log('\n== Feuerrate ==');
@@ -1067,7 +1175,10 @@ console.log('\n== Boss-Fähigkeiten ==');
   check('Warnkreis hat Vorlaufzeit', !warning || warning.life > 0.5, `(${warning?.life})`);
   const healthBefore = player.health;
   step(room, 60);
-  check('Warnkreis schlägt danach ein', player.health < healthBefore || room.state.hazards.size === 0);
+  check(
+    'Warnkreis schlägt danach ein',
+    player.health < healthBefore || room.state.hazards.size === 0,
+  );
 }
 {
   // Lavapfützen bleiben liegen und tun weh.
@@ -1158,7 +1269,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
     `(${(ZOMBIES.omega.abilities ?? []).length})`,
   );
   check('Vier Mini-Bosse plus Brutling', MINI_BOSSES.length === 4);
-  check('Sechs Türme', TURRET_ORDER.length === 6, `(${TURRET_ORDER.length})`);
+  check('Neun Türme', TURRET_ORDER.length === 9, `(${TURRET_ORDER.length})`);
   const swarmWaves = MAPS.flatMap((map) => map.waves).filter((wave) => wave.kind === 'swarm');
   check('Schwarmwellen sind eingeplant', swarmWaves.length > 0, `(${swarmWaves.length})`);
 }

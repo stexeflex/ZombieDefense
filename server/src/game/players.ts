@@ -17,6 +17,8 @@ import {
   SHIELD_DECAY,
   SHIELD_SHARE,
   WEAPONS,
+  healthRegenPerSecond,
+  magazineCapacity,
   reserveCapacity,
   weaponLife,
   type PermanentPerks,
@@ -37,6 +39,12 @@ export class PlayerSystem {
       if (!runtime) return;
       this.tickTimers(player, runtime, delta, combat);
       if (!player.alive) return;
+      if (combat && player.health < player.maxHealth) {
+        player.health = Math.min(
+          player.maxHealth,
+          player.health + healthRegenPerSecond(runtime.upgrades.healthRegen) * delta,
+        );
+      }
       this.move(player, runtime, delta);
       if (runtime.input.reload && player.reloading === 0) {
         this.beginReload(player, runtime.upgrades);
@@ -52,12 +60,7 @@ export class PlayerSystem {
 
   // ------------------------------------------------------------------ timers
 
-  private tickTimers(
-    player: PlayerState,
-    runtime: RuntimePlayer,
-    delta: number,
-    combat: boolean,
-  ) {
+  private tickTimers(player: PlayerState, runtime: RuntimePlayer, delta: number, combat: boolean) {
     // Held fire keeps a little credit across ticks so a fast weapon holds its
     // rate. A fresh trigger press must not cash that in, or the first shot of
     // a quick weapon would come out twice at once.
@@ -122,9 +125,7 @@ export class PlayerSystem {
   private tickDash(player: PlayerState, runtime: RuntimePlayer, delta: number) {
     player.dashMax = this.maxDashes(runtime.upgrades);
     runtime.dashLock = Math.max(0, runtime.dashLock - delta);
-    runtime.dashRecharge = runtime.dashRecharge
-      .map((timer) => timer - delta)
-      .sort((a, b) => a - b);
+    runtime.dashRecharge = runtime.dashRecharge.map((timer) => timer - delta).sort((a, b) => a - b);
     while (
       runtime.dashRecharge.length > 0 &&
       runtime.dashRecharge[0] <= 0 &&
@@ -375,11 +376,13 @@ export class PlayerSystem {
         projectile.radius =
           player.weapon === 'rocket'
             ? 8
-            : player.weapon === 'flamer'
-              ? 13
-              : player.weapon === 'cryo'
-                ? 10
-                : 4;
+            : player.weapon === 'acid'
+              ? 7
+              : player.weapon === 'flamer'
+                ? 13
+                : player.weapon === 'cryo'
+                  ? 10
+                  : 4;
         projectile.splashRadius = config.splashRadius ?? 0;
         projectile.splashDamage = (config.splashDamage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
         projectile.chain = config.chain ?? 0;
@@ -447,7 +450,7 @@ export class PlayerSystem {
   }
 
   magazineSize(weapon: WeaponType, upgrades: PermanentUpgrades) {
-    return Math.max(1, Math.round(WEAPONS[weapon].magazine * (1 + upgrades.magazineSize * 0.02)));
+    return magazineCapacity(weapon, upgrades.magazineSize);
   }
 
   maxGrenades(perks: PermanentPerks) {

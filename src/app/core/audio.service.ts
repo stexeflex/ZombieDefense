@@ -30,7 +30,9 @@ const WEAPON_SOUND: Record<WeaponType, SoundName> = {
   smg: 'shot',
   rifle: 'shot',
   shotgun: 'shot-heavy',
+  nailgun: 'shot-heavy',
   sniper: 'shot-heavy',
+  acid: 'shot-flame',
   lmg: 'shot-heavy',
   flamer: 'shot-flame',
   cryo: 'shot-frost',
@@ -172,7 +174,14 @@ export class AudioService {
         break;
       case 'victory':
         [0, 4, 7, 12].forEach((step, index) => {
-          this.tone(at + index * 0.16, 'triangle', 330 * Math.pow(2, step / 12), 330 * Math.pow(2, step / 12), 0.4, 0.26 * volume);
+          this.tone(
+            at + index * 0.16,
+            'triangle',
+            330 * Math.pow(2, step / 12),
+            330 * Math.pow(2, step / 12),
+            0.4,
+            0.26 * volume,
+          );
         });
         break;
     }
@@ -327,12 +336,28 @@ export class AudioService {
 
     // bass drone on every bar
     if (beat % 8 === 0) {
-      this.musicVoice(at, 'sawtooth', root, root * 0.99, this.track === 'build' ? 3.4 : 2, 0.16, 260);
+      this.musicVoice(
+        at,
+        'sawtooth',
+        root,
+        root * 0.99,
+        this.track === 'build' ? 3.4 : 2,
+        0.16,
+        260,
+      );
     }
     if (this.track === 'build') {
       if (beat % 4 === 0) {
         const step = SCALE[(beat / 4) % SCALE.length];
-        this.musicVoice(at, 'triangle', root * 4 * Math.pow(2, step / 12), root * 4 * Math.pow(2, step / 12), 1.6, 0.07, 1800);
+        this.musicVoice(
+          at,
+          'triangle',
+          root * 4 * Math.pow(2, step / 12),
+          root * 4 * Math.pow(2, step / 12),
+          1.6,
+          0.07,
+          1800,
+        );
       }
       return;
     }
@@ -367,7 +392,15 @@ export class AudioService {
     // arpeggio
     const step = SCALE[beat % SCALE.length];
     const frequency = root * 4 * Math.pow(2, step / 12);
-    this.musicVoice(at, this.track === 'boss' ? 'square' : 'triangle', frequency, frequency, 0.24, 0.06, 2400);
+    this.musicVoice(
+      at,
+      this.track === 'boss' ? 'square' : 'triangle',
+      frequency,
+      frequency,
+      0.24,
+      0.06,
+      2400,
+    );
   }
 
   private musicVoice(

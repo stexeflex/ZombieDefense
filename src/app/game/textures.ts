@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import {
+  BARRICADE_ORDER,
   DEFENSES,
   MAPS,
   ZOMBIES,
@@ -20,7 +21,9 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   smg: 38,
   rifle: 48,
   shotgun: 46,
+  nailgun: 48,
   sniper: 58,
+  acid: 44,
   lmg: 52,
   flamer: 40,
   cryo: 44,
@@ -297,12 +300,28 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     fillRounded(ctx, 40, 9, 20, 10, 3, '#95a49c', '#141d19', 1.5);
     fillRounded(ctx, 18, 19, 16, 7, 3, '#3c2c20');
   },
+  nailgun: (ctx) => {
+    fillRounded(ctx, 3, 8, 38, 12, 3, '#545f58', '#161d19', 1.5);
+    fillRounded(ctx, 38, 11, 22, 6, 2, '#c0c8c3', '#161d19', 1.5);
+    fillRounded(ctx, 13, 19, 10, 13, 2, '#303a34', '#161d19', 1.5);
+    fillRounded(ctx, 8, 3, 25, 6, 2, '#7d8a83');
+    ctx.fillStyle = '#d8dfdb';
+    for (let x = 12; x < 32; x += 6) ctx.fillRect(x, 4, 2, 4);
+  },
   sniper: (ctx) => {
     fillRounded(ctx, 0, 11, 54, 7, 2, '#3a463f', '#121a16', 1.5);
     fillRounded(ctx, 50, 12, 22, 5, 2, '#b3c1b9', '#121a16', 1.5);
     fillRounded(ctx, 22, 4, 20, 7, 3, '#1d2723', '#5f7169', 1.5);
     circle(ctx, 41, 7.5, 3, '#8fffc1');
     fillRounded(ctx, 24, 18, 8, 14, 2, '#2b3630');
+  },
+  acid: (ctx) => {
+    fillRounded(ctx, 1, 7, 20, 19, 7, '#294c33', '#102016', 2);
+    circle(ctx, 11, 16, 6, '#65c96f', '#b9ff8f', 1.5);
+    fillRounded(ctx, 18, 10, 28, 9, 3, '#3d5142', '#142019', 1.5);
+    fillRounded(ctx, 44, 8, 14, 13, 5, '#5e8a57', '#142019', 1.5);
+    circle(ctx, 56, 14.5, 4, '#b8ff71');
+    fillRounded(ctx, 22, 18, 8, 13, 2, '#29382d');
   },
   lmg: (ctx) => {
     fillRounded(ctx, 2, 9, 44, 10, 3, '#333d38', '#111815', 1.5);
@@ -396,7 +415,17 @@ function paintZombieBody(type: ZombieType, radius: number): Painter {
     const bodyH = radius * 1.95;
 
     // torso
-    fillRounded(ctx, -bodyW / 2, -bodyH / 2, bodyW, bodyH, radius * 0.55, skin.skin, '#1d2416', 2.5);
+    fillRounded(
+      ctx,
+      -bodyW / 2,
+      -bodyH / 2,
+      bodyW,
+      bodyH,
+      radius * 0.55,
+      skin.skin,
+      '#1d2416',
+      2.5,
+    );
     // tattered shirt
     ctx.save();
     rounded(ctx, -bodyW / 2, -bodyH / 2, bodyW, bodyH, radius * 0.55);
@@ -454,7 +483,15 @@ function paintZombieBody(type: ZombieType, radius: number): Painter {
     ctx.fillRect(headX - radius, -radius, radius, radius * 2);
     ctx.fillStyle = skin.accent;
     ctx.beginPath();
-    ctx.ellipse(headX + radius * 0.1, -radius * 0.2, radius * 0.2, radius * 0.1, 0.6, 0, Math.PI * 2);
+    ctx.ellipse(
+      headX + radius * 0.1,
+      -radius * 0.2,
+      radius * 0.2,
+      radius * 0.1,
+      0.6,
+      0,
+      Math.PI * 2,
+    );
     ctx.fill();
     ctx.restore();
     // eyes
@@ -519,6 +556,27 @@ const DEFENSE_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     ctx.fillRect(w * 0.72, 2, 4, h - 4);
     noise(ctx, w, h, 50, ['rgba(0,0,0,0.25)', 'rgba(255,255,255,0.08)'], 1, 2, 21);
   },
+  wire: (ctx, w, h) => {
+    ctx.strokeStyle = '#aebbb4';
+    ctx.lineWidth = 2;
+    for (const y of [h * 0.34, h * 0.66]) {
+      ctx.beginPath();
+      ctx.moveTo(2, y);
+      ctx.lineTo(w - 2, y);
+      ctx.stroke();
+      for (let x = 7; x < w - 3; x += 10) {
+        ctx.beginPath();
+        ctx.moveTo(x - 3, y - 4);
+        ctx.lineTo(x + 3, y + 4);
+        ctx.moveTo(x - 3, y + 4);
+        ctx.lineTo(x + 3, y - 4);
+        ctx.stroke();
+      }
+    }
+    ctx.fillStyle = '#4a3925';
+    ctx.fillRect(5, 1, 4, h - 2);
+    ctx.fillRect(w - 9, 1, 4, h - 2);
+  },
   spike: (ctx, w, h) => {
     ctx.fillStyle = '#4b3722';
     ctx.fillRect(2, h * 0.3, w - 4, h * 0.4);
@@ -566,6 +624,15 @@ const DEFENSE_PAINTERS: Partial<Record<DefenseType, Painter>> = {
       }
     }
     noise(ctx, w, h, 90, ['rgba(255,255,255,0.09)', 'rgba(0,0,0,0.28)'], 1, 3, 33);
+  },
+  blastwall: (ctx, w, h) => {
+    fillRounded(ctx, 1, 1, w - 2, h - 2, 4, '#4c5551', '#171d1a', 2);
+    ctx.fillStyle = '#d1a933';
+    for (let x = 5; x < w - 5; x += 16) ctx.fillRect(x, 3, 8, h - 6);
+    ctx.fillStyle = '#2a302d';
+    for (let x = 13; x < w - 5; x += 16) ctx.fillRect(x, 3, 8, h - 6);
+    fillRounded(ctx, w / 2 - 12, 5, 24, h - 10, 5, '#8e302d', '#30100f', 1.5);
+    circle(ctx, w / 2, h / 2, 5, '#ff765f', '#ffd166', 1.5);
   },
   steel: (ctx, w, h) => {
     const gradient = ctx.createLinearGradient(0, 0, 0, h);
@@ -630,6 +697,33 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     fillRounded(ctx, 40, 6, 12, 14, 5, '#8f5a2a', '#241407', 2);
     circle(ctx, 50, 13, 4, '#ffb347');
     circle(ctx, 8, 13, 3.5, '#ff7a3a');
+  },
+  frost: (ctx) => {
+    fillRounded(ctx, 0, 6, 22, 15, 5, '#294555', '#0d1b23', 2);
+    fillRounded(ctx, 20, 9, 28, 8, 3, '#5d879b', '#10212a', 2);
+    circle(ctx, 47, 13, 6, '#d8f7ff', '#70cbe8', 2);
+    ctx.strokeStyle = '#b8f2ff';
+    ctx.lineWidth = 1.5;
+    for (let index = 0; index < 4; index += 1) {
+      const angle = (Math.PI / 2) * index;
+      ctx.beginPath();
+      ctx.moveTo(47 + Math.cos(angle) * 4, 13 + Math.sin(angle) * 4);
+      ctx.lineTo(47 + Math.cos(angle) * 9, 13 + Math.sin(angle) * 9);
+      ctx.stroke();
+    }
+  },
+  scatter: (ctx) => {
+    fillRounded(ctx, 0, 5, 23, 17, 5, '#4a4238', '#191611', 2);
+    for (let index = 0; index < 3; index += 1) {
+      fillRounded(ctx, 20, 6 + index * 6, 31, 5, 2, '#9d9688', '#25221d', 1.5);
+    }
+    circle(ctx, 9, 13, 4, '#d4b16a');
+  },
+  acid: (ctx) => {
+    fillRounded(ctx, 0, 5, 22, 17, 6, '#294932', '#102016', 2);
+    circle(ctx, 10, 13, 6, '#4fae5d', '#b8ff71', 2);
+    fillRounded(ctx, 20, 9, 26, 9, 3, '#55765a', '#16251a', 2);
+    circle(ctx, 46, 13.5, 5, '#a6f06e', '#d8ff9a', 1.5);
   },
   tesla: (ctx) => {
     fillRounded(ctx, 0, 8, 24, 10, 4, '#2b3a4a', '#101820', 2);
@@ -760,7 +854,17 @@ const OBSTACLE_PAINTERS: Record<ObstacleKind, Painter> = {
       const offset = row === 0 ? 0 : 11;
       for (let index = 0; index < 5; index += 1) {
         const x = 3 + offset + index * ((w - 12) / 4.4);
-        fillRounded(ctx, x, 3 + row * (h / 2 - 2), (w - 10) / 4.6, h / 2 - 6, 7, '#8c7f5c', '#3b3524', 2);
+        fillRounded(
+          ctx,
+          x,
+          3 + row * (h / 2 - 2),
+          (w - 10) / 4.6,
+          h / 2 - 6,
+          7,
+          '#8c7f5c',
+          '#3b3524',
+          2,
+        );
       }
     }
     noise(ctx, w, h, 60, ['rgba(0,0,0,0.22)', 'rgba(255,255,255,0.08)'], 1, 2, 53);
@@ -844,7 +948,12 @@ const DECOR_PAINTERS: Record<string, Painter> = {
       const x = 4 + (index * (w - 8)) / 8;
       ctx.beginPath();
       ctx.moveTo(x, h - 3);
-      ctx.quadraticCurveTo(x + (index % 2 === 0 ? 4 : -4), h / 2, x + (index % 2 === 0 ? 2 : -2), 3);
+      ctx.quadraticCurveTo(
+        x + (index % 2 === 0 ? 4 : -4),
+        h / 2,
+        x + (index % 2 === 0 ? 2 : -2),
+        3,
+      );
       ctx.stroke();
     }
   },
@@ -931,15 +1040,18 @@ export function createGameTextures(scene: Phaser.Scene) {
     );
   }
 
-  make(scene, 'defense-wood', 58, 26, DEFENSE_PAINTERS.wood!);
-  make(scene, 'defense-spike', 58, 24, DEFENSE_PAINTERS.spike!);
-  make(scene, 'defense-stone', 60, 30, DEFENSE_PAINTERS.stone!);
-  make(scene, 'defense-steel', 62, 28, DEFENSE_PAINTERS.steel!);
+  for (const type of BARRICADE_ORDER) {
+    const config = DEFENSES[type];
+    make(scene, `defense-${type}`, config.width, config.height, DEFENSE_PAINTERS[type]!);
+  }
 
   const TURRET_ACCENTS: Record<string, string> = {
     mg: '#69f0ae',
     flame: '#ff8f4a',
+    frost: '#aef0ff',
+    scatter: '#d4b16a',
     marksman: '#8fffc1',
+    acid: '#b8ff71',
     tesla: '#9fdcff',
     launcher: '#ff8f5a',
     laser: '#ff8fd8',

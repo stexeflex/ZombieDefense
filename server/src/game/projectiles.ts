@@ -106,6 +106,17 @@ export class ProjectileSystem {
     for (const [id, zombie] of victims) {
       const distance = Math.hypot(zombie.x - x, zombie.y - y);
       const falloff = Math.max(0.35, 1 - distance / (radius + zombie.radius));
+      if (projectile.burn > 0) {
+        this.world.igniteZombie(
+          zombie,
+          projectile.burn,
+          projectile.burnSeconds,
+          projectile.ownerId,
+        );
+      }
+      if (projectile.slow > 0) {
+        this.world.chillZombie(zombie, projectile.slow, projectile.slowSeconds);
+      }
       this.world.damageZombie(id, zombie, projectile.splashDamage * falloff, projectile.ownerId);
     }
   }

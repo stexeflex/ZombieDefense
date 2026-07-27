@@ -24,6 +24,8 @@ export class PlayerState extends Schema {
   @type('number') money = 400;
   @type('string') weapon: WeaponType = 'pistol';
   @type(['string']) owned = new ArraySchema<string>('pistol');
+  /** Current sale value per bought weapon, after accounting for missing rounds. */
+  @type({ map: 'number' }) weaponRefunds = new MapSchema<number>();
   @type('number') ammo = 12;
   @type('number') reserveAmmo = 96;
   @type('number') grenades = 3;

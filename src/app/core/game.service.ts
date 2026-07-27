@@ -108,7 +108,9 @@ export class GameService {
     const player = this.player();
     if (!player) return false;
     if (player.weapon === 'pistol') return true;
-    return player.reserveAmmo >= reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo);
+    return (
+      player.reserveAmmo >= reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo)
+    );
   });
 
   /** The pistol is the endless fallback and therefore never needs bought ammunition. */
@@ -127,7 +129,9 @@ export class GameService {
     const config = DEFENSES[type];
     const player = this.player();
     const left =
-      config.kind === 'barricade' ? (player?.barricadeDiscount ?? 0) : (player?.turretDiscount ?? 0);
+      config.kind === 'barricade'
+        ? (player?.barricadeDiscount ?? 0)
+        : (player?.turretDiscount ?? 0);
     return discountedCost(config.cost, left);
   }
 
@@ -243,6 +247,13 @@ export class GameService {
     if (!player || player.weapon === weapon || !player.owned.includes(weapon)) return;
     this.audio.play('reload', 0.6);
     this.room?.send('switch_weapon', weapon);
+  }
+
+  sellWeapon(weapon: WeaponType) {
+    const player = this.player();
+    if (!player || weapon === 'pistol' || !player.owned.includes(weapon)) return;
+    this.audio.play('ui');
+    this.room?.send('sell_weapon', weapon);
   }
 
   /** Steps through the arsenal, used by the mouse wheel. */

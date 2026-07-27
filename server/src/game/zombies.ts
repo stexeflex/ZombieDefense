@@ -81,10 +81,11 @@ export class ZombieSystem {
             this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: 'spike' });
             if (!this.world.state.zombies.has(id)) return;
           }
-          if (defenseConfig.slow) this.world.chillZombie(zombie, defenseConfig.slow, 1.2);
+          if (defenseConfig.slow) {
+            this.world.chillZombie(zombie, defenseConfig.slow, defenseConfig.slowSeconds ?? 1.2);
+          }
           if (blocking.health <= 0) {
-            this.world.pushFx({ k: 'wreck', x: blocking.x, y: blocking.y, s: blocking.type });
-            this.world.state.defenses.delete(blocking.id);
+            this.world.destroyDefense(blocking);
           }
         }
         zombie.stuckTimer = 0;
@@ -233,7 +234,13 @@ export class ZombieSystem {
    * Walks a zombie around map obstacles. Sliding along a wall can dead-end in a
    * corner, so a zombie that has been stuck for a while simply walks through.
    */
-  private moveZombie(zombie: ZombieState, dx: number, dy: number, targetX: number, targetY: number) {
+  private moveZombie(
+    zombie: ZombieState,
+    dx: number,
+    dy: number,
+    targetX: number,
+    targetY: number,
+  ) {
     const apply = (stepX: number, stepY: number) => {
       zombie.x = this.world.clamp(zombie.x + stepX, 12, ARENA.width - 12);
       zombie.y = this.world.clamp(zombie.y + stepY, 12, ARENA.height - 12);
@@ -308,13 +315,21 @@ export class ZombieSystem {
             const normalX = distance < 0.01 ? Math.cos(other) : dx / distance;
             const normalY = distance < 0.01 ? Math.sin(other) : dy / distance;
             if (
-              this.world.canStand(partner.x + normalX * push, partner.y + normalY * push, partner.radius)
+              this.world.canStand(
+                partner.x + normalX * push,
+                partner.y + normalY * push,
+                partner.radius,
+              )
             ) {
               partner.x = this.world.clamp(partner.x + normalX * push, 12, ARENA.width - 12);
               partner.y = this.world.clamp(partner.y + normalY * push, 12, ARENA.height - 12);
             }
             if (
-              this.world.canStand(zombie.x - normalX * push, zombie.y - normalY * push, zombie.radius)
+              this.world.canStand(
+                zombie.x - normalX * push,
+                zombie.y - normalY * push,
+                zombie.radius,
+              )
             ) {
               zombie.x = this.world.clamp(zombie.x - normalX * push, 12, ARENA.width - 12);
               zombie.y = this.world.clamp(zombie.y - normalY * push, 12, ARENA.height - 12);

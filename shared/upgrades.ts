@@ -8,6 +8,7 @@ import { DASH_BASE_RESIST, DASH_RESIST_STEP, START_MONEY } from './arena.js';
 export interface PermanentUpgrades {
   startMoney: number;
   maxHealth: number;
+  healthRegen: number;
   moveSpeed: number;
   weaponDamage: number;
   reloadSpeed: number;
@@ -33,6 +34,7 @@ export type UpgradeKey = keyof PermanentUpgrades;
 export const EMPTY_UPGRADES: PermanentUpgrades = {
   startMoney: 0,
   maxHealth: 0,
+  healthRegen: 0,
   moveSpeed: 0,
   weaponDamage: 0,
   reloadSpeed: 0,
@@ -83,9 +85,15 @@ export function upgradeLevelCost(key: UpgradeKey, level: number) {
 
 /** Every level provides this much extra build money at the start of a run. */
 export const START_MONEY_PER_LEVEL = 50;
+/** Passive health restored per second by one regeneration level. */
+export const HEALTH_REGEN_PER_LEVEL = 0.25;
 
 export function startingMoney(level: number) {
   return START_MONEY + Math.max(0, Math.floor(level)) * START_MONEY_PER_LEVEL;
+}
+
+export function healthRegenPerSecond(level: number) {
+  return Math.max(0, Math.floor(level)) * HEALTH_REGEN_PER_LEVEL;
 }
 
 /** Damage reduction from armour, capped so no build becomes untouchable. */

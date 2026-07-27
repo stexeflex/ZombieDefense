@@ -56,6 +56,8 @@ export interface PlayerSnapshot {
   weapon: WeaponType;
   /** Every weapon the player bought, in purchase order, pistol first. */
   owned: WeaponType[];
+  /** Sale value after the paid purchase price and missing ammunition are counted. */
+  weaponRefunds: Partial<Record<WeaponType, number>>;
   ammo: number;
   reserveAmmo: number;
   grenades: number;

@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
-import { WEAPONS, type FxEvent, type WeaponType, type ZombieType } from '../../../shared/game-types';
+import {
+  WEAPONS,
+  type FxEvent,
+  type WeaponType,
+  type ZombieType,
+} from '../../../shared/game-types';
 import type { AudioService } from '../core/audio.service';
 import { WEAPON_MUZZLE } from './textures';
 import type { Bolt } from './views';
@@ -231,11 +236,13 @@ export class EffectLayer {
       .setTint(
         weapon === 'laser'
           ? 0xff8fd8
-          : weapon === 'tesla'
-            ? 0x9fdcff
-            : weapon === 'cryo'
-              ? 0xaef0ff
-              : 0xffd489,
+          : weapon === 'acid'
+            ? 0xb8ff71
+            : weapon === 'tesla'
+              ? 0x9fdcff
+              : weapon === 'cryo'
+                ? 0xaef0ff
+                : 0xffd489,
       )
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.42, 0.3)

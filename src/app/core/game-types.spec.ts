@@ -12,6 +12,7 @@ import {
   DEFENSE_REACH,
   EMPTY_PERKS,
   EMPTY_UPGRADES,
+  HEALTH_REGEN_PER_LEVEL,
   MAPS,
   MINI_BOSSES,
   PERK_COST,
@@ -39,6 +40,8 @@ import {
   discountedCost,
   distanceToDefense,
   endlessWave,
+  healthRegenPerSecond,
+  magazineCapacity,
   repairCost,
   reserveCapacity,
   sellValue,
@@ -50,6 +53,7 @@ import {
   upgradeLevelCost,
   upgradeMaxLevel,
   upgradeUnlocked,
+  weaponSellValue,
   type MapObstacle,
   type PerkKey,
   type PlacedDefense,
@@ -199,8 +203,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists eleven weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(11);
+  it('lists thirteen weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(13);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -221,6 +225,9 @@ describe('weapon balance', () => {
     expect(WEAPONS.flamer.burn).toBeGreaterThan(0);
     expect(WEAPONS.laser.pierce).toBeGreaterThan(WEAPONS.rifle.pierce);
     expect(WEAPONS.flamer.range).toBeLessThan(WEAPONS.sniper.range);
+    expect(WEAPONS.nailgun.pierce).toBeGreaterThan(WEAPONS.rifle.pierce);
+    expect(WEAPONS.acid.splashRadius).toBeGreaterThan(0);
+    expect(WEAPONS.acid.burn).toBeGreaterThan(0);
   });
 
   it('lets the frost cannon brake instead of burn', () => {
@@ -235,9 +242,9 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers four barricades and six turrets', () => {
-    expect(BARRICADE_ORDER).toHaveLength(4);
-    expect(TURRET_ORDER).toHaveLength(6);
+  it('offers six barricades and nine turrets', () => {
+    expect(BARRICADE_ORDER).toHaveLength(6);
+    expect(TURRET_ORDER).toHaveLength(9);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
   });
@@ -270,6 +277,17 @@ describe('defenses', () => {
     expect(DEFENSES.tesla.chain).toBe(3);
     expect(DEFENSES.laser.pierce!).toBeGreaterThan(DEFENSES.marksman.pierce!);
     expect(DEFENSES.laser.range!).toBeGreaterThan(DEFENSES.tesla.range!);
+    expect(DEFENSES.frost.slow).toBeGreaterThan(0);
+    expect(DEFENSES.scatter.pellets).toBeGreaterThan(1);
+    expect(DEFENSES.acid.splashRadius).toBeGreaterThan(0);
+    expect(DEFENSES.acid.burn).toBeGreaterThan(0);
+  });
+
+  it('gives both new barricades a distinct last-resort role', () => {
+    expect(DEFENSES.wire.slow).toBeGreaterThan(DEFENSES.stone.slow!);
+    expect(DEFENSES.wire.thorns).toBeGreaterThan(0);
+    expect(DEFENSES.blastwall.blastRadius).toBeGreaterThan(0);
+    expect(DEFENSES.blastwall.blastDamage).toBeGreaterThan(0);
   });
 });
 
@@ -300,9 +318,9 @@ describe('building rules', () => {
     expect(canPlaceDefense(barricade(insetX, insetY), [], [])).toBe(true);
     expect(canPlaceDefense(barricade(ARENA.width - insetX, insetY), [], [])).toBe(true);
     expect(canPlaceDefense(barricade(insetX, ARENA.height - insetY), [], [])).toBe(true);
-    expect(
-      canPlaceDefense(barricade(ARENA.width - insetX, ARENA.height - insetY), [], []),
-    ).toBe(true);
+    expect(canPlaceDefense(barricade(ARENA.width - insetX, ARENA.height - insetY), [], [])).toBe(
+      true,
+    );
   });
 
   it('snaps a loose preview flush against its neighbour', () => {
@@ -370,6 +388,7 @@ describe('arsenal and ammunition', () => {
 
   it('grows the reserve with the upgrade', () => {
     expect(reserveCapacity('rifle', 40)).toBeGreaterThan(reserveCapacity('rifle'));
+    expect(magazineCapacity('rifle', 40)).toBeGreaterThan(magazineCapacity('rifle'));
   });
 
   it('charges only for the rounds that are missing', () => {
@@ -384,6 +403,24 @@ describe('arsenal and ammunition', () => {
     expect(oneRound).toBeLessThan(halfRefill);
     expect(ammoRefillCost('rifle', capacity)).toBe(0);
     expect(ammoRefillCost('pistol', 0)).toBe(0);
+  });
+
+  it('deducts missing ammunition from a weapon sale', () => {
+    const price = WEAPONS.rifle.cost;
+    const full = weaponSellValue(
+      'rifle',
+      price,
+      magazineCapacity('rifle'),
+      reserveCapacity('rifle'),
+    );
+    const empty = weaponSellValue('rifle', price, 0, 0);
+    const discounted = weaponSellValue('rifle', Math.round(price * 0.6), 0, 0);
+
+    expect(full).toBe(price);
+    expect(empty).toBeLessThan(full);
+    expect(price - empty).toBeGreaterThan(WEAPONS.rifle.ammoCost);
+    expect(discounted).toBeLessThanOrEqual(Math.round(price * 0.6));
+    expect(weaponSellValue('pistol', 0, 0, 0)).toBe(0);
   });
 });
 
@@ -469,6 +506,13 @@ describe('permanent upgrades', () => {
     expect(Object.keys(EMPTY_UPGRADES)).not.toContain('income');
     expect(Object.values(EMPTY_UPGRADES).every((level) => level === 0)).toBe(true);
     expect(Object.keys(EMPTY_PERKS)).not.toContain('income');
+  });
+
+  it('adds predictable passive health regeneration per level', () => {
+    expect(EMPTY_UPGRADES.healthRegen).toBe(0);
+    expect(healthRegenPerSecond(0)).toBe(0);
+    expect(healthRegenPerSecond(1)).toBe(HEALTH_REGEN_PER_LEVEL);
+    expect(healthRegenPerSecond(10)).toBe(10 * HEALTH_REGEN_PER_LEVEL);
   });
 
   it('leaves extra dash charges to the levelled upgrade alone', () => {
