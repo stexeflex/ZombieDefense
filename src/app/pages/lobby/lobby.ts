@@ -10,8 +10,10 @@ import {
   WEAPONS,
   WEAPON_ORDER,
   ZOMBIES,
+  ammoRefillCost,
   dashReduction,
   findMap,
+  reserveCapacity,
   type DefenseType,
   type WeaponType,
 } from '../../../../shared/game-types';
@@ -195,8 +197,23 @@ export class Lobby implements OnInit, OnDestroy {
   }
 
   ammoCost() {
-    const weapon = this.game.player()?.weapon ?? 'pistol';
-    return Math.round(WEAPONS[weapon].ammoCost * this.activeMap().moneyScale);
+    const player = this.game.player();
+    if (!player) return 0;
+    return ammoRefillCost(
+      player.weapon,
+      player.reserveAmmo,
+      this.progress.upgrades().reserveAmmo,
+      this.activeMap().moneyScale,
+    );
+  }
+
+  ammoMissing() {
+    const player = this.game.player();
+    if (!player || player.weapon === 'pistol') return 0;
+    return Math.max(
+      0,
+      reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo) - player.reserveAmmo,
+    );
   }
 
   /** One pip per dash charge; filled ones are ready to use. */

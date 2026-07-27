@@ -519,7 +519,7 @@
                           {{
                             game.ammoFull()
                               ? 'Vorrat ist voll'
-                              : 'Vorrat auffüllen (' + game.player()?.reserveAmmo + ' Schuss)'
+                              : ammoMissing() + ' fehlende Schüsse auffüllen'
                           }}
                         </small>
                       </span>

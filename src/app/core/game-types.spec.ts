@@ -21,6 +21,8 @@ import {
   SELL_REFUND,
   SHIELD_DECAY,
   SHIELD_SHARE,
+  START_MONEY,
+  START_MONEY_PER_LEVEL,
   STARTER_DISCOUNT,
   TURRET_ORDER,
   UPGRADE_MAX_LEVEL,
@@ -29,6 +31,7 @@ import {
   WEAPON_ORDER,
   ZOMBIES,
   ZOMBIE_TYPES,
+  ammoRefillCost,
   armorReduction,
   canPlaceDefense,
   dashReduction,
@@ -42,6 +45,7 @@ import {
   sellValue,
   snapDefense,
   splitAbility,
+  startingMoney,
   timedAbilities,
   upgradeCost,
   upgradeLevelCost,
@@ -344,6 +348,20 @@ describe('arsenal and ammunition', () => {
   it('grows the reserve with the upgrade', () => {
     expect(reserveCapacity('rifle', 40)).toBeGreaterThan(reserveCapacity('rifle'));
   });
+
+  it('charges only for the rounds that are missing', () => {
+    const capacity = reserveCapacity('rifle');
+    const fullRefill = ammoRefillCost('rifle', 0);
+    const halfRefill = ammoRefillCost('rifle', capacity / 2);
+    const oneRound = ammoRefillCost('rifle', capacity - 1);
+
+    expect(fullRefill).toBe(WEAPONS.rifle.ammoCost);
+    expect(halfRefill).toBe(Math.ceil(fullRefill / 2));
+    expect(oneRound).toBeGreaterThan(0);
+    expect(oneRound).toBeLessThan(halfRefill);
+    expect(ammoRefillCost('rifle', capacity)).toBe(0);
+    expect(ammoRefillCost('pistol', 0)).toBe(0);
+  });
 });
 
 describe('permanent upgrades', () => {
@@ -420,7 +438,11 @@ describe('permanent upgrades', () => {
     expect(armorReduction(UPGRADE_MAX_LEVEL)).toBeLessThanOrEqual(0.35);
   });
 
-  it('has no money upgrade at all', () => {
+  it('adds start money through a levelled upgrade', () => {
+    expect(EMPTY_UPGRADES.startMoney).toBe(0);
+    expect(startingMoney(0)).toBe(START_MONEY);
+    expect(startingMoney(1)).toBe(START_MONEY + START_MONEY_PER_LEVEL);
+    expect(startingMoney(10)).toBe(START_MONEY + 10 * START_MONEY_PER_LEVEL);
     expect(Object.keys(EMPTY_UPGRADES)).not.toContain('income');
     expect(Object.values(EMPTY_UPGRADES).every((level) => level === 0)).toBe(true);
     expect(Object.keys(EMPTY_PERKS)).not.toContain('income');

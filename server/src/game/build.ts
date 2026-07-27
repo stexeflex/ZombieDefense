@@ -7,6 +7,7 @@ import {
   REPAIR_COST_PER_HP,
   STARTER_BARRICADE_COUNT,
   WEAPONS,
+  ammoRefillCost,
   canPlaceDefense,
   discountedCost,
   distanceToDefense,
@@ -87,10 +88,14 @@ export class BuildSystem {
     if (!player || !runtime || this.world.state.phase !== 'build' || player.weapon === 'pistol') {
       return;
     }
-    const config = WEAPONS[player.weapon];
     const capacity = reserveCapacity(player.weapon, runtime.upgrades.reserveAmmo);
-    const cost = Math.round(config.ammoCost * this.world.map.moneyScale);
-    if (player.money < cost || player.reserveAmmo >= capacity) return;
+    const cost = ammoRefillCost(
+      player.weapon,
+      player.reserveAmmo,
+      runtime.upgrades.reserveAmmo,
+      this.world.map.moneyScale,
+    );
+    if (cost <= 0 || player.money < cost || player.reserveAmmo >= capacity) return;
     player.money -= cost;
     player.reserveAmmo = capacity;
   }

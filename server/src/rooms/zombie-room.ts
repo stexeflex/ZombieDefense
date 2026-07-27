@@ -6,9 +6,9 @@ import {
   EMPTY_PERKS,
   EMPTY_UPGRADES,
   SHIELD_SHARE,
-  START_MONEY,
   findMap,
   reserveCapacity,
+  startingMoney,
   upgradeMaxLevel,
   type DefenseType,
   type PermanentPerks,
@@ -188,7 +188,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.maxHealth = Math.round(100 * (1 + upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
     player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
-    player.money = START_MONEY;
+    player.money = startingMoney(upgrades.startMoney);
     player.ammo = this.playerSystem.magazineSize('pistol', upgrades);
     player.reserveAmmo = reserveCapacity('pistol', upgrades.reserveAmmo);
     player.dashMax = this.playerSystem.maxDashes(upgrades);
@@ -248,6 +248,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.health = player.maxHealth;
     player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
     player.shield = 0;
+    player.money = startingMoney(runtime.upgrades.startMoney);
     player.ammo = this.playerSystem.magazineSize(player.weapon, runtime.upgrades);
     player.reserveAmmo = reserveCapacity(player.weapon, runtime.upgrades.reserveAmmo);
     player.dashMax = this.playerSystem.maxDashes(runtime.upgrades);

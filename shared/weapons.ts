@@ -257,6 +257,22 @@ export function reserveCapacity(weapon: WeaponType, reserveLevel = 0) {
   return Math.round(WEAPONS[weapon].reserve * (1 + reserveLevel * 0.02));
 }
 
+/**
+ * Price only the rounds that are actually missing. `ammoCost` is the price of
+ * the weapon's base reserve, so upgrades that add more space keep the same
+ * fair price per round.
+ */
+export function ammoRefillCost(
+  weapon: WeaponType,
+  currentReserve: number,
+  reserveLevel = 0,
+  moneyScale = 1,
+) {
+  if (weapon === 'pistol') return 0;
+  const missing = Math.max(0, reserveCapacity(weapon, reserveLevel) - currentReserve);
+  return Math.ceil((missing * WEAPONS[weapon].ammoCost * moneyScale) / WEAPONS[weapon].reserve);
+}
+
 export function weaponLife(weapon: WeaponConfig) {
   return weapon.range / weapon.speed;
 }

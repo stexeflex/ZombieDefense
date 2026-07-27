@@ -1,9 +1,9 @@
 import {
   SHIELD_SHARE,
-  START_MONEY,
   endlessWave,
   reserveCapacity,
   sellValue,
+  startingMoney,
   type ZombieType,
 } from '../../../shared/game-types.js';
 import type { BuildSystem } from './build.js';
@@ -67,7 +67,7 @@ export class WaveSystem {
       player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
       player.shield = 0;
       player.alive = true;
-      player.money = START_MONEY;
+      player.money = startingMoney(upgrades.startMoney);
       player.weapon = 'pistol';
       player.owned.clear();
       player.owned.push('pistol');

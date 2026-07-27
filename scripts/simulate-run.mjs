@@ -26,9 +26,11 @@ const {
   WEAPONS,
   WEAPON_ORDER,
   ZOMBIES,
+  ammoRefillCost,
   dashReduction,
   reserveCapacity,
   sellRefund,
+  startingMoney,
   upgradeMaxLevel,
 } = await load('server/build/shared/game-types.js');
 
@@ -670,7 +672,7 @@ console.log('\n== Upgrades aus der Lobby ==');
   check('Ohne Upgrades das Grundleben', player.maxHealth === 100, `(${player.maxHealth})`);
 
   room.applyLoadout('p1', {
-    upgrades: { maxHealth: 10, dashCharges: 2 },
+    upgrades: { startMoney: 3, maxHealth: 10, dashCharges: 2 },
     perks: { extraGrenade: true },
   });
   check(
@@ -679,9 +681,13 @@ console.log('\n== Upgrades aus der Lobby ==');
     `(${player.maxHealth} HP, ${player.dashMax} Dashes)`,
   );
   check('Der Vorteil kommt mit', player.grenades === 4, `(${player.grenades})`);
+  check('Startkapital steigt pro Stufe', player.money === startingMoney(3), `($ ${player.money})`);
 
   room.systems.waves.startRun();
-  check('Der Run übernimmt die Werte', player.maxHealth === 120 && player.dashMax === 4);
+  check(
+    'Der Run übernimmt die Werte',
+    player.maxHealth === 120 && player.dashMax === 4 && player.money === startingMoney(3),
+  );
   room.applyLoadout('p1', { upgrades: { maxHealth: 40 }, perks: {} });
   check('Mitten im Run zählt kein Nachkauf', player.maxHealth === 120, `(${player.maxHealth})`);
 }
@@ -839,11 +845,12 @@ console.log('\n== Arsenal ==');
   room.systems.build.buyAmmo('p1');
   check('Kein Munitionskauf bei vollem Vorrat', player.money === money);
   player.reserveAmmo = 10;
+  const expectedAmmoCost = ammoRefillCost('rifle', player.reserveAmmo);
   room.systems.build.buyAmmo('p1');
   check(
-    'Munitionskauf füllt bis zum Maximum',
-    player.money < money && player.reserveAmmo === reserveCapacity('rifle'),
-    `(${player.reserveAmmo})`,
+    'Munitionskauf füllt auf und kostet nur die fehlenden Schüsse',
+    player.money === money - expectedAmmoCost && player.reserveAmmo === reserveCapacity('rifle'),
+    `(${player.reserveAmmo} Schuss, $ ${money - player.money})`,
   );
 }
 
@@ -926,9 +933,19 @@ console.log('\n== Sonderzombies ==');
   check('Mini-Boss stürmt', brute.abilityTimers.length > 0);
   check('Explodierer detoniert', !exploder || !room.state.zombies.has(exploder[0]));
 
+  player.x = 100;
+  player.y = 100;
+  const distantTarget = { x: 2200, y: 1400 };
+  const distantZombie = room.systems.world.spawnZombie('normal', distantTarget);
+  const distantHealth = distantZombie.health;
   player.grenades = 3;
-  room.systems.players.throwGrenade('p1', { x: 1300, y: 800 });
+  room.systems.players.throwGrenade('p1', distantTarget);
   check('Granate verbraucht', player.grenades === 2);
+  check(
+    'Granate explodiert auch am anderen Ende der Karte',
+    distantZombie.health < distantHealth,
+    `(${distantZombie.health}/${distantHealth} HP)`,
+  );
 }
 
 console.log('\n== Boss-Fähigkeiten ==');

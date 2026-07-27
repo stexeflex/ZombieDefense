@@ -468,12 +468,10 @@ export class PlayerSystem {
       return;
     }
     const upgrades = runtime.upgrades;
-    let x = Number(target.x) || player.x;
-    let y = Number(target.y) || player.y;
-    const angle = Math.atan2(y - player.y, x - player.x);
-    const distance = Math.min(360, Math.hypot(x - player.x, y - player.y));
-    x = player.x + Math.cos(angle) * distance;
-    y = player.y + Math.sin(angle) * distance;
+    const targetX = Number(target.x);
+    const targetY = Number(target.y);
+    const x = Number.isFinite(targetX) ? this.world.clamp(targetX, 0, ARENA.width) : player.x;
+    const y = Number.isFinite(targetY) ? this.world.clamp(targetY, 0, ARENA.height) : player.y;
     const radius = 110 * (1 + upgrades.grenadeRadius * 0.02);
     const damage = 120 * (1 + upgrades.grenadeDamage * 0.02);
 

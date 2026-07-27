@@ -3,9 +3,10 @@
  * special perks that change a rule instead of a number.
  */
 
-import { DASH_BASE_RESIST, DASH_RESIST_STEP } from './arena.js';
+import { DASH_BASE_RESIST, DASH_RESIST_STEP, START_MONEY } from './arena.js';
 
 export interface PermanentUpgrades {
+  startMoney: number;
   maxHealth: number;
   moveSpeed: number;
   weaponDamage: number;
@@ -30,6 +31,7 @@ export interface PermanentUpgrades {
 export type UpgradeKey = keyof PermanentUpgrades;
 
 export const EMPTY_UPGRADES: PermanentUpgrades = {
+  startMoney: 0,
   maxHealth: 0,
   moveSpeed: 0,
   weaponDamage: 0,
@@ -77,6 +79,13 @@ export function upgradeLevelCost(key: UpgradeKey, level: number) {
   if (key === 'dashCharges') return 700 + level * 900;
   if (key === 'dashResist') return 500 + level * 550;
   return upgradeCost(level);
+}
+
+/** Every level provides this much extra build money at the start of a run. */
+export const START_MONEY_PER_LEVEL = 50;
+
+export function startingMoney(level: number) {
+  return START_MONEY + Math.max(0, Math.floor(level)) * START_MONEY_PER_LEVEL;
 }
 
 /** Damage reduction from armour, capped so no build becomes untouchable. */
