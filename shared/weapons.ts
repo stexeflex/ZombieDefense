@@ -17,7 +17,9 @@ export type WeaponType =
   | 'laser'
   | 'railgun'
   | 'gravity'
-  | 'nova';
+  | 'nova'
+  | 'ionstorm'
+  | 'sun';
 
 export interface WeaponConfig {
   label: string;
@@ -195,7 +197,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     acidRadius: 96,
     acidDps: 30,
     acidSeconds: 4.5,
-    description: 'Zerplatzt und lässt grüne Säurelachen zurück',
+    description: 'Zerplatzt und lässt türkise Säurelachen zurück',
   },
   lmg: {
     label: 'Maschinengewehr',
@@ -403,6 +405,46 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     splashDamage: 108,
     description: 'Fünf explosive Plasmalanzen in einer breiten Salve',
   },
+  ionstorm: {
+    label: 'Ionensturm',
+    short: 'IS',
+    cost: 10800,
+    damage: 115,
+    fireDelay: 300,
+    magazine: 36,
+    reserve: 144,
+    reload: 2900,
+    speed: 1650,
+    pellets: 3,
+    spread: 0.12,
+    pierce: 0,
+    range: 1250,
+    ammoCost: 720,
+    chain: 4,
+    chainRange: 245,
+    description: 'Drei Ionenblitze springen durch die ganze Horde',
+  },
+  sun: {
+    label: 'Sonnenwerfer',
+    short: 'SO',
+    cost: 15000,
+    damage: 200,
+    fireDelay: 2200,
+    magazine: 3,
+    reserve: 12,
+    reload: 3400,
+    speed: 720,
+    pellets: 1,
+    spread: 0.004,
+    pierce: 0,
+    range: 1500,
+    ammoCost: 980,
+    splashRadius: 290,
+    splashDamage: 980,
+    burn: 72,
+    burnSeconds: 6,
+    description: 'Schleudert eine Mini-Sonne mit gewaltigem Brandradius',
+  },
 };
 
 export const WEAPON_ORDER: WeaponType[] = [
@@ -425,6 +467,8 @@ export const WEAPON_ORDER: WeaponType[] = [
   'railgun',
   'gravity',
   'nova',
+  'ionstorm',
+  'sun',
 ];
 
 /** Upper limit for carried spare ammunition, one full resupply. */

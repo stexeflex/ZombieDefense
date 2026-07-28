@@ -251,7 +251,11 @@
               Run starten
               <span>
                 {{ activeMap().name }} ·
-                {{ snapshot.endless ? 'Endlos' : 'Welle 1 / ' + activeMap().waves.length }}
+                {{
+                  snapshot.endless
+                    ? 'Endlos · zuerst Bauphase'
+                    : 'Bauphase vor Welle 1 / ' + activeMap().waves.length
+                }}
               </span>
             </button>
           } @else {
@@ -292,12 +296,15 @@
               }}
             </span>
             <strong
-              >{{ snapshot.wave }}<em>/{{ totalLabel() }}</em></strong
+              >{{ snapshot.phase === 'build' && snapshot.wave === 0 ? 1 : snapshot.wave
+              }}<em>/{{ totalLabel() }}</em></strong
             >
             @if (snapshot.phase === 'combat') {
               <small>{{ snapshot.enemiesRemaining }} Gegner</small>
             } @else if (snapshot.phase === 'build') {
-              <small>Baut in Ruhe auf</small>
+              <small>{{
+                snapshot.wave === 0 ? 'Erste Verteidigung aufbauen' : 'Baut in Ruhe auf'
+              }}</small>
             }
           </div>
 
@@ -781,7 +788,13 @@
                 [class.ready]="game.player()?.ready"
                 (click)="toggleReady()"
               >
-                {{ game.player()?.ready ? 'Bereit ✓' : 'Bereit für nächste Welle' }}
+                {{
+                  game.player()?.ready
+                    ? 'Bereit ✓'
+                    : snapshot.wave === 0
+                      ? 'Bereit für Welle 1'
+                      : 'Bereit für nächste Welle'
+                }}
                 @if (players().length > 1) {
                   <span>{{ readyCount() }} / {{ players().length }} bereit</span>
                 } @else {
@@ -790,7 +803,7 @@
               </button>
               @if (game.isHost() && players().length > 1 && readyCount() < players().length) {
                 <button class="force-start-button" type="button" (click)="forceStartWave()">
-                  Welle jetzt starten
+                  {{ snapshot.wave === 0 ? 'Welle 1 jetzt starten' : 'Welle jetzt starten' }}
                   <span>Host-Start · unbereite Spieler werden übergangen</span>
                 </button>
               }

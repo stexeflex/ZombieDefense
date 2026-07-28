@@ -145,7 +145,7 @@ export class EffectLayer {
         if (!energyBlast) this.burst('smoke', Math.min(20, 8 + radius / 10), event.x, event.y);
         this.burst('shard', acidBurst ? 4 : 10, event.x, event.y);
         const color = acidBurst
-          ? 0xb8ff45
+          ? 0x2eeaff
           : event.s === 'gravity'
             ? 0xa67cff
             : event.s === 'nova'
@@ -262,23 +262,27 @@ export class EffectLayer {
       .setTint(
         source === 'plasma'
           ? 0x7eeaff
-          : source === 'drone'
-            ? 0x4ce0d5
-            : weapon === 'railgun'
-              ? 0xbaf7ff
-              : weapon === 'gravity'
-                ? 0xa67cff
-                : weapon === 'nova'
-                  ? 0xff9ee0
-                  : weapon === 'laser'
-                    ? 0xff8fd8
-                    : weapon === 'acid'
-                      ? 0xb8ff71
-                      : weapon === 'tesla'
-                        ? 0x9fdcff
-                        : weapon === 'cryo'
-                          ? 0xaef0ff
-                          : 0xffd489,
+          : source === 'ring' || weapon === 'sun'
+            ? 0xffd35c
+            : source === 'drone'
+              ? 0x4ce0d5
+              : weapon === 'ionstorm'
+                ? 0x62d9ff
+                : weapon === 'railgun'
+                  ? 0xbaf7ff
+                  : weapon === 'gravity'
+                    ? 0xa67cff
+                    : weapon === 'nova'
+                      ? 0xff9ee0
+                      : weapon === 'laser'
+                        ? 0xff8fd8
+                        : weapon === 'acid'
+                          ? 0x42e9ff
+                          : weapon === 'tesla'
+                            ? 0x9fdcff
+                            : weapon === 'cryo'
+                              ? 0xaef0ff
+                              : 0xffd489,
       )
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.42, 0.3)

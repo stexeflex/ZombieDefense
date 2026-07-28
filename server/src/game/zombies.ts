@@ -52,7 +52,9 @@ export class ZombieSystem {
       const target = this.world.nearestLivingPlayer(zombie.x, zombie.y);
       if (!target) return;
 
-      const angle = Math.atan2(target.y - zombie.y, target.x - zombie.x);
+      const navigation = this.navigationTarget(zombie, target.x, target.y);
+      const angle = Math.atan2(navigation.y - zombie.y, navigation.x - zombie.x);
+      const navigationDistance = Math.hypot(navigation.x - zombie.x, navigation.y - zombie.y);
       zombie.rotation = angle;
       const contact = zombie.radius + PLAYER_RADIUS;
       const distance = Math.hypot(target.x - zombie.x, target.y - zombie.y);
@@ -104,14 +106,20 @@ export class ZombieSystem {
         zombie.stuckTimer = 0;
         zombie.bestDistance = distance;
       } else if (distance > contact) {
-        this.moveZombie(zombie, stepX, stepY, target.x, target.y);
-        // Sliding along a wall can loop forever, so track real progress instead
-        // of "did it move at all".
-        if (distance < zombie.bestDistance - 3 || distance > zombie.bestDistance + 400) {
-          zombie.bestDistance = distance;
+        const moved = this.moveZombie(zombie, stepX, stepY);
+        const progress = zombie.path.length > 0 ? navigationDistance : distance;
+        if (moved && progress < zombie.bestDistance - (zombie.path.length > 0 ? 1 : 3)) {
+          zombie.bestDistance = progress;
           zombie.stuckTimer = 0;
         } else {
           zombie.stuckTimer += delta;
+          if (zombie.path.length > 0 && zombie.stuckTimer > 0.8) {
+            // A dynamic shove can invalidate the first cells of a route.
+            zombie.path = [];
+            zombie.stuckTimer = 0;
+            zombie.bestDistance = Infinity;
+            zombie.avoidSide *= -1;
+          }
         }
       } else {
         zombie.stuckTimer = 0;
@@ -195,13 +203,10 @@ export class ZombieSystem {
 
   /**
    * Being shoved into a wall would make a zombie unhittable — a bullet stops at
-   * the wall in front of it — so nothing is allowed to rest inside one. Only
-   * zombies that are deliberately phasing through after being stuck are left
-   * alone, otherwise they could never get out of a dead end.
+   * the wall in front of it — so nothing is allowed to rest inside one.
    */
   private freeFromObstacles() {
     this.world.state.zombies.forEach((zombie) => {
-      if (zombie.stuckTimer > 3) return;
       for (const rect of this.world.map.obstacles) {
         if (!this.world.circleOverlapsRect(zombie.x, zombie.y, zombie.radius, rect)) continue;
         const closestX = this.world.clamp(zombie.x, rect.x - rect.w / 2, rect.x + rect.w / 2);
@@ -302,50 +307,236 @@ export class ZombieSystem {
   }
 
   /**
-   * Walks a zombie around map obstacles. Sliding along a wall can dead-end in a
-   * corner, so a zombie that has been stuck for a while simply walks through.
+   * Local steering is cheap and handles most props. If it stops making real
+   * progress, a small A* grid supplies waypoints around larger formations.
    */
-  private moveZombie(
-    zombie: ZombieState,
-    dx: number,
-    dy: number,
-    targetX: number,
-    targetY: number,
-  ) {
+  private navigationTarget(zombie: ZombieState, targetX: number, targetY: number) {
+    if (Math.hypot(targetX - zombie.pathTargetX, targetY - zombie.pathTargetY) > 140) {
+      zombie.path = [];
+    }
+    zombie.pathTargetX = targetX;
+    zombie.pathTargetY = targetY;
+
+    if (
+      zombie.path.length > 0 &&
+      this.world.canTravel(zombie.x, zombie.y, targetX, targetY, zombie.radius)
+    ) {
+      zombie.path = [];
+      zombie.stuckTimer = 0;
+      zombie.bestDistance = Math.hypot(targetX - zombie.x, targetY - zombie.y);
+    }
+
+    while (
+      zombie.path.length > 0 &&
+      Math.hypot(zombie.path[0].x - zombie.x, zombie.path[0].y - zombie.y) <
+        Math.max(18, zombie.radius * 0.75)
+    ) {
+      zombie.path.shift();
+      zombie.bestDistance = Infinity;
+    }
+
+    if (zombie.path.length === 0 && zombie.stuckTimer > 1.2) {
+      zombie.path = this.findPath(zombie, targetX, targetY);
+      zombie.stuckTimer = 0;
+      zombie.bestDistance = Infinity;
+    }
+
+    if (zombie.path.length === 0) return { x: targetX, y: targetY };
+
+    // Skip cell-by-cell zig-zags whenever a farther waypoint is already clear.
+    for (let index = zombie.path.length - 1; index > 0; index -= 1) {
+      const waypoint = zombie.path[index];
+      if (!this.world.canTravel(zombie.x, zombie.y, waypoint.x, waypoint.y, zombie.radius)) {
+        continue;
+      }
+      zombie.path.splice(0, index);
+      zombie.bestDistance = Infinity;
+      break;
+    }
+    return zombie.path[0];
+  }
+
+  private findPath(zombie: ZombieState, targetX: number, targetY: number) {
+    const cell = 40;
+    const columns = Math.ceil(ARENA.width / cell);
+    const rows = Math.ceil(ARENA.height / cell);
+    const total = columns * rows;
+    const pointOf = (index: number) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      return {
+        x: this.world.clamp((column + 0.5) * cell, 12, ARENA.width - 12),
+        y: this.world.clamp((row + 0.5) * cell, 12, ARENA.height - 12),
+      };
+    };
+    const walkable = new Map<number, boolean>();
+    const canUse = (index: number) => {
+      const known = walkable.get(index);
+      if (known !== undefined) return known;
+      const point = pointOf(index);
+      const value = this.world.canStand(point.x, point.y, zombie.radius + 2);
+      walkable.set(index, value);
+      return value;
+    };
+    const nearestCell = (x: number, y: number, requireConnection = false) => {
+      const originColumn = this.world.clamp(Math.floor(x / cell), 0, columns - 1);
+      const originRow = this.world.clamp(Math.floor(y / cell), 0, rows - 1);
+      let best = -1;
+      let bestDistance = Infinity;
+      for (let radius = 0; radius <= 4; radius += 1) {
+        for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
+          for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
+            if (radius > 0 && Math.max(Math.abs(offsetX), Math.abs(offsetY)) !== radius) continue;
+            const column = originColumn + offsetX;
+            const row = originRow + offsetY;
+            if (column < 0 || row < 0 || column >= columns || row >= rows) continue;
+            const index = row * columns + column;
+            if (!canUse(index)) continue;
+            const point = pointOf(index);
+            if (requireConnection && !this.world.canTravel(x, y, point.x, point.y, zombie.radius)) {
+              continue;
+            }
+            const distance = Math.hypot(point.x - x, point.y - y);
+            if (distance >= bestDistance) continue;
+            best = index;
+            bestDistance = distance;
+          }
+        }
+        if (best >= 0) return best;
+      }
+      return -1;
+    };
+
+    const start = nearestCell(zombie.x, zombie.y, true);
+    const goal = nearestCell(targetX, targetY);
+    if (start < 0 || goal < 0 || start === goal) return [];
+
+    const scores = new Float64Array(total);
+    scores.fill(Infinity);
+    const previous = new Int32Array(total);
+    previous.fill(-1);
+    const closed = new Uint8Array(total);
+    const heap: Array<{ index: number; score: number }> = [];
+    const push = (entry: { index: number; score: number }) => {
+      heap.push(entry);
+      let child = heap.length - 1;
+      while (child > 0) {
+        const parent = Math.floor((child - 1) / 2);
+        if (heap[parent].score <= entry.score) break;
+        heap[child] = heap[parent];
+        child = parent;
+      }
+      heap[child] = entry;
+    };
+    const pop = () => {
+      const first = heap[0];
+      const last = heap.pop();
+      if (!last || heap.length === 0) return first;
+      let parent = 0;
+      while (true) {
+        const left = parent * 2 + 1;
+        const right = left + 1;
+        if (left >= heap.length) break;
+        const child = right < heap.length && heap[right].score < heap[left].score ? right : left;
+        if (heap[child].score >= last.score) break;
+        heap[parent] = heap[child];
+        parent = child;
+      }
+      heap[parent] = last;
+      return first;
+    };
+    const goalPoint = pointOf(goal);
+    scores[start] = 0;
+    push({
+      index: start,
+      score: Math.hypot(pointOf(start).x - goalPoint.x, pointOf(start).y - goalPoint.y),
+    });
+
+    const directions = [
+      [-1, -1],
+      [0, -1],
+      [1, -1],
+      [-1, 0],
+      [1, 0],
+      [-1, 1],
+      [0, 1],
+      [1, 1],
+    ] as const;
+    while (heap.length > 0) {
+      const currentEntry = pop();
+      if (!currentEntry) break;
+      const current = currentEntry.index;
+      if (closed[current]) continue;
+      if (current === goal) break;
+      closed[current] = 1;
+      const column = current % columns;
+      const row = Math.floor(current / columns);
+      const from = pointOf(current);
+      for (const [offsetX, offsetY] of directions) {
+        const nextColumn = column + offsetX;
+        const nextRow = row + offsetY;
+        if (nextColumn < 0 || nextRow < 0 || nextColumn >= columns || nextRow >= rows) continue;
+        const next = nextRow * columns + nextColumn;
+        if (closed[next] || !canUse(next)) continue;
+        const to = pointOf(next);
+        if (!this.world.canTravel(from.x, from.y, to.x, to.y, zombie.radius + 2)) continue;
+        const nextScore = scores[current] + Math.hypot(to.x - from.x, to.y - from.y);
+        if (nextScore >= scores[next]) continue;
+        scores[next] = nextScore;
+        previous[next] = current;
+        push({
+          index: next,
+          score: nextScore + Math.hypot(to.x - goalPoint.x, to.y - goalPoint.y),
+        });
+      }
+    }
+
+    if (previous[goal] < 0) return [];
+    const reversed: Array<{ x: number; y: number }> = [];
+    let cursor = goal;
+    while (cursor >= 0) {
+      reversed.push(pointOf(cursor));
+      if (cursor === start) break;
+      cursor = previous[cursor];
+    }
+    reversed.reverse();
+    const last = reversed[reversed.length - 1];
+    if (last && this.world.canTravel(last.x, last.y, targetX, targetY, zombie.radius)) {
+      reversed.push({ x: targetX, y: targetY });
+    }
+    return reversed;
+  }
+
+  /**
+   * Walks a zombie around map obstacles. Movement is checked in short substeps,
+   * so a fast charge cannot tunnel across a thin wall between two server ticks.
+   * When the direct line is blocked, stable angle sampling steers around the
+   * same side until the route opens again.
+   */
+  private moveZombie(zombie: ZombieState, dx: number, dy: number) {
     const apply = (stepX: number, stepY: number) => {
       zombie.x = this.world.clamp(zombie.x + stepX, 12, ARENA.width - 12);
       zombie.y = this.world.clamp(zombie.y + stepY, 12, ARENA.height - 12);
     };
+    const canTravel = (stepX: number, stepY: number) =>
+      this.world.canTravel(zombie.x, zombie.y, zombie.x + stepX, zombie.y + stepY, zombie.radius);
 
-    if (zombie.stuckTimer > 3) {
+    if (canTravel(dx, dy)) {
       apply(dx, dy);
       return true;
     }
-    if (this.world.canStand(zombie.x + dx, zombie.y + dy, zombie.radius)) {
-      apply(dx, dy);
-      return true;
-    }
-    if (this.world.canStand(zombie.x + dx, zombie.y, zombie.radius)) {
-      apply(dx, 0);
-      return true;
-    }
-    if (this.world.canStand(zombie.x, zombie.y + dy, zombie.radius)) {
-      apply(0, dy);
-      return true;
-    }
 
-    const options: Array<[number, number]> = [
-      [dy, -dx],
-      [-dy, dx],
-    ];
-    options.sort(
-      (a, b) =>
-        Math.hypot(targetX - (zombie.x + a[0]), targetY - (zombie.y + a[1])) -
-        Math.hypot(targetX - (zombie.x + b[0]), targetY - (zombie.y + b[1])),
-    );
-    for (const [slideX, slideY] of options) {
-      if (this.world.canStand(zombie.x + slideX * 1.4, zombie.y + slideY * 1.4, zombie.radius)) {
-        apply(slideX * 1.4, slideY * 1.4);
+    const length = Math.hypot(dx, dy);
+    const desired = Math.atan2(dy, dx);
+    const offsets = [15, 30, 45, 60, 75, 90, 110, 135, 160, 180];
+    for (const side of [zombie.avoidSide, -zombie.avoidSide]) {
+      for (const degrees of offsets) {
+        const angle = desired + side * ((degrees * Math.PI) / 180);
+        const stepX = Math.cos(angle) * length;
+        const stepY = Math.sin(angle) * length;
+        if (!canTravel(stepX, stepY)) continue;
+        zombie.avoidSide = side;
+        apply(stepX, stepY);
         return true;
       }
     }

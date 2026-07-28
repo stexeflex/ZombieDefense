@@ -114,11 +114,22 @@ function makeInvincible(player) {
   player.maxHealth = 1e9;
 }
 
+function startCombat(room) {
+  room.systems.waves.startRun();
+  room.systems.waves.startNextWave();
+}
+
 console.log('\n== Erste Welle auf Vorposten 07 ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   room.systems.waves.startRun();
+  check(
+    'Run beginnt mit Bauphase vor Welle 1',
+    room.state.phase === 'build' && room.state.wave === 0 && room.state.enemiesRemaining === 0,
+    `(${room.state.phase}, Welle ${room.state.wave})`,
+  );
+  room.systems.waves.startNextWave();
   check('Kampfphase gestartet', room.state.phase === 'combat');
 
   let ticks = 0;
@@ -133,11 +144,62 @@ console.log('\n== Erste Welle auf Vorposten 07 ==');
   console.log(`  info ${ticks} Ticks, ${player.kills} Abschüsse, ${player.money} $`);
 }
 
-console.log('\n== Alle Waffen treffen ==');
+console.log('\n== Sichere Spawns und Kartenwände ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   room.systems.waves.startRun();
+  player.money = 1e6;
+  player.x = 200;
+  player.y = 800;
+  room.systems.build.placeDefense('p1', { type: 'mg', x: 70, y: 800, rotation: 0 });
+  const defense = [...room.state.defenses.values()][0];
+  const entries = Array.from({ length: 80 }, () => room.systems.world.edgeSpawn(20));
+  const nearest = Math.min(
+    ...entries.map((spawn) => Math.hypot(spawn.x - defense.x, spawn.y - defense.y)),
+  );
+  check(
+    'Explodierer spawnen außerhalb ihres Schadensradius zu Bauten',
+    nearest > ZOMBIES.exploder.explode.radius,
+    `(${Math.round(nearest)} px Abstand)`,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  makeInvincible(player);
+  const wall = room.systems.world.map.obstacles.find(
+    (obstacle) => obstacle.solid && obstacle.kind === 'wall' && obstacle.w > obstacle.h,
+  );
+  const brute = room.systems.world.spawnZombie('brute', {
+    x: wall.x,
+    y: wall.y - wall.h / 2 - ZOMBIES.brute.radius - 2,
+  });
+  player.x = wall.x;
+  player.y = wall.y + 320;
+  brute.charging = 1;
+  brute.chargeSpeed = 3000;
+  room.update(50);
+  const crossedThrough =
+    brute.x > wall.x - wall.w / 2 - brute.radius &&
+    brute.x < wall.x + wall.w / 2 + brute.radius &&
+    brute.y > wall.y + wall.h / 2 + brute.radius;
+  check(
+    'Auch ein schneller Sturmangriff tunnelt nicht durch kleine Kartenwände',
+    !crossedThrough && !room.systems.world.circleOverlapsRect(brute.x, brute.y, brute.radius, wall),
+    `(${Math.round(brute.x)}, ${Math.round(brute.y)})`,
+  );
+}
+
+console.log('\n== Alle Waffen treffen ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   makeInvincible(player);
 
@@ -183,7 +245,7 @@ console.log('\n== Verteidigungen ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -232,10 +294,11 @@ for (const type of [
   'laser',
   'drone',
   'plasma',
+  'ring',
 ]) {
   const room = makeRoom('crater');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -277,7 +340,7 @@ console.log('\n== Säure, Feuer und Magnum ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   room.state.hazards.clear();
@@ -299,7 +362,7 @@ console.log('\n== Säure, Feuer und Magnum ==');
     room.update(50);
   }
   const pool = [...room.state.hazards.values()].find((hazard) => hazard.kind === 'acid');
-  check('Säure hinterlässt grüne Lachen', Boolean(pool), `(${room.state.hazards.size})`);
+  check('Säure hinterlässt türkise Lachen', Boolean(pool), `(${room.state.hazards.size})`);
   check('Säure entzündet niemanden mehr', target.burning === 0, `(${target.burning})`);
 
   runtime.input = { ...IDLE };
@@ -331,7 +394,7 @@ console.log('\n== Säure, Feuer und Magnum ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   room.state.hazards.clear();
@@ -364,7 +427,7 @@ console.log('\n== Säure, Feuer und Magnum ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   makeInvincible(player);
@@ -430,7 +493,7 @@ console.log('\n== Drohnenhangar ==');
 {
   const room = makeRoom('crater');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -494,7 +557,7 @@ console.log('\n== Fahrzeuge ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -531,7 +594,7 @@ console.log('\n== Fahrzeuge ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -588,7 +651,7 @@ console.log('\n== Fahrzeuge ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -636,7 +699,7 @@ console.log('\n== Fahrzeuge ==');
   // Bordwaffe, Bordlazarett und die fahrende Werkstatt.
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -660,7 +723,7 @@ console.log('\n== Fahrzeuge ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -687,7 +750,7 @@ console.log('\n== Fahrzeuge ==');
 
   const workshopRoom = makeRoom('outpost');
   const mechanic = join(workshopRoom, 'p1');
-  workshopRoom.systems.waves.startRun();
+  startCombat(workshopRoom);
   workshopRoom.systems.waves.finishWave();
   mechanic.money = 1e6;
   mechanic.x = 1200;
@@ -721,7 +784,7 @@ console.log('\n== Fahrzeuge ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -741,7 +804,7 @@ console.log('\n== Fahrzeuge ==');
   const heavyRoom = makeRoom('outpost');
   const heavyPlayer = join(heavyRoom, 'p1');
   const heavyRuntime = heavyRoom.systems.world.runtime.get('p1');
-  heavyRoom.systems.waves.startRun();
+  startCombat(heavyRoom);
   heavyRoom.systems.waves.finishWave();
   heavyPlayer.money = 1e6;
   heavyPlayer.x = 1200;
@@ -760,7 +823,7 @@ console.log('\n== Fahrzeuge ==');
   // Zombies reißen die Hülle auf, statt durch sie hindurchzulaufen.
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -826,7 +889,7 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -900,7 +963,7 @@ console.log('\n== Neue Barrikaden ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -976,7 +1039,7 @@ console.log('\n== Freie Ecken und sichere Zombie-Einstiege ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 100;
@@ -1023,7 +1086,7 @@ console.log('\n== Besondere Vorteile ==');
   const player = join(room, 'p1', {
     perks: { starterWeapon: true, starterBarricade: true, starterTurret: true, engineer: true },
   });
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
   player.x = 1200;
@@ -1086,7 +1149,7 @@ console.log('\n== Dash ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1', { upgrades: { dashCharges: 2 } });
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = ['normal'];
   room.systems.waves.spawnDelay = 1e6;
   room.state.zombies.clear();
@@ -1131,7 +1194,7 @@ console.log('\n== Dash ==');
   const maxResist = upgradeMaxLevel('dashResist');
   const player = join(room, 'p1', { upgrades: { dashResist: maxResist } });
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = ['normal'];
   room.systems.waves.spawnDelay = 1e6;
   room.state.zombies.clear();
@@ -1158,7 +1221,7 @@ console.log('\n== Stoßdash ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1', { perks: { dashShock: true } });
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = ['normal'];
   room.systems.waves.spawnDelay = 1e6;
   room.state.zombies.clear();
@@ -1190,7 +1253,7 @@ console.log('\n== Klingendash und Schild ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1', { perks: { dashBlades: true }, upgrades: { dashShield: 50 } });
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = ['normal'];
   room.systems.waves.spawnDelay = 1e6;
   room.state.zombies.clear();
@@ -1253,7 +1316,7 @@ console.log('\n== Klingendash und Schild ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = ['normal'];
   room.systems.waves.spawnDelay = 1e6;
   room.state.zombies.clear();
@@ -1274,7 +1337,7 @@ console.log('\n== Frostkanone bremst ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = ['normal'];
   room.systems.waves.spawnDelay = 1e6;
   room.state.zombies.clear();
@@ -1324,7 +1387,7 @@ console.log('\n== Treffer im Dash klingt anders ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1', { upgrades: { dashResist: upgradeMaxLevel('dashResist') } });
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.systems.waves.spawnDelay = 1e6;
   room.state.zombies.clear();
@@ -1388,7 +1451,7 @@ console.log('\n== Geld wird gleich geteilt ==');
   const room = makeRoom('outpost');
   const shooter = join(room, 'p1');
   const helper = join(room, 'p2');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   shooter.money = 0;
@@ -1436,7 +1499,7 @@ console.log('\n== Upgrades aus der Lobby ==');
   check('Der Vorteil kommt mit', player.grenades === 4, `(${player.grenades})`);
   check('Startkapital steigt pro Stufe', player.money === startingMoney(3), `($ ${player.money})`);
 
-  room.systems.waves.startRun();
+  startCombat(room);
   check(
     'Der Run übernimmt die Werte',
     player.maxHealth === 120 && player.dashMax === 4 && player.money === startingMoney(3),
@@ -1449,7 +1512,7 @@ console.log('\n== Lebensregeneration ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1', { upgrades: { healthRegen: 10 } });
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = ['normal'];
   room.systems.waves.spawnDelay = 1e6;
   player.health = 50;
@@ -1469,7 +1532,7 @@ console.log('\n== Wellenende heilt den Trupp ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   player.health = 1;
   player.alive = false;
   player.reviveProgress = 0.4;
@@ -1506,6 +1569,9 @@ console.log('\n== Host-Start und sicherer Rejoin ==');
     room.requestStart('guest') === false &&
       room.state.phase === 'lobby' &&
       room.requestStart('host') === true &&
+      room.state.phase === 'build' &&
+      room.state.wave === 0 &&
+      room.requestStart('host') === true &&
       room.state.phase === 'combat',
   );
   room.systems.waves.finishWave();
@@ -1527,6 +1593,7 @@ console.log('\n== Host-Start und sicherer Rejoin ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   join(room, 'anchor');
+  room.requestStart('p1');
   room.requestStart('p1');
   room.systems.waves.finishWave();
   player.x = 1200;
@@ -1563,7 +1630,7 @@ console.log('\n== Endlosmodus ==');
     `(${room.state.totalWaves})`,
   );
 
-  room.systems.waves.startRun();
+  startCombat(room);
   makeInvincible(player);
   // Direkt vor die letzte geplante Welle setzen, statt alle zu spielen.
   room.state.wave = map.waves.length;
@@ -1617,7 +1684,7 @@ console.log('\n== Endlosmodus ==');
   room.broadcast = (type, payload) => {
     if (type === 'permanent_reward') reward = payload;
   };
-  room.systems.waves.startRun();
+  startCombat(room);
   makeInvincible(player);
   room.state.wave = map.waves.length;
   room.state.zombies.clear();
@@ -1645,7 +1712,7 @@ console.log('\n== Freiwilliger Run-Ausstieg ==');
   const room = makeRoom(map.id);
   const player = join(room, 'p1');
   const teammate = join(room, 'p2');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.state.wave = 7;
   const reward = room.systems.waves.currentReward(false);
   check(
@@ -1672,7 +1739,7 @@ console.log('\n== Kampagnenlohn bei Niederlage ==');
   room.broadcast = (type, payload) => {
     if (type === 'permanent_reward') reward = payload;
   };
-  room.systems.waves.startRun();
+  startCombat(room);
   room.state.wave = map.waves.length - 1;
   player.health = 0;
   player.alive = false;
@@ -1696,7 +1763,7 @@ console.log('\n== Arsenal ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.finishWave();
   player.money = 1e6;
 
@@ -1794,7 +1861,7 @@ console.log('\n== Feuerrate ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   // Ein Eintrag in der Warteschlange hält die Welle offen, die riesige
   // Spawn-Pause sorgt dafür, dass trotzdem kein Gegner auftaucht.
   room.systems.waves.spawnQueue = ['normal'];
@@ -1838,7 +1905,7 @@ console.log('\n== Sonderzombies ==');
 {
   const room = makeRoom('crater');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   makeInvincible(player);
@@ -1888,7 +1955,7 @@ console.log('\n== Boss-Fähigkeiten ==');
   // Warnkreis: der Zerreißer kündigt seine Druckwelle an, bevor sie trifft.
   const room = makeRoom('citadel');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   makeInvincible(player);
@@ -1911,7 +1978,7 @@ console.log('\n== Boss-Fähigkeiten ==');
   // Lavapfützen bleiben liegen und tun weh.
   const room = makeRoom('foundry');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   player.x = 1200;
@@ -1931,7 +1998,7 @@ console.log('\n== Boss-Fähigkeiten ==');
   // Die Brutmutter zerfällt in Brutlinge.
   const room = makeRoom('harbor');
   join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   const brood = room.systems.world.spawnZombie('brood', { x: 1200, y: 800 });
@@ -1947,7 +2014,7 @@ console.log('\n== Boss-Fähigkeiten ==');
   // Der Feldmarschall flickt seine Horde zusammen.
   const room = makeRoom('base');
   join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   const warlord = room.systems.world.spawnZombie('warlord', { x: 1200, y: 800 });
@@ -1962,7 +2029,7 @@ console.log('\n== Boss-Fähigkeiten ==');
   // Der Sogfürst zieht den Trupp zu sich.
   const room = makeRoom('subway');
   const player = join(room, 'p1');
-  room.systems.waves.startRun();
+  startCombat(room);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   makeInvincible(player);
@@ -1996,7 +2063,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
     `(${(ZOMBIES.omega.abilities ?? []).length})`,
   );
   check('Vier Mini-Bosse plus Brutling', MINI_BOSSES.length === 4);
-  check('Dreizehn Türme', TURRET_ORDER.length === 13, `(${TURRET_ORDER.length})`);
+  check('Vierzehn Türme', TURRET_ORDER.length === 14, `(${TURRET_ORDER.length})`);
   const swarmWaves = MAPS.flatMap((map) => map.waves).filter((wave) => wave.kind === 'swarm');
   check('Schwarmwellen sind eingeplant', swarmWaves.length > 0, `(${swarmWaves.length})`);
 }
@@ -2017,7 +2084,7 @@ MAPS.forEach((map, mapIndex) => {
       magazineSize: Math.min(40, mapIndex * 5),
     },
   });
-  room.systems.waves.startRun();
+  startCombat(room);
 
   let ticks = 0;
   let waveStart = 0;

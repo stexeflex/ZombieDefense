@@ -271,8 +271,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists nineteen weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(19);
+  it('lists twenty-one weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(21);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -300,6 +300,11 @@ describe('weapon balance', () => {
     expect(WEAPONS.gravity.slow).toBeGreaterThan(0);
     expect(WEAPONS.nova.pellets).toBeGreaterThan(1);
     expect(WEAPONS.nova.splashRadius).toBeGreaterThan(0);
+    expect(WEAPONS.ionstorm.pellets).toBeGreaterThan(1);
+    expect(WEAPONS.ionstorm.chain).toBeGreaterThan(0);
+    expect(WEAPONS.sun.splashRadius).toBeGreaterThan(WEAPONS.rocket.splashRadius!);
+    expect(WEAPONS.sun.burnSeconds).toBeGreaterThan(WEAPONS.firerocket.burnSeconds!);
+    expect(WEAPONS.sun.cost).toBeGreaterThan(WEAPONS.ionstorm.cost);
   });
 
   it('lets acid leave puddles instead of setting anything on fire', () => {
@@ -361,9 +366,9 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers six barricades and thirteen turrets', () => {
+  it('offers six barricades and fourteen turrets', () => {
     expect(BARRICADE_ORDER).toHaveLength(6);
-    expect(TURRET_ORDER).toHaveLength(13);
+    expect(TURRET_ORDER).toHaveLength(14);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
   });
@@ -411,6 +416,9 @@ describe('defenses', () => {
       (DEFENSES.laser.damage! / DEFENSES.laser.fireDelay!) * 2.5,
     );
     expect(DEFENSES.plasma.pierce!).toBeGreaterThan(DEFENSES.laser.pierce!);
+    expect(DEFENSES.ring.radialShots).toBe(24);
+    expect(DEFENSES.ring.fireDelay!).toBeGreaterThan(DEFENSES.launcher.fireDelay!);
+    expect(DEFENSES.ring.damage!).toBeGreaterThan(DEFENSES.plasma.damage!);
   });
 
   it('keeps the three barrels on the tower and the drones in the hangar', () => {

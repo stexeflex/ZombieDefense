@@ -1228,6 +1228,7 @@ export class ArenaScene extends Phaser.Scene {
   private createHazard(hazard: HazardSnapshot): HazardView {
     const style = HAZARD_STYLE[hazard.kind] ?? HAZARD_STYLE['warning'];
     const warning = hazard.kind === 'warning';
+    const friendlyAcid = hazard.kind === 'acid';
     const pool = this.add
       .image(0, 0, 'fx-pool')
       .setDisplaySize(hazard.r * 2, hazard.r * 2)
@@ -1237,7 +1238,7 @@ export class ArenaScene extends Phaser.Scene {
     const fill = this.add.circle(0, 0, 1, style.tint, 0.28).setVisible(warning);
     const ring = this.add
       .circle(0, 0, hazard.r)
-      .setStrokeStyle(warning ? 4 : 2, style.tint, warning ? 0.95 : 0.5);
+      .setStrokeStyle(warning || friendlyAcid ? 4 : 2, style.tint, warning ? 0.95 : 0.65);
 
     const root = this.add
       .container(hazard.x, hazard.y, [pool, fill, ring])
@@ -1283,6 +1284,9 @@ export class ArenaScene extends Phaser.Scene {
       if (view.kind === 'pull') {
         view.ring.setStrokeStyle(2, 0x4ce0d5, 0.35 + Math.sin(view.pulse * 9) * 0.2);
         continue;
+      }
+      if (view.kind === 'acid') {
+        view.ring.setStrokeStyle(4, 0x8ff5ff, 0.55 + Math.sin(view.pulse * 7) * 0.3);
       }
       view.pool.setScale(
         (view.radius * 2 * (1 + Math.sin(view.pulse * 2.2) * 0.03)) / 128,

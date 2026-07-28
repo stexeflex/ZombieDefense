@@ -78,6 +78,12 @@ export class ZombieState extends Schema {
   attackCooldown = 0;
   stuckTimer = 0;
   bestDistance = Infinity;
+  /** Stable side used while steering around an obstacle, avoids left/right jitter. */
+  avoidSide = 1;
+  /** Temporary grid route around map geometry; authoritative but not networked. */
+  path: Array<{ x: number; y: number }> = [];
+  pathTargetX = 0;
+  pathTargetY = 0;
   lastAttacker = '';
   burnDps = 0;
   slowFactor = 1;

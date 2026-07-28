@@ -38,6 +38,8 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   railgun: 62,
   gravity: 50,
   nova: 52,
+  ionstorm: 54,
+  sun: 60,
 };
 
 export const OBSTACLE_TEXTURE_SIZE: Record<ObstacleKind, { w: number; h: number }> = {
@@ -333,12 +335,12 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     fillRounded(ctx, 24, 18, 8, 14, 2, '#2b3630');
   },
   acid: (ctx) => {
-    fillRounded(ctx, 1, 7, 20, 19, 7, '#294c33', '#102016', 2);
-    circle(ctx, 11, 16, 6, '#65c96f', '#b9ff8f', 1.5);
-    fillRounded(ctx, 18, 10, 28, 9, 3, '#3d5142', '#142019', 1.5);
-    fillRounded(ctx, 44, 8, 14, 13, 5, '#5e8a57', '#142019', 1.5);
-    circle(ctx, 56, 14.5, 4, '#b8ff71');
-    fillRounded(ctx, 22, 18, 8, 13, 2, '#29382d');
+    fillRounded(ctx, 1, 7, 20, 19, 7, '#17485a', '#071b24', 2);
+    circle(ctx, 11, 16, 6, '#2eaec4', '#8ff5ff', 1.5);
+    fillRounded(ctx, 18, 10, 28, 9, 3, '#315866', '#0d2028', 1.5);
+    fillRounded(ctx, 44, 8, 14, 13, 5, '#3d8795', '#0d2028', 1.5);
+    circle(ctx, 56, 14.5, 4, '#42e9ff');
+    fillRounded(ctx, 22, 18, 8, 13, 2, '#183743');
   },
   lmg: (ctx) => {
     fillRounded(ctx, 2, 9, 44, 10, 3, '#333d38', '#111815', 1.5);
@@ -418,6 +420,31 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     }
     circle(ctx, 35, 15, 6, '#ff9ee0', '#ffd7f1', 1.5);
     fillRounded(ctx, 14, 20, 9, 12, 2, '#2d1c2c');
+  },
+  ionstorm: (ctx) => {
+    fillRounded(ctx, 1, 7, 34, 16, 6, '#18344d', '#07131e', 2);
+    circle(ctx, 19, 15, 8, '#245a79', '#62d9ff', 2);
+    for (const y of [7, 14, 21]) {
+      fillRounded(ctx, 32, y, 27, 4, 2, '#4f91b5', '#102b3d', 1.2);
+      circle(ctx, 59, y + 2, 3.5, '#baf5ff', '#62d9ff', 1.2);
+    }
+    fillRounded(ctx, 10, 21, 9, 11, 2, '#122b3d');
+  },
+  sun: (ctx) => {
+    fillRounded(ctx, 1, 6, 43, 19, 8, '#50351b', '#1b0e05', 2);
+    fillRounded(ctx, 40, 9, 24, 12, 5, '#94632a', '#2a1608', 2);
+    circle(ctx, 61, 15, 7, '#ffb52e', '#fff1a3', 2);
+    circle(ctx, 18, 15, 8, '#6f431d', '#ffd35c', 2);
+    ctx.strokeStyle = '#ffd35c';
+    ctx.lineWidth = 2;
+    for (let index = 0; index < 6; index += 1) {
+      const angle = (index * Math.PI) / 3;
+      ctx.beginPath();
+      ctx.moveTo(18 + Math.cos(angle) * 9, 15 + Math.sin(angle) * 9);
+      ctx.lineTo(18 + Math.cos(angle) * 12, 15 + Math.sin(angle) * 12);
+      ctx.stroke();
+    }
+    fillRounded(ctx, 9, 23, 10, 9, 2, '#352212');
   },
 };
 
@@ -805,10 +832,10 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     circle(ctx, 52, 18.5, 2.5, '#ffd591');
   },
   acid: (ctx) => {
-    fillRounded(ctx, 0, 5, 22, 17, 6, '#294932', '#102016', 2);
-    circle(ctx, 10, 13, 6, '#4fae5d', '#b8ff71', 2);
-    fillRounded(ctx, 20, 9, 26, 9, 3, '#55765a', '#16251a', 2);
-    circle(ctx, 46, 13.5, 5, '#a6f06e', '#d8ff9a', 1.5);
+    fillRounded(ctx, 0, 5, 22, 17, 6, '#174454', '#071b24', 2);
+    circle(ctx, 10, 13, 6, '#289aae', '#42e9ff', 2);
+    fillRounded(ctx, 20, 9, 26, 9, 3, '#3d7180', '#0d2028', 2);
+    circle(ctx, 46, 13.5, 5, '#5eeeff', '#c9fbff', 1.5);
   },
   tesla: (ctx) => {
     fillRounded(ctx, 0, 8, 24, 10, 4, '#2b3a4a', '#101820', 2);
@@ -845,6 +872,21 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     ctx.stroke();
     circle(ctx, 53, 13, 6, '#72ddff', '#e2fbff', 2);
     circle(ctx, 11, 14, 5, '#16243a', '#7eeaff', 2);
+  },
+  ring: (ctx) => {
+    circle(ctx, 17, 13, 11, '#4b3519', '#ffd35c', 2.5);
+    circle(ctx, 17, 13, 5, '#fff1a3', '#ffb52e', 1.5);
+    ctx.strokeStyle = '#c58a37';
+    ctx.lineWidth = 4;
+    for (let index = 0; index < 6; index += 1) {
+      const angle = (index * Math.PI) / 3;
+      ctx.beginPath();
+      ctx.moveTo(17 + Math.cos(angle) * 9, 13 + Math.sin(angle) * 9);
+      ctx.lineTo(17 + Math.cos(angle) * 20, 13 + Math.sin(angle) * 20);
+      ctx.stroke();
+    }
+    fillRounded(ctx, 32, 9, 23, 8, 3, '#8b6634', '#2a1a0b', 1.5);
+    circle(ctx, 54, 13, 4, '#ffd35c', '#fff1a3', 1.5);
   },
 };
 
@@ -1337,13 +1379,14 @@ export function createGameTextures(scene: Phaser.Scene) {
     scatter: '#d4b16a',
     marksman: '#8fffc1',
     shotgun: '#ffd591',
-    acid: '#b8ff71',
+    acid: '#42e9ff',
     tesla: '#9fdcff',
     launcher: '#ff8f5a',
     triple: '#c9f7a8',
     drone: '#4ce0d5',
     laser: '#ff8fd8',
     plasma: '#7eeaff',
+    ring: '#ffd35c',
   };
   for (const [type, painter] of Object.entries(TURRET_GUN_PAINTERS)) {
     const config = DEFENSES[type as DefenseType];

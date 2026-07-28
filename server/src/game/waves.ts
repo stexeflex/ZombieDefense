@@ -55,7 +55,13 @@ export class WaveSystem {
     state.wave = 0;
     this.clearRunField();
     this.resetPlayers();
-    this.startNextWave();
+    // The squad gets the same untimed preparation phase before wave one that
+    // it gets between later waves. The host can still skip the ready votes.
+    state.phase = 'build';
+    state.waveKind = 'normal';
+    state.waveLabel = 'Welle';
+    state.enemiesRemaining = 0;
+    state.statusText = 'Bauphase vor Welle 1 · Baut eure erste Verteidigung';
   }
 
   /** Put the whole connected squad back into the shared pre-run lobby. */

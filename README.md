@@ -28,11 +28,11 @@ Aufruf kann das Laden deshalb kurz dauern.
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
 - dreizehn Zombiearten plus zehn Bosse
-- neunzehn Waffen von der Pistole bis zur Nova-Kanone, darunter Railgun und
-  Gravitationswerfer für teure Endgame-Builds
+- einundzwanzig Waffen von der Pistole bis zum Sonnenwerfer, darunter
+  Ionensturm und Gravitationswerfer für sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- sechs Barrikaden und dreizehn Türme vom günstigen MG bis zur Plasma-Bastion,
+- sechs Barrikaden und vierzehn Türme vom günstigen MG bis zum Donnerkranz,
   inklusive Drohnenhangar mit drei fliegenden Jagddrohnen
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
   mehrere Spieler; langsamere, deutlich robustere Hüllen machen Insassen
@@ -43,8 +43,8 @@ Aufruf kann das Laden deshalb kurz dauern.
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
 - Munition, Reparieren und Verkaufen im Bau-Shop
-- die Bauphase hat keine Uhr: alle können sich bereit melden, der Host kann die
-  nächste Welle bei Bedarf trotzdem sofort starten
+- vor Welle 1 und zwischen allen späteren Wellen gibt es eine Bauphase ohne Uhr:
+  alle können sich bereit melden, der Host kann die Welle trotzdem sofort starten
 - am Wellenende wird der ganze Trupp geheilt und wieder aufgestellt
 - automatische Wiederbelebung gefallener Spieler durch kurzes Danebenstehen
 - freie WASD-/Pfeiltasten-Kamera, solange der eigene Spieler am Boden liegt
@@ -102,45 +102,48 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 
 ### Waffen
 
-| Waffe                | Preis | Besonderheit                                       |
-| -------------------- | ----- | -------------------------------------------------- |
-| Pistole              | 0     | Startwaffe                                         |
-| Maschinenpistole     | 450   | sehr hohe Feuerrate                                |
-| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner              |
-| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz                |
-| Nagelwerfer          | 1400  | schwere Nägel durchbohren mehrere Gegner           |
-| Schwere Magnum       | 1550  | harter Einzeltreffer, durchschlägt niemanden       |
-| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner              |
-| Säurewerfer          | 2000  | zerplatzt und lässt grüne Säurelachen liegen       |
-| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                              |
-| Elefantenbüchse      | 2500  | zwölf Schuss, 720 Schaden pro Treffer              |
-| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand            |
-| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner   |
-| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                           |
-| Feuer-Raketenwerfer  | 3600  | Feuerexplosion, die weiterbrennt                   |
-| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner              |
-| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner             |
-| Railgun              | 5700  | Magnetgeschoss durchbohrt bis zu vierzehn Gegner   |
-| Gravitationswerfer   | 6600  | zieht Horden in eine verlangsamende Singularität   |
-| Nova-Kanone          | 7600  | fünf explosive Plasmalanzen in einer breiten Salve |
+| Waffe                | Preis | Besonderheit                                        |
+| -------------------- | ----- | --------------------------------------------------- |
+| Pistole              | 0     | Startwaffe                                          |
+| Maschinenpistole     | 450   | sehr hohe Feuerrate                                 |
+| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner               |
+| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz                 |
+| Nagelwerfer          | 1400  | schwere Nägel durchbohren mehrere Gegner            |
+| Schwere Magnum       | 1550  | harter Einzeltreffer, durchschlägt niemanden        |
+| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner               |
+| Säurewerfer          | 2000  | lässt klar türkise, verbündete Säurelachen liegen   |
+| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                               |
+| Elefantenbüchse      | 2500  | zwölf Schuss, 720 Schaden pro Treffer               |
+| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand             |
+| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner    |
+| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                            |
+| Feuer-Raketenwerfer  | 3600  | Feuerexplosion, die weiterbrennt                    |
+| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner               |
+| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner              |
+| Railgun              | 5700  | Magnetgeschoss durchbohrt bis zu vierzehn Gegner    |
+| Gravitationswerfer   | 6600  | zieht Horden in eine verlangsamende Singularität    |
+| Nova-Kanone          | 7600  | fünf explosive Plasmalanzen in einer breiten Salve  |
+| Ionensturm           | 10800 | drei Blitze springen gleichzeitig durch die Horde   |
+| Sonnenwerfer         | 15000 | Mini-Sonne mit riesigem Brand- und Explosionsradius |
 
 ### Türme
 
-| Turm                | Preis | Besonderheit                                      |
-| ------------------- | ----- | ------------------------------------------------- |
-| MG-Turm             | 700   | Dauerfeuer auf mittlere Distanz                   |
-| Brandturm           | 1000  | kurze Reichweite, setzt ganze Gruppen in Brand    |
-| Frostturm           | 1200  | friert Reihen ein und bremst sie stark            |
-| Schrottschleuder    | 1350  | breite, günstige Schrottsalve                     |
-| Scharfschützenturm  | 1500  | weite Reichweite, durchschlägt Reihen             |
-| Schrotflinten-Turm  | 1650  | acht schwere Kugeln auf kurze Distanz             |
-| Säureturm           | 1750  | ätzender Flächenschaden über Zeit                 |
-| Blitzturm           | 1900  | Blitz springt auf drei Nachbarn über              |
-| Raketenturm         | 2200  | Sprengraketen gegen Gruppen                       |
-| Dreifachschuss-Turm | 2750  | drei gebuffte Läufe bekämpfen verschiedene Ziele  |
-| Laserturm           | 3200  | Endgame: durchschlägt Reihen auf weite Distanz    |
-| Drohnenhangar       | 3600  | drei fliegende Jagddrohnen verfolgen Gegner       |
-| Plasma-Bastion      | 6800  | Luxus-Endgame, deutlich stärker als der Laserturm |
+| Turm                | Preis | Besonderheit                                       |
+| ------------------- | ----- | -------------------------------------------------- |
+| MG-Turm             | 700   | Dauerfeuer auf mittlere Distanz                    |
+| Brandturm           | 1000  | kurze Reichweite, setzt ganze Gruppen in Brand     |
+| Frostturm           | 1200  | friert Reihen ein und bremst sie stark             |
+| Schrottschleuder    | 1350  | breite, günstige Schrottsalve                      |
+| Scharfschützenturm  | 1500  | weite Reichweite, durchschlägt Reihen              |
+| Schrotflinten-Turm  | 1650  | acht schwere Kugeln auf kurze Distanz              |
+| Säureturm           | 1750  | ätzender Flächenschaden über Zeit                  |
+| Blitzturm           | 1900  | Blitz springt auf drei Nachbarn über               |
+| Raketenturm         | 2200  | Sprengraketen gegen Gruppen                        |
+| Dreifachschuss-Turm | 2750  | drei gebuffte Läufe bekämpfen verschiedene Ziele   |
+| Laserturm           | 3200  | Endgame: durchschlägt Reihen auf weite Distanz     |
+| Drohnenhangar       | 3600  | drei fliegende Jagddrohnen verfolgen Gegner        |
+| Plasma-Bastion      | 6800  | Luxus-Endgame, deutlich stärker als der Laserturm  |
+| Donnerkranz         | 9800  | 24 schwere Geschosse in einer langsamen 360°-Salve |
 
 ### Fahrzeuge
 
@@ -245,9 +248,9 @@ Lebens und schmilzt danach von selbst wieder weg — es lohnt sich also nur, wer
 weiter in die Horde dasht. Unter dem Leben zeigt ein blauer Balken, wie viel noch
 steht, auch über den Köpfen der Mitspieler.
 
-In der Bauphase wird im Seitenmenü zwischen Waffen, Barrikaden, Türmen und
-Fahrzeugen gewechselt, ein Bauteil ausgewählt und danach auf dem Spielfeld
-platziert.
+Jeder Run beginnt mit einer Bauphase vor Welle 1. Im Seitenmenü wird zwischen
+Waffen, Barrikaden, Türmen und Fahrzeugen gewechselt, ein Bauteil ausgewählt und
+danach auf dem Spielfeld platziert.
 Spieler können sich dabei weiterhin bewegen. Die Vorschau rastet an
 Nachbarbauten und Hindernissen ein, sodass Wände lückenlos entstehen; rot
 bedeutet, dass dort nicht gebaut werden kann. Mit dem Start der Welle fällt die
@@ -266,6 +269,10 @@ Wellen wird der Trupp voll geheilt, Gefallene stehen wieder auf. Zum
 Wiederbeleben mitten in der Welle genügt es, kurz neben einem gefallenen
 Mitspieler stehen zu bleiben. Sound und Musik lassen sich oben rechts
 abschalten.
+
+Verbündete Säure ist auf dem Spielfeld leuchtend türkis und von einem dicken,
+pulsierenden Ring umgeben. Gegnerisches Gift bleibt grün, sodass die beiden
+Bodeneffekte auch mitten in einer Horde sofort auseinanderzuhalten sind.
 
 ## Geld und Fortschritt
 

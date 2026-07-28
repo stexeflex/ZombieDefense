@@ -20,7 +20,8 @@ export type DefenseType =
   | 'triple'
   | 'laser'
   | 'drone'
-  | 'plasma';
+  | 'plasma'
+  | 'ring';
 
 export interface DefenseConfig {
   label: string;
@@ -63,6 +64,8 @@ export interface DefenseConfig {
   spread?: number;
   /** How many different zombies this turret attacks per volley. */
   targets?: number;
+  /** Equally spaced shots fired around the complete circle in one volley. */
+  radialShots?: number;
   /** Flying drones this building keeps in the air; it has no gun of its own. */
   drones?: number;
   /** How fast a drone flies and how far it shoots from where it hovers. */
@@ -258,7 +261,7 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     acidRadius: 92,
     acidDps: 14,
     acidSeconds: 3.5,
-    description: 'Ätzt grüne Lachen in den Boden, die weiter fressen',
+    description: 'Ätzt türkise Lachen in den Boden, die weiter fressen',
   },
   tesla: {
     label: 'Blitzturm',
@@ -358,6 +361,22 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     pierce: 9,
     description: 'Luxus-Endgame: vernichtet mit Plasma ganze Reihen auf maximale Distanz',
   },
+  ring: {
+    label: 'Donnerkranz',
+    short: '☼',
+    kind: 'turret',
+    cost: 9800,
+    health: 900,
+    width: 62,
+    height: 62,
+    damage: 240,
+    fireDelay: 4.8,
+    range: 720,
+    speed: 1050,
+    pierce: 2,
+    radialShots: 24,
+    description: 'Sehr langsam: feuert 24 schwere Geschosse im kompletten Kreis',
+  },
 };
 
 export const BARRICADE_ORDER: DefenseType[] = [
@@ -382,6 +401,7 @@ export const TURRET_ORDER: DefenseType[] = [
   'laser',
   'drone',
   'plasma',
+  'ring',
 ];
 
 /** How far from the player a new structure may be placed. */

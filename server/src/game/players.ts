@@ -50,6 +50,8 @@ const PROJECTILE_RADIUS: Partial<Record<WeaponType, number>> = {
   flamer: 13,
   cryo: 10,
   railgun: 11,
+  ionstorm: 8,
+  sun: 12,
 };
 
 /** Movement, shooting, reloading, dashing, grenades and picking each other up. */

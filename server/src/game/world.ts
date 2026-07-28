@@ -76,6 +76,8 @@ const MAX_FX_PER_SNAPSHOT = 56;
  * so an emptied magazine can never swallow a boss warning ring.
  */
 const MAX_HAZARDS = 60;
+/** Extra empty ground between an edge spawn and anything the squad placed. */
+const SPAWN_STRUCTURE_CLEARANCE = 120;
 
 export const EMPTY_INPUT: PlayerInput = {
   up: false,
@@ -307,10 +309,14 @@ export class GameWorld {
     const entryY = this.clamp(candidate.y, 12, ARENA.height - 12);
     if (!this.canStand(entryX, entryY, radius + 10)) return false;
     for (const defense of this.state.defenses.values()) {
-      if (this.circleOverlapsDefense(entryX, entryY, radius + 18, defense)) return false;
+      if (this.circleOverlapsDefense(entryX, entryY, radius + SPAWN_STRUCTURE_CLEARANCE, defense)) {
+        return false;
+      }
     }
     for (const vehicle of this.state.vehicles.values()) {
-      if (circleOverlapsVehicle(entryX, entryY, radius + 18, vehicle)) return false;
+      if (circleOverlapsVehicle(entryX, entryY, radius + SPAWN_STRUCTURE_CLEARANCE, vehicle)) {
+        return false;
+      }
     }
     if (!avoidPlayers) return true;
     return this.livingPlayers().every(
@@ -623,6 +629,23 @@ export class GameWorld {
   canStand(x: number, y: number, radius: number) {
     for (const obstacle of this.map.obstacles) {
       if (this.circleOverlapsRect(x, y, radius, obstacle)) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Continuous-enough body sweep for fast movers. Sampling at a fraction of
+   * the body radius prevents a thin obstacle from fitting between two checks.
+   */
+  canTravel(x1: number, y1: number, x2: number, y2: number, radius: number) {
+    const distance = Math.hypot(x2 - x1, y2 - y1);
+    const stride = Math.max(4, radius * 0.25);
+    const steps = Math.max(1, Math.ceil(distance / stride));
+    for (let step = 1; step <= steps; step += 1) {
+      const progress = step / steps;
+      if (!this.canStand(x1 + (x2 - x1) * progress, y1 + (y2 - y1) * progress, radius)) {
+        return false;
+      }
     }
     return true;
   }
