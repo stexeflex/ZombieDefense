@@ -1,13 +1,10 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
-  DASH_RESIST_STEP,
   EMPTY_PERKS,
   EMPTY_UPGRADES,
   MAPS,
   PERK_COST,
   UPGRADE_REQUIRES,
-  VEHICLE_ARMOR_STEP,
-  VEHICLE_MAX_ARMOR_REDUCTION,
   upgradeLevelCost,
   upgradeMaxLevel,
   upgradeUnlocked,
@@ -16,162 +13,15 @@ import {
   type PerkKey,
   type UpgradeKey,
 } from '../../../shared/game-types';
+import { PERK_DEFINITIONS } from './upgrade-catalog';
 
+export {
+  PERK_DEFINITIONS,
+  UPGRADE_DEFINITIONS,
+  UPGRADE_GROUPS,
+  upgradeCurrentValue,
+} from './upgrade-catalog';
 export type { PerkKey, UpgradeKey };
-
-export interface UpgradeDefinition {
-  key: UpgradeKey;
-  label: string;
-  description: string;
-  icon: string;
-}
-
-export interface PerkDefinition {
-  key: PerkKey;
-  label: string;
-  description: string;
-  icon: string;
-}
-
-export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
-  {
-    key: 'healthRegen',
-    label: 'Lebensregeneration',
-    description: '+0,25 Leben pro Sekunde',
-    icon: '+',
-  },
-  { key: 'startMoney', label: 'Startkapital', description: '+$ 50 Startgeld', icon: '$' },
-  {
-    key: 'maxHealth',
-    label: 'Maximales Spielerleben',
-    description: '+2 % maximales Leben',
-    icon: '♥',
-  },
-  { key: 'armor', label: 'Panzerung', description: '−1 % Schaden (max. −35 %)', icon: '⛨' },
-  { key: 'moveSpeed', label: 'Bewegung', description: '+2 % Tempo', icon: '➜' },
-  { key: 'dashCharges', label: 'Zusätzlicher Dash', description: '+1 Dash-Ladung', icon: '»' },
-  { key: 'dashRecharge', label: 'Dash-Aufladung', description: '+2 % schneller', icon: '◌' },
-  { key: 'dashDamage', label: 'Dash-Schaden', description: '+2 % Schaden im Dash', icon: '✧' },
-  { key: 'dashShield', label: 'Dash-Schild', description: '+2 % Schild pro Gegner', icon: '⬢' },
-  {
-    key: 'dashResist',
-    label: 'Dash-Schadensreduktion',
-    description: `+${Math.round(DASH_RESIST_STEP * 100)} % weniger Schaden im Dash`,
-    icon: '◇',
-  },
-  { key: 'weaponDamage', label: 'Waffenschaden', description: '+2 % Schaden', icon: '✦' },
-  { key: 'reloadSpeed', label: 'Nachladen', description: '+2 % schneller', icon: '↻' },
-  { key: 'magazineSize', label: 'Magazingröße', description: '+2 % Kapazität', icon: '▥' },
-  {
-    key: 'reserveAmmo',
-    label: 'Munitionsreserve',
-    description: '+2 % Munition für alle gekauften Waffen',
-    icon: '⛁',
-  },
-  { key: 'grenadeDamage', label: 'Granatenschaden', description: '+2 % Schaden', icon: '●' },
-  { key: 'grenadeCooldown', label: 'Granaten-Cooldown', description: '+2 % schneller', icon: '◷' },
-  {
-    key: 'grenadeRadius',
-    label: 'Granaten-Explosionsradius',
-    description: '+2 % Radius der Granatenexplosion',
-    icon: '◎',
-  },
-  { key: 'barricadeHealth', label: 'Barrikadenleben', description: '+2 % Leben', icon: '▰' },
-  { key: 'turretDamage', label: 'Turmschaden', description: '+2 % Schaden', icon: '⌖' },
-  { key: 'turretRange', label: 'Turmreichweite', description: '+1 % Reichweite', icon: '◈' },
-  { key: 'vehicleHealth', label: 'Fahrzeugpanzerung', description: '+2 % Hüllenleben', icon: '🚙' },
-  {
-    key: 'vehicleArmor',
-    label: 'Hüllenpanzerung',
-    description: `+${Math.round(VEHICLE_ARMOR_STEP * 100)} % weniger Hüllenschaden (max. ${Math.round(VEHICLE_MAX_ARMOR_REDUCTION * 100)} %)`,
-    icon: '⛨',
-  },
-  {
-    key: 'vehicleSpeed',
-    label: 'Motorleistung',
-    description: '+1 % Tempo (max. +40 %)',
-    icon: '⚙',
-  },
-  {
-    key: 'vehicleRam',
-    label: 'Rammschaden',
-    description: '+2 % Schaden beim Überfahren',
-    icon: '✖',
-  },
-  {
-    key: 'vehicleGun',
-    label: 'Bordwaffen',
-    description: '+2 % Schaden der Fahrzeugwaffen',
-    icon: '⌗',
-  },
-  { key: 'reviveSpeed', label: 'Wiederbelebung', description: '+2 % schneller', icon: '✚' },
-];
-
-/** Special buys that change a rule instead of a number, each bought once. */
-export const PERK_DEFINITIONS: PerkDefinition[] = [
-  {
-    key: 'starterWeapon',
-    label: 'Waffenhändler',
-    description: 'Die erste gekaufte Waffe eines Runs kostet 40 % weniger.',
-    icon: '⚒',
-  },
-  {
-    key: 'starterBarricade',
-    label: 'Bausatz',
-    description: 'Die ersten vier Barrikaden eines Runs kosten 40 % weniger.',
-    icon: '▰',
-  },
-  {
-    key: 'starterTurret',
-    label: 'Erstausstattung',
-    description: 'Der erste Turm eines Runs kostet 40 % weniger.',
-    icon: '⌖',
-  },
-  {
-    key: 'motorPool',
-    label: 'Fuhrpark',
-    description: 'Das erste Fahrzeug eines Runs kostet 40 % weniger.',
-    icon: '🚙',
-  },
-  {
-    key: 'dashShock',
-    label: 'Stoßdash',
-    description: 'Der ganze Dash schleudert getroffene Zombies weit weg und verletzt sie.',
-    icon: '✺',
-  },
-  {
-    key: 'dashBlades',
-    label: 'Klingendash',
-    description:
-      'Jeder Gegner, durch den du dashst, nimmt Schaden und lädt dein Schild. ' +
-      'Das Schild schluckt Treffer und schmilzt langsam wieder weg.',
-    icon: '⚔',
-  },
-  {
-    key: 'fieldMedic',
-    label: 'Sanitäter',
-    description: 'Wiederbeleben geht doppelt so schnell, der Trupp steht mit 70 % Leben auf.',
-    icon: '✚',
-  },
-  {
-    key: 'engineer',
-    label: 'Techniker',
-    description: 'Reparaturen kosten 40 % weniger.',
-    icon: '⚙',
-  },
-  {
-    key: 'extraGrenade',
-    label: 'Zweiter Gürtel',
-    description: 'Eine Granate mehr im Gürtel.',
-    icon: '●',
-  },
-  {
-    key: 'lastStand',
-    label: 'Letztes Aufbäumen',
-    description: 'Einmal pro Welle überlebst du einen tödlichen Treffer mit 1 Leben.',
-    icon: '⛨',
-  },
-];
 
 interface StoredProgress {
   gold: number;
@@ -183,10 +33,19 @@ interface StoredProgress {
   clearedMaps: string[];
 }
 
-/** Perks that were dropped again, with the price they were bought for. */
+/** Removed purchases and their original prices, so an update never destroys spent gold. */
 const RETIRED_PERKS: Record<string, number> = {
   // "Reserveschub" only repeated what the dash-charge upgrade already does.
   extraDash: 1600,
+};
+
+const RETIRED_UPGRADE_REFUNDS: Record<string, (level: number) => number> = {
+  // Wiederbelebung used the former regular curve: 40 + 16 gold per owned level.
+  reviveSpeed: (level) =>
+    Array.from(
+      { length: Math.min(40, Math.max(0, Math.floor(level))) },
+      (_, index) => 40 + index * 16,
+    ).reduce((sum, cost) => sum + cost, 0),
 };
 
 @Injectable({ providedIn: 'root' })
@@ -200,7 +59,7 @@ export class ProgressService {
   readonly clearedMaps = computed(() => this.progress().clearedMaps);
 
   constructor() {
-    this.refundRetiredPerks();
+    this.refundRetiredProgress();
   }
 
   maxLevel(key: UpgradeKey) {
@@ -301,21 +160,25 @@ export class ProgressService {
     return true;
   }
 
-  /** Gold spent on a perk that no longer exists goes back to the player. */
-  private refundRetiredPerks() {
+  /** Gold spent on removed perks or upgrades goes back exactly once. */
+  private refundRetiredProgress() {
     let refund = 0;
     try {
       const stored = JSON.parse(localStorage.getItem(this.storageKey) ?? '{}') as {
         perks?: Record<string, unknown>;
+        upgrades?: Record<string, unknown>;
       };
       for (const [key, cost] of Object.entries(RETIRED_PERKS)) {
         if (stored.perks?.[key]) refund += cost;
+      }
+      for (const [key, calculate] of Object.entries(RETIRED_UPGRADE_REFUNDS)) {
+        refund += calculate(Number(stored.upgrades?.[key]) || 0);
       }
     } catch {
       return;
     }
     if (refund === 0) return;
-    // Saving drops the retired flag as well, so this pays out exactly once.
+    // Saving drops retired keys as well, so the refund cannot be paid twice.
     const current = this.progress();
     this.save({ ...current, gold: current.gold + refund });
   }

@@ -371,9 +371,7 @@ export class Lobby implements OnInit, OnDestroy {
     if (this.leaveStep() !== 'idle') return;
     this.leaveStep.set('saving');
     try {
-      await this.game.returnToLobby(this.lobbyCode(), this.name, () =>
-        this.leaveStep.set('opening'),
-      );
+      await this.game.returnToLobby(() => this.leaveStep.set('opening'));
     } finally {
       this.leaveStep.set('idle');
     }

@@ -5,6 +5,7 @@ import {
   DEFAULT_MAP_ID,
   EMPTY_PERKS,
   EMPTY_UPGRADES,
+  PLAYER_BASE_HEALTH,
   SHIELD_SHARE,
   findMap,
   reserveCapacity,
@@ -158,9 +159,13 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       }
     });
     this.onMessage('leave_run', (client) => this.settleLeavingClient(client));
-    // Older clients used this message to reset the shared room. Treating it as
-    // an individual exit keeps one player from pulling the whole squad along.
-    this.onMessage('return_lobby', (client) => this.settleLeavingClient(client));
+    this.onMessage('return_lobby', () => {
+      // Only a finished run may move the shared room. This keeps an old client
+      // from pulling teammates out of an active wave.
+      if (this.state.phase !== 'gameover') return;
+      this.waves.returnToLobby();
+      this.broadcastSnapshot();
+    });
     this.onMessage('loadout', (client, options: JoinOptions) => {
       this.applyLoadout(client.sessionId, options);
     });
@@ -211,7 +216,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const spawn = this.world.playerSpawn(this.state.players.size);
     player.x = spawn.x;
     player.y = spawn.y;
-    player.maxHealth = Math.round(100 * (1 + upgrades.maxHealth * 0.02));
+    player.maxHealth = Math.round(PLAYER_BASE_HEALTH * (1 + upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
     player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
     // Start money is granted by startRun to everybody already in the lobby.
@@ -302,7 +307,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     if (!player || !runtime) return;
     runtime.upgrades = this.cleanUpgrades(options.upgrades);
     runtime.perks = this.cleanPerks(options.perks);
-    player.maxHealth = Math.round(100 * (1 + runtime.upgrades.maxHealth * 0.02));
+    player.maxHealth = Math.round(PLAYER_BASE_HEALTH * (1 + runtime.upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
     player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
     player.shield = 0;

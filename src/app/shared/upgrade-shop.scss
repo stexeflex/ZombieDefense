@@ -14,7 +14,7 @@
 }
 
 .upgrade-modal {
-  width: min(980px, 100%);
+  width: min(1040px, 100%);
   max-height: min(820px, 92dvh);
   overflow: auto;
   background: #0f1715;
@@ -23,7 +23,7 @@
   padding: clamp(24px, 4vw, 42px);
 }
 
-.upgrade-modal header {
+.modal-header {
   display: flex;
   justify-content: space-between;
   gap: 20px;
@@ -86,11 +86,52 @@
   background: rgba(105, 240, 174, 0.08);
 }
 
+.upgrade-groups {
+  display: grid;
+  gap: 20px;
+}
+
+.upgrade-group {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.group-heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(105, 240, 174, 0.035);
+}
+
+.group-heading > span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(105, 240, 174, 0.25);
+  color: var(--acid);
+  font-size: 1rem;
+}
+
+.group-heading h3 {
+  margin: 0 0 3px;
+  color: var(--text);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.group-heading p {
+  margin: 0;
+  color: var(--muted-2);
+  font-size: 0.62rem;
+}
+
 .upgrade-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-top: 1px solid var(--line);
-  border-left: 1px solid var(--line);
 }
 
 .upgrade-item.owned {
@@ -136,7 +177,8 @@
   font-size: 1.3rem;
 }
 
-.upgrade-copy h3 {
+.upgrade-copy h3,
+.upgrade-copy h4 {
   font-size: 0.82rem;
   margin: 0 0 5px;
 }
@@ -145,6 +187,11 @@
   color: var(--muted-2);
   font-size: 0.68rem;
   margin: 0 0 10px;
+}
+
+.upgrade-copy .current-value {
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 /* Short ladders show one pip per level, so a pip always means a level. */

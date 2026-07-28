@@ -1,4 +1,5 @@
 import {
+  PLAYER_BASE_HEALTH,
   SHIELD_SHARE,
   campaignRunReward,
   endlessRunReward,
@@ -52,6 +53,35 @@ export class WaveSystem {
     state.runGold = 0;
     state.runVictory = false;
     state.wave = 0;
+    this.clearRunField();
+    this.resetPlayers();
+    this.startNextWave();
+  }
+
+  /** Put the whole connected squad back into the shared pre-run lobby. */
+  returnToLobby() {
+    const state = this.world.state;
+    this.runId = '';
+    state.runId = '';
+    state.runGold = 0;
+    state.runVictory = false;
+    state.wave = 0;
+    state.waveKind = 'normal';
+    state.waveLabel = 'Welle';
+    state.enemiesRemaining = 0;
+    state.phase = 'lobby';
+    state.totalWaves = state.endless ? 0 : this.world.map.waves.length;
+    state.statusText = state.endless
+      ? `${this.world.map.name} · Endlos`
+      : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
+    this.clearRunField();
+    this.resetPlayers();
+  }
+
+  private clearRunField() {
+    const state = this.world.state;
+    this.spawnQueue = [];
+    this.spawnDelay = 0;
     state.zombies.clear();
     state.projectiles.clear();
     state.defenses.clear();
@@ -61,6 +91,11 @@ export class WaveSystem {
     state.bossName = '';
     state.bossHealth = 0;
     state.bossMaxHealth = 0;
+    this.onClearField();
+  }
+
+  private resetPlayers() {
+    const state = this.world.state;
     let index = 0;
     state.players.forEach((player, id) => {
       const runtime = this.world.runtime.get(id);
@@ -68,7 +103,7 @@ export class WaveSystem {
       const spawn = this.world.playerSpawn(index++);
       player.x = spawn.x;
       player.y = spawn.y;
-      player.maxHealth = Math.round(100 * (1 + upgrades.maxHealth * 0.02));
+      player.maxHealth = Math.round(PLAYER_BASE_HEALTH * (1 + upgrades.maxHealth * 0.02));
       player.health = player.maxHealth;
       player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
       player.shield = 0;
@@ -109,7 +144,6 @@ export class WaveSystem {
       }
       this.build.resetDiscounts(id);
     });
-    this.startNextWave();
   }
 
   /**

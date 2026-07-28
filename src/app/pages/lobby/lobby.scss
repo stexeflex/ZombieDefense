@@ -467,6 +467,11 @@
   transition: right 180ms ease;
 }
 
+.combat-panel-toggle:hover:not(:disabled) {
+  /* The global button hover resets transforms; this control needs its centering. */
+  transform: translateY(-50%);
+}
+
 .game-layout.combat-panel-collapsed .combat-panel-toggle {
   right: 0;
 }

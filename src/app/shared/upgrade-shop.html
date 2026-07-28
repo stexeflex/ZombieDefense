@@ -6,7 +6,7 @@
     aria-labelledby="upgrade-title"
     (click)="$event.stopPropagation()"
   >
-    <header>
+    <header class="modal-header">
       <div>
         <p class="eyebrow">Permanenter Fortschritt</p>
         <h2 id="upgrade-title">Vorbereitung ist alles.</h2>
@@ -28,58 +28,72 @@
     </div>
 
     @if (shopTab() === 'levels') {
-      <div class="upgrade-grid">
-        @for (upgrade of definitions; track upgrade.key) {
-          <article class="upgrade-item" [class.locked]="!unlocked(upgrade.key)">
-            <span class="upgrade-icon">{{ upgrade.icon }}</span>
-            <div class="upgrade-copy">
-              <h3>{{ upgrade.label }}</h3>
-              @if (lockedBy(upgrade.key); as perk) {
-                <p class="needs-perk">🔒 Braucht den Vorteil {{ perk }}</p>
-              } @else {
-                <p>{{ upgrade.description }} pro Stufe</p>
-              }
-              @if (pips(upgrade.key); as steps) {
-                <div
-                  class="level-track"
-                  [class.maxed]="maxed(upgrade.key)"
-                  aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
-                >
-                  @for (step of steps; track step) {
-                    <span [class.filled]="level(upgrade.key) >= step"></span>
-                  }
-                </div>
-              } @else {
-                <div
-                  class="level-bar"
-                  [class.maxed]="maxed(upgrade.key)"
-                  aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
-                >
-                  <span [style.width.%]="fillPercent(upgrade.key)"></span>
-                </div>
+      <div class="upgrade-groups">
+        @for (group of groups; track group.key) {
+          <section class="upgrade-group" [attr.aria-labelledby]="'upgrade-group-' + group.key">
+            <div class="group-heading">
+              <span>{{ group.icon }}</span>
+              <div>
+                <h3 [id]="'upgrade-group-' + group.key">{{ group.label }}</h3>
+                <p>{{ group.description }}</p>
+              </div>
+            </div>
+
+            <div class="upgrade-grid">
+              @for (upgrade of group.upgrades; track upgrade.key) {
+                <article class="upgrade-item" [class.locked]="!unlocked(upgrade.key)">
+                  <span class="upgrade-icon">{{ upgrade.icon }}</span>
+                  <div class="upgrade-copy">
+                    <h4>{{ upgrade.label }}</h4>
+                    @if (lockedBy(upgrade.key); as perk) {
+                      <p class="needs-perk">🔒 Braucht den Vorteil {{ perk }}</p>
+                    } @else {
+                      <p class="current-value">{{ currentValue(upgrade.key) }}</p>
+                    }
+                    @if (pips(upgrade.key); as steps) {
+                      <div
+                        class="level-track"
+                        [class.maxed]="maxed(upgrade.key)"
+                        aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
+                      >
+                        @for (step of steps; track step) {
+                          <span [class.filled]="level(upgrade.key) >= step"></span>
+                        }
+                      </div>
+                    } @else {
+                      <div
+                        class="level-bar"
+                        [class.maxed]="maxed(upgrade.key)"
+                        aria-label="Stufe {{ level(upgrade.key) }} von {{ maxLevel(upgrade.key) }}"
+                      >
+                        <span [style.width.%]="fillPercent(upgrade.key)"></span>
+                      </div>
+                    }
+                  </div>
+                  <div class="upgrade-buy">
+                    <b>Stufe {{ level(upgrade.key) }} / {{ maxLevel(upgrade.key) }}</b>
+                    <button
+                      type="button"
+                      [disabled]="
+                        !unlocked(upgrade.key) ||
+                        progress.gold() < progress.cost(upgrade.key) ||
+                        level(upgrade.key) >= maxLevel(upgrade.key)
+                      "
+                      (click)="buyUpgrade(upgrade.key)"
+                    >
+                      @if (!unlocked(upgrade.key)) {
+                        🔒
+                      } @else if (level(upgrade.key) >= maxLevel(upgrade.key)) {
+                        MAX
+                      } @else {
+                        ◆ {{ progress.cost(upgrade.key) }}
+                      }
+                    </button>
+                  </div>
+                </article>
               }
             </div>
-            <div class="upgrade-buy">
-              <b>Stufe {{ level(upgrade.key) }} / {{ maxLevel(upgrade.key) }}</b>
-              <button
-                type="button"
-                [disabled]="
-                  !unlocked(upgrade.key) ||
-                  progress.gold() < progress.cost(upgrade.key) ||
-                  level(upgrade.key) >= maxLevel(upgrade.key)
-                "
-                (click)="buyUpgrade(upgrade.key)"
-              >
-                @if (!unlocked(upgrade.key)) {
-                  🔒
-                } @else if (level(upgrade.key) >= maxLevel(upgrade.key)) {
-                  MAX
-                } @else {
-                  ◆ {{ progress.cost(upgrade.key) }}
-                }
-              </button>
-            </div>
-          </article>
+          </section>
         }
       </div>
     } @else {

@@ -31,7 +31,6 @@ export interface PermanentUpgrades {
   dashDamage: number;
   dashShield: number;
   dashResist: number;
-  reviveSpeed: number;
 }
 
 export type UpgradeKey = keyof PermanentUpgrades;
@@ -62,7 +61,6 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   dashDamage: 0,
   dashShield: 0,
   dashResist: 0,
-  reviveSpeed: 0,
 };
 
 /** Room to specialise: a focused player can push a single stat very far. */
@@ -70,7 +68,7 @@ export const UPGRADE_MAX_LEVEL = 40;
 
 /** Gold for the next level of a percent upgrade. */
 export function upgradeCost(level: number) {
-  return 40 + level * 16;
+  return 40 + level * 12;
 }
 
 /**
@@ -88,8 +86,8 @@ export function upgradeMaxLevel(key: UpgradeKey) {
 }
 
 export function upgradeLevelCost(key: UpgradeKey, level: number) {
-  if (key === 'dashCharges') return 700 + level * 900;
-  if (key === 'dashResist') return 500 + level * 550;
+  if (key === 'dashCharges') return 700 + level * 750;
+  if (key === 'dashResist') return 500 + level * 450;
   return upgradeCost(level);
 }
 

@@ -728,6 +728,8 @@ describe('permanent upgrades', () => {
     }
     // A single level must stay affordable next to what a run pays out.
     expect(upgradeCost(UPGRADE_MAX_LEVEL - 1)).toBeLessThan(1000);
+    // The price still rises, but more gently than the former 16-gold step.
+    expect(upgradeCost(10) - upgradeCost(9)).toBe(12);
   });
 
   it('keeps the dash ladder short and expensive', () => {
@@ -821,6 +823,10 @@ describe('permanent upgrades', () => {
   it('leaves extra dash charges to the levelled upgrade alone', () => {
     expect(Object.keys(EMPTY_PERKS)).not.toContain('extraDash');
     expect(upgradeMaxLevel('dashCharges')).toBeGreaterThan(0);
+  });
+
+  it('does not keep the retired Wiederbelebung level in the shared upgrade model', () => {
+    expect(Object.keys(EMPTY_UPGRADES)).not.toContain('reviveSpeed');
   });
 
   it('prices every one-time perk', () => {

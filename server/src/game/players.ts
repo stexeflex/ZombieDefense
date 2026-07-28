@@ -11,6 +11,10 @@ import {
   DASH_SHOCK_RADIUS,
   DASH_SPEED,
   DEFENSES,
+  GRENADE_BASE_COOLDOWN,
+  GRENADE_BASE_DAMAGE,
+  GRENADE_BASE_RADIUS,
+  GRENADE_MIN_COOLDOWN,
   PLAYER_BASE_SPEED,
   PLAYER_RADIUS,
   REVIVE_RADIUS,
@@ -546,8 +550,8 @@ export class PlayerSystem {
     const targetY = Number(target.y);
     const x = Number.isFinite(targetX) ? this.world.clamp(targetX, 0, ARENA.width) : player.x;
     const y = Number.isFinite(targetY) ? this.world.clamp(targetY, 0, ARENA.height) : player.y;
-    const radius = 110 * (1 + upgrades.grenadeRadius * 0.02);
-    const damage = 120 * (1 + upgrades.grenadeDamage * 0.02);
+    const radius = GRENADE_BASE_RADIUS * (1 + upgrades.grenadeRadius * 0.02);
+    const damage = GRENADE_BASE_DAMAGE * (1 + upgrades.grenadeDamage * 0.02);
 
     const victims: Array<[string, ZombieState]> = [];
     this.world.state.zombies.forEach((zombie, id) => {
@@ -558,7 +562,10 @@ export class PlayerSystem {
     for (const [id, zombie] of victims) this.world.damageZombie(id, zombie, damage, player.id);
 
     player.grenades -= 1;
-    const rechargeTime = Math.max(6, 18 / (1 + upgrades.grenadeCooldown * 0.02));
+    const rechargeTime = Math.max(
+      GRENADE_MIN_COOLDOWN,
+      GRENADE_BASE_COOLDOWN / (1 + upgrades.grenadeCooldown * 0.02),
+    );
     runtime.grenadeRecharge.push(rechargeTime);
     runtime.grenadeThrowLock = 0.35;
     player.grenadeCooldown = Math.min(...runtime.grenadeRecharge);
@@ -577,8 +584,7 @@ export class PlayerSystem {
           Math.hypot(player.x - downed.x, player.y - downed.y) <= REVIVE_RADIUS,
       );
       const helper = rescuer ? this.world.runtime.get(rescuer.id) : undefined;
-      const speed =
-        (1 + (helper?.upgrades.reviveSpeed ?? 0) * 0.02) * (helper?.perks.fieldMedic ? 2 : 1);
+      const speed = helper?.perks.fieldMedic ? 2 : 1;
       downed.reviveProgress = rescuer
         ? Math.min(1, downed.reviveProgress + (delta * speed) / REVIVE_SECONDS)
         : Math.max(0, downed.reviveProgress - delta * 1.25);

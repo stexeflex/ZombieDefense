@@ -1,8 +1,8 @@
 /** Size of the world, the camera and everything the player physically is. */
 
 export const ARENA = {
-  width: 2400,
-  height: 1600,
+  width: 2520,
+  height: 1680,
   padding: 52,
 } as const;
 
@@ -14,6 +14,7 @@ export const VIEWPORT = {
 /** How many zombies may walk the arena at once; the rest waits in the queue. */
 export const MAX_ACTIVE_ZOMBIES = 95;
 
+export const PLAYER_BASE_HEALTH = 100;
 export const PLAYER_BASE_SPEED = 205;
 export const PLAYER_RADIUS = 18;
 export const REVIVE_RADIUS = 74;
@@ -49,3 +50,9 @@ export const DASH_SHIELD_PER_HIT = 10;
 export const SHIELD_SHARE = 0.35;
 /** Shield points that fade away per second when nothing refreshes them. */
 export const SHIELD_DECAY = 4;
+
+/** Shared grenade baselines, used by combat and by the permanent-upgrade shop. */
+export const GRENADE_BASE_DAMAGE = 120;
+export const GRENADE_BASE_RADIUS = 110;
+export const GRENADE_BASE_COOLDOWN = 18;
+export const GRENADE_MIN_COOLDOWN = 6;

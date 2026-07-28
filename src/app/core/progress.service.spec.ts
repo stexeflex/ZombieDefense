@@ -1,4 +1,9 @@
-import { ProgressService, UPGRADE_DEFINITIONS } from './progress.service';
+import {
+  ProgressService,
+  UPGRADE_DEFINITIONS,
+  UPGRADE_GROUPS,
+  upgradeCurrentValue,
+} from './progress.service';
 
 describe('ProgressService run rewards', () => {
   beforeEach(() => localStorage.clear());
@@ -30,10 +35,42 @@ describe('ProgressService run rewards', () => {
 });
 
 describe('ProgressService upgrade shop', () => {
-  it('offers maximum player health as a levelled upgrade', () => {
-    const health = UPGRADE_DEFINITIONS.find((upgrade) => upgrade.key === 'maxHealth');
+  beforeEach(() => localStorage.clear());
 
-    expect(health?.label).toContain('Spielerleben');
-    expect(health?.description).toContain('maximales Leben');
+  it('groups every levelled upgrade into the six readable shop sections', () => {
+    expect(UPGRADE_GROUPS.map((group) => group.label)).toEqual([
+      'Spieler',
+      'Waffen',
+      'Granaten',
+      'Türme',
+      'Fahrzeuge',
+      'Dash',
+    ]);
+    expect(
+      UPGRADE_DEFINITIONS.every((upgrade) =>
+        UPGRADE_GROUPS.some((group) => group.key === upgrade.category),
+      ),
+    ).toBe(true);
+    expect(UPGRADE_DEFINITIONS.map((upgrade) => String(upgrade.key))).not.toContain('reviveSpeed');
+  });
+
+  it('shows the current value together with the gain per level', () => {
+    expect(upgradeCurrentValue('healthRegen', 16)).toBe('4 Leben pro Sekunde (+0,25 pro Stufe)');
+    expect(upgradeCurrentValue('maxHealth', 5)).toContain('110 maximales Leben');
+    expect(upgradeCurrentValue('dashCharges', 2)).toContain('4 Dash-Ladungen');
+  });
+
+  it('refunds old Wiederbelebung levels once and removes them from the save', () => {
+    localStorage.setItem(
+      'zombie-defense-progress-v1',
+      JSON.stringify({ gold: 10, upgrades: { reviveSpeed: 3 } }),
+    );
+
+    const progress = new ProgressService();
+    expect(progress.gold()).toBe(178);
+    expect(progress.upgrades()).not.toHaveProperty('reviveSpeed');
+
+    const reloaded = new ProgressService();
+    expect(reloaded.gold()).toBe(178);
   });
 });

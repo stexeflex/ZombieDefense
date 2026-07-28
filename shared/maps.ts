@@ -107,6 +107,9 @@ export function seeded(seed: number) {
 
 const CENTER_X = ARENA.width / 2;
 const CENTER_Y = ARENA.height / 2;
+/** The hand-placed structures were authored around the original map centre. */
+const AUTHORED_CENTER_X = 1200;
+const AUTHORED_CENTER_Y = 800;
 
 const OBSTACLE_SIZES: Record<ObstacleKind, { w: number; h: number; solid: boolean }> = {
   car: { w: 116, h: 58, solid: true },
@@ -159,7 +162,12 @@ function scatter(
   seed: number,
 ): MapObstacle[] {
   const random = seeded(seed);
-  const placed = [...base];
+  // Keep authored formations centred when the shared arena gets a little larger.
+  const placed = base.map((entry) => ({
+    ...entry,
+    x: entry.x + CENTER_X - AUTHORED_CENTER_X,
+    y: entry.y + CENTER_Y - AUTHORED_CENTER_Y,
+  }));
   let guard = 0;
   while (placed.length < base.length + amount && guard < amount * 60) {
     guard += 1;

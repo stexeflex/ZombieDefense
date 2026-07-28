@@ -35,6 +35,16 @@ describe('GameService', () => {
     expect(service.placementRotation()).toBe(0);
   });
 
+  it('drops the previous result when the shared room returns to the lobby', () => {
+    service.lastReward.set({ gold: 120, victory: false, mapId: 'outpost' });
+
+    (service as unknown as { reactToPhase(snapshot: GameSnapshot): void }).reactToPhase(
+      snapshotWith('lobby'),
+    );
+
+    expect(service.lastReward()).toBeNull();
+  });
+
   it('never sends an ammo purchase for the infinite pistol', () => {
     const sent: string[] = [];
     service.sessionId.set('player-1');
@@ -107,14 +117,24 @@ describe('GameService', () => {
     await settlement;
   });
 
-  it('opens an individual fresh lobby instead of moving the teammate', async () => {
+  it('moves the connected squad back into the shared lobby room', async () => {
+    const sent: string[] = [];
     vi.spyOn(service, 'settleRunReward').mockResolvedValue();
-    vi.spyOn(service, 'disconnect').mockResolvedValue();
-    vi.spyOn(service, 'connect').mockResolvedValue();
+    const disconnect = vi.spyOn(service, 'disconnect').mockResolvedValue();
+    service.snapshot.set(snapshotWith('gameover'));
+    (service as unknown as { room: { send(type: string): void } }).room = {
+      send: (type) => sent.push(type),
+    };
 
-    await service.returnToLobby('ABCDE', 'Alex');
+    const transition = service.returnToLobby();
+    await Promise.resolve();
+    expect(sent).toEqual(['return_lobby']);
 
-    expect(service.disconnect).toHaveBeenCalledWith(false);
-    expect(service.connect).toHaveBeenCalledWith('ABCDE', 'Alex', true);
+    const lobby = snapshotWith('lobby');
+    service.snapshot.set(lobby);
+    service.snapshot$.next(lobby);
+    await transition;
+
+    expect(disconnect).not.toHaveBeenCalled();
   });
 });

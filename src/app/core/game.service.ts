@@ -31,6 +31,8 @@ type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error';
 const SETTLE_TIMEOUT = 1200;
 /** How long it waits for the socket to close before it moves on regardless. */
 const LEAVE_TIMEOUT = 1500;
+/** A shared lobby transition should arrive with the next server snapshot. */
+const LOBBY_RETURN_TIMEOUT = 2000;
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
@@ -243,17 +245,34 @@ export class GameService {
     this.room?.send('restart');
   }
 
-  /**
-   * Leave the finished room alone and open a fresh lobby with the same code.
-   * Other clients remain in their current room until they decide for
-   * themselves where to go. `onSettled` fires as soon as the gold is safe, so
-   * the button can stop claiming it is still saving.
-   */
-  async returnToLobby(lobbyCode: string, name: string, onSettled?: () => void) {
+  /** Keep the connected squad together and move its finished room back to the lobby. */
+  async returnToLobby(onSettled?: () => void) {
     await this.settleRunReward();
     onSettled?.();
-    await this.disconnect(false);
-    await this.connect(lobbyCode, name, true);
+    if (!this.room) return;
+
+    const lobbySnapshot = this.waitForPhase('lobby', LOBBY_RETURN_TIMEOUT);
+    this.room.send('return_lobby');
+    const arrived = await lobbySnapshot;
+    if (!arrived) {
+      this.errorMessage.set('Die gemeinsame Lobby konnte nicht geöffnet werden.');
+    }
+  }
+
+  private waitForPhase(phase: GamePhase, timeoutMs: number) {
+    if (this.snapshot()?.phase === phase) return Promise.resolve(true);
+    return new Promise<boolean>((resolve) => {
+      const subscription = this.snapshot$.subscribe((snapshot) => {
+        if (snapshot.phase !== phase) return;
+        window.clearTimeout(timer);
+        subscription.unsubscribe();
+        resolve(true);
+      });
+      const timer = window.setTimeout(() => {
+        subscription.unsubscribe();
+        resolve(false);
+      }, timeoutMs);
+    });
   }
 
   /**
@@ -507,6 +526,7 @@ export class GameService {
   private reactToPhase(snapshot: GameSnapshot) {
     if (snapshot.phase !== this.lastPhase) {
       this.lastPhase = snapshot.phase;
+      if (snapshot.phase === 'lobby') this.lastReward.set(null);
       // A ghost left over from the last build phase would come back with the
       // next one, so the start of a wave drops the selection.
       if (snapshot.phase !== 'build' && (this.selectedBuild() || this.selectedVehicle())) {

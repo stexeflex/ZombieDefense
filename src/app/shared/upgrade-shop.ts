@@ -1,11 +1,11 @@
 import { Component, inject, output, signal } from '@angular/core';
 import {
   PERK_DEFINITIONS,
-  ProgressService,
   UPGRADE_DEFINITIONS,
-  type PerkKey,
-  type UpgradeKey,
-} from '../core/progress.service';
+  UPGRADE_GROUPS,
+  upgradeCurrentValue,
+} from '../core/upgrade-catalog';
+import { ProgressService, type PerkKey, type UpgradeKey } from '../core/progress.service';
 
 /** The gold shop as a dialog, used by the start page and by the lobby. */
 @Component({
@@ -20,6 +20,10 @@ export class UpgradeShop {
   readonly closed = output<void>();
   readonly shopTab = signal<'levels' | 'perks'>('levels');
   readonly definitions = UPGRADE_DEFINITIONS;
+  readonly groups = UPGRADE_GROUPS.map((group) => ({
+    ...group,
+    upgrades: UPGRADE_DEFINITIONS.filter((upgrade) => upgrade.category === group.key),
+  }));
   readonly perkDefinitions = PERK_DEFINITIONS;
   /**
    * A short ladder gets one pip per level, so a pip always means a level. Long
@@ -44,6 +48,10 @@ export class UpgradeShop {
 
   level(key: UpgradeKey) {
     return this.progress.upgrades()[key];
+  }
+
+  currentValue(key: UpgradeKey) {
+    return upgradeCurrentValue(key, this.level(key));
   }
 
   /** An upgrade whose perk is missing stays visible, but cannot be bought. */
