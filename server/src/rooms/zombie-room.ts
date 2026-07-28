@@ -112,6 +112,10 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     state.lobbyCode = this.cleanCode(options.lobbyCode);
     state.endless = Boolean(options.endless);
     this.setState(state);
+    // The browser consumes our compact, interpolated `snapshot` messages.
+    // Colyseus would otherwise also send its own schema patches every 50 ms,
+    // duplicating the busiest combat traffic without a listener on the client.
+    this.patchRate = null;
 
     this.world = new GameWorld(state, findMap(options.mapId ?? DEFAULT_MAP_ID));
     this.abilities = new AbilitySystem(this.world);
@@ -357,10 +361,14 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     }
 
     this.snapshotElapsed += deltaMs;
-    // Big hordes push a lot of JSON, so send slightly fewer frames then and let
-    // the client interpolate the gap.
+    // Big hordes, projectile storms and additional recipients multiply the
+    // amount of encoding and socket traffic. The client interpolates between
+    // snapshots, so a small adaptive step keeps co-op smooth without making
+    // solo controls less responsive.
+    const extraRecipients = Math.max(0, this.clients.length - 1);
+    const busyCombat = this.state.zombies.size > 55 || this.state.projectiles.size > 45;
     const snapshotInterval =
-      this.state.phase === 'combat' ? (this.state.zombies.size > 55 ? 100 : 75) : 150;
+      this.state.phase === 'combat' ? (busyCombat ? 100 : 75) + extraRecipients * 10 : 150;
     if (this.snapshotElapsed >= snapshotInterval) {
       this.snapshotElapsed %= snapshotInterval;
       this.broadcastSnapshot();

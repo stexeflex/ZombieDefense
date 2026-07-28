@@ -538,7 +538,7 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   fast: { skin: '#c3cf63', cloth: '#4b4b2c', accent: '#8f9a3c', eye: '#ff8f5a' },
   crawler: { skin: '#9ab86a', cloth: '#38402c', accent: '#6d8a3c', eye: '#ffe08a' },
   big: { skin: '#a5674f', cloth: '#4a3128', accent: '#7d4634', eye: '#ff6b6b' },
-  exploder: { skin: '#8fbf5a', cloth: '#3e4a2a', accent: '#c4ff4f', eye: '#d8ff5a' },
+  exploder: { skin: '#c64b32', cloth: '#242426', accent: '#ffd23f', eye: '#fff1a8' },
   armored: { skin: '#7a8390', cloth: '#2f353d', accent: '#aab6c2', eye: '#7fd8ff' },
   spitter: { skin: '#6fae7a', cloth: '#2c4433', accent: '#9dff8a', eye: '#c6ff5a' },
   screamer: { skin: '#b98fa8', cloth: '#4a2e3f', accent: '#ff9ed8', eye: '#ffe08a' },
@@ -569,15 +569,16 @@ function paintZombieBody(type: ZombieType, radius: number): Painter {
   const rank = ZOMBIES[type].rank;
   const plated = rank === 'mini' || rank === 'boss' || type === 'armored';
   const crowned = rank === 'boss';
-  const glowing = type === 'exploder' || type === 'spitter';
+  const explosive = type === 'exploder';
+  const glowing = type === 'spitter';
   return (ctx, w, h) => {
     const cx = w / 2;
     const cy = h / 2;
     ctx.save();
     ctx.translate(cx, cy);
 
-    const bodyW = radius * 1.75;
-    const bodyH = radius * 1.95;
+    const bodyW = radius * (explosive ? 2.08 : 1.75);
+    const bodyH = radius * (explosive ? 2.12 : 1.95);
 
     // torso
     fillRounded(
@@ -588,7 +589,7 @@ function paintZombieBody(type: ZombieType, radius: number): Painter {
       bodyH,
       radius * 0.55,
       skin.skin,
-      '#1d2416',
+      explosive ? '#3a100c' : '#1d2416',
       2.5,
     );
     // tattered shirt
@@ -622,6 +623,50 @@ function paintZombieBody(type: ZombieType, radius: number): Painter {
     ctx.fillRect(-bodyW / 2, -bodyH / 2, bodyW, bodyH);
     ctx.restore();
 
+    if (explosive) {
+      // A black demolition harness, warning stripes and a hot detonator make
+      // this silhouette readable even in a dense green acid horde.
+      fillRounded(
+        ctx,
+        -bodyW / 2 + 2,
+        -radius * 0.17,
+        bodyW - 4,
+        radius * 0.34,
+        radius * 0.1,
+        '#171719',
+      );
+      fillRounded(
+        ctx,
+        -radius * 0.17,
+        -bodyH / 2 + 2,
+        radius * 0.34,
+        bodyH - 4,
+        radius * 0.1,
+        '#171719',
+      );
+      ctx.save();
+      rounded(ctx, -bodyW / 2, -bodyH / 2, bodyW, bodyH, radius * 0.55);
+      ctx.clip();
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = Math.max(3, radius * 0.2);
+      for (let stripe = -2; stripe <= 2; stripe += 1) {
+        ctx.beginPath();
+        ctx.moveTo(-bodyW * 0.62, stripe * radius * 0.48 - radius * 0.34);
+        ctx.lineTo(-bodyW * 0.28, stripe * radius * 0.48 + radius * 0.34);
+        ctx.stroke();
+      }
+      ctx.restore();
+      circle(ctx, radius * 0.06, 0, radius * 0.54, '#4b1110', '#ff713f', 3);
+      circle(ctx, radius * 0.06, 0, radius * 0.3, '#ff9f32', '#fff1a8', 2);
+      circle(ctx, radius * 0.06, 0, radius * 0.11, '#fff7d6');
+      ctx.strokeStyle = '#201719';
+      ctx.lineWidth = Math.max(2, radius * 0.11);
+      ctx.beginPath();
+      ctx.moveTo(-radius * 0.12, -radius * 0.46);
+      ctx.quadraticCurveTo(-radius * 0.5, -radius * 0.78, -radius * 0.72, -radius * 0.56);
+      ctx.stroke();
+      circle(ctx, -radius * 0.76, -radius * 0.58, radius * 0.13, '#fff1a8', '#ff5a36', 2);
+    }
     if (glowing) {
       circle(ctx, 0, 0, radius * 0.62, 'rgba(196, 255, 79, 0.35)', skin.accent, 2);
       circle(ctx, -radius * 0.1, -radius * 0.15, radius * 0.22, '#e4ff9a');

@@ -124,6 +124,11 @@ console.log('\n== Erste Welle auf Vorposten 07 ==');
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
+  check(
+    'Kompakte Snapshots ersetzen den ungenutzten Colyseus-Doppelkanal',
+    room.patchRate === null,
+    `(Patchrate ${room.patchRate})`,
+  );
   room.systems.waves.startRun();
   check(
     'Run beginnt mit Bauphase vor Welle 1',

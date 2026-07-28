@@ -776,7 +776,8 @@ export class ArenaScene extends Phaser.Scene {
         views.delete(id);
       }
     }
-    for (const [id, entity] of Object.entries(entities)) {
+    for (const id in entities) {
+      const entity = entities[id];
       let view = views.get(id);
       if (!view) {
         view = create(entity);
@@ -955,7 +956,10 @@ export class ArenaScene extends Phaser.Scene {
 
     const children: Phaser.GameObjects.GameObject[] = [shadow, actor, healthBackground, healthBar];
     let aura: Phaser.GameObjects.Arc | undefined;
-    if (config.rank === 'mini' || config.rank === 'boss') {
+    if (zombie.type === 'exploder') {
+      aura = this.add.circle(0, 0, radius + 9).setStrokeStyle(3, 0xff5a36, 0.82);
+      children.unshift(aura);
+    } else if (config.rank === 'mini' || config.rank === 'boss') {
       aura = this.add
         .circle(0, 0, radius + 12)
         .setStrokeStyle(3, config.rank === 'boss' ? 0xff4f6b : 0xff5f9e, 0.55);
@@ -1002,8 +1006,12 @@ export class ArenaScene extends Phaser.Scene {
 
     if (view.aura) {
       const casting = zombie.casting > 0;
-      view.aura.setScale(zombie.charging > 0 || casting ? 1.18 : 1);
       const rank = ZOMBIES[zombie.type].rank;
+      if (zombie.type === 'exploder') {
+        view.aura.setStrokeStyle(3, damaged ? 0xfff1a8 : 0xff5a36, 0.82);
+        return;
+      }
+      view.aura.setScale(zombie.charging > 0 || casting ? 1.18 : 1);
       const color = casting
         ? 0xffd166
         : zombie.charging > 0
@@ -1029,6 +1037,10 @@ export class ArenaScene extends Phaser.Scene {
       const rate = view.type === 'fast' || view.type === 'crawler' ? 15 : view.radius > 50 ? 5 : 9;
       view.walk += delta * (moving ? rate : 2.5);
       const swing = Math.sin(view.walk);
+      if (view.type === 'exploder' && view.aura) {
+        const pulse = (Math.sin(view.walk * 1.7) + 1) / 2;
+        view.aura.setScale(1.02 + pulse * 0.13).setAlpha(0.62 + pulse * 0.34);
+      }
       const attack = zombie && zombie.attacking > 0 ? 1 : 0;
       const reach = view.radius * (0.86 + attack * 0.32);
       view.limbs[0]
