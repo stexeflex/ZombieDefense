@@ -6,6 +6,7 @@ import {
   endlessWave,
   reserveCapacity,
   startingMoney,
+  type SpawnPattern,
   type ZombieType,
 } from '../../../shared/game-types.js';
 import type { BuildSystem } from './build.js';
@@ -24,6 +25,9 @@ export interface RunReward {
 export class WaveSystem {
   spawnQueue: ZombieType[] = [];
   spawnDelay = 0;
+  private spawnPattern: SpawnPattern = 'all';
+  private spawnDelayScale = 1;
+  private spawnIndex = 0;
   private runId = '';
 
   constructor(
@@ -32,7 +36,9 @@ export class WaveSystem {
     private readonly build: BuildSystem,
     private readonly onReward: (reward: RunReward) => void,
     private readonly onClearField: () => void,
-  ) {}
+  ) {
+    world.onObjectiveDestroyed = () => this.endRun(false);
+  }
 
   spawn(delta: number) {
     if (this.spawnQueue.length === 0) return;
@@ -40,10 +46,14 @@ export class WaveSystem {
     if (this.spawnDelay > 0) return;
     if (this.world.atZombieCap()) return;
     const rush = this.world.state.waveKind === 'swarm' ? 0.45 : 1;
-    this.spawnDelay = Math.max(0.08, (0.42 - this.world.state.wave * 0.015) * rush);
+    this.spawnDelay = Math.max(
+      0.045,
+      (0.42 - this.world.state.wave * 0.015) * rush * this.spawnDelayScale,
+    );
     const type = this.spawnQueue.shift();
     if (!type) return;
-    this.world.spawnZombie(type);
+    this.world.spawnZombie(type, undefined, this.nextSpawnSide());
+    this.spawnIndex += 1;
   }
 
   startRun() {
@@ -54,6 +64,7 @@ export class WaveSystem {
     state.runVictory = false;
     state.wave = 0;
     this.clearRunField();
+    this.initializeObjective();
     this.resetPlayers();
     // The squad gets the same untimed preparation phase before wave one that
     // it gets between later waves. The host can still skip the ready votes.
@@ -81,6 +92,7 @@ export class WaveSystem {
       ? `${this.world.map.name} · Endlos`
       : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
     this.clearRunField();
+    this.clearObjective();
     this.resetPlayers();
   }
 
@@ -88,6 +100,9 @@ export class WaveSystem {
     const state = this.world.state;
     this.spawnQueue = [];
     this.spawnDelay = 0;
+    this.spawnPattern = 'all';
+    this.spawnDelayScale = 1;
+    this.spawnIndex = 0;
     state.zombies.clear();
     state.projectiles.clear();
     state.defenses.clear();
@@ -152,6 +167,113 @@ export class WaveSystem {
     });
   }
 
+  private initializeObjective() {
+    const state = this.world.state;
+    const mission = this.world.map.mission;
+    this.clearObjective();
+    if (!mission || mission.kind === 'survival') return;
+
+    state.objectiveActive = true;
+    state.objectiveKind = mission.kind;
+    state.objectiveTitle = mission.title;
+    state.objectiveRadius = mission.radius;
+    state.objectiveMaxHealth = mission.maxHealth;
+    state.objectiveHealth = mission.maxHealth;
+    state.objectiveProgress = 0;
+    if (mission.kind === 'holdout') {
+      state.objectiveX = mission.x;
+      state.objectiveY = mission.y;
+      return;
+    }
+    state.objectiveX = mission.path[0]?.x ?? 0;
+    state.objectiveY = mission.path[0]?.y ?? 0;
+  }
+
+  private clearObjective() {
+    const state = this.world.state;
+    state.objectiveActive = false;
+    state.objectiveKind = '';
+    state.objectiveTitle = '';
+    state.objectiveX = 0;
+    state.objectiveY = 0;
+    state.objectiveRadius = 0;
+    state.objectiveHealth = 0;
+    state.objectiveMaxHealth = 0;
+    state.objectiveProgress = 0;
+  }
+
+  /**
+   * The wagon moves slowly on its own and twice as fast with nearby cover.
+   * Enemies close to the hull almost stop it, so clearing the road matters.
+   */
+  updateMission(delta: number) {
+    const state = this.world.state;
+    const mission = this.world.map.mission;
+    if (
+      state.phase !== 'combat' ||
+      !state.objectiveActive ||
+      !mission ||
+      mission.kind !== 'escort' ||
+      state.objectiveProgress >= 1
+    ) {
+      return;
+    }
+
+    const checkpoint = Math.min(1, state.wave / Math.max(1, this.world.map.waves.length));
+    if (state.objectiveProgress >= checkpoint) return;
+
+    const guarded = this.world
+      .livingPlayers()
+      .some(
+        (player) =>
+          Math.hypot(player.x - state.objectiveX, player.y - state.objectiveY) <=
+          mission.radius + 260,
+      );
+    const blocked = [...state.zombies.values()].some(
+      (zombie) =>
+        Math.hypot(zombie.x - state.objectiveX, zombie.y - state.objectiveY) <=
+        mission.radius + 145,
+    );
+    const distance = this.escortPathLength(mission.path);
+    if (distance <= 0) return;
+    const pace = mission.speed * (guarded ? 2 : 0.45) * (blocked ? 0.18 : 1);
+    state.objectiveProgress = Math.min(
+      checkpoint,
+      state.objectiveProgress + (pace * delta) / distance,
+    );
+    const point = this.escortPoint(mission.path, state.objectiveProgress);
+    state.objectiveX = point.x;
+    state.objectiveY = point.y;
+  }
+
+  private escortPathLength(path: Array<{ x: number; y: number }>) {
+    let total = 0;
+    for (let index = 1; index < path.length; index += 1) {
+      total += Math.hypot(path[index].x - path[index - 1].x, path[index].y - path[index - 1].y);
+    }
+    return total;
+  }
+
+  private escortPoint(path: Array<{ x: number; y: number }>, progress: number) {
+    const total = this.escortPathLength(path);
+    let remaining = total * Math.max(0, Math.min(1, progress));
+    for (let index = 1; index < path.length; index += 1) {
+      const from = path[index - 1];
+      const to = path[index];
+      const length = Math.hypot(to.x - from.x, to.y - from.y);
+      if (remaining > length) {
+        remaining -= length;
+        continue;
+      }
+      const share = length > 0 ? remaining / length : 0;
+      return {
+        x: from.x + (to.x - from.x) * share,
+        y: from.y + (to.y - from.y) * share,
+      };
+    }
+    return path[path.length - 1] ?? { x: 0, y: 0 };
+  }
+
   /**
    * The planned waves of the map first, then waves the endless mode makes up on
    * the spot. Nothing left means the campaign is beaten.
@@ -173,9 +295,12 @@ export class WaveSystem {
     state.wave += 1;
     this.spawnQueue = [...definition.zombies];
     this.spawnDelay = 0.3;
+    this.spawnPattern = definition.spawnPattern ?? 'all';
+    this.spawnDelayScale = definition.spawnDelayScale ?? 1;
+    this.spawnIndex = 0;
     state.waveKind = definition.kind;
     state.waveLabel = definition.label;
-    state.statusText = this.waveStatus(definition.kind);
+    state.statusText = this.waveStatus(definition.kind, definition.label);
     state.runGold = this.rewardGold(false);
     state.runVictory = false;
     state.players.forEach((player) => {
@@ -185,7 +310,7 @@ export class WaveSystem {
     });
   }
 
-  private waveStatus(kind: string) {
+  private waveStatus(kind: string, label: string) {
     const state = this.world.state;
     const map = this.world.map;
     if (kind === 'boss')
@@ -193,7 +318,30 @@ export class WaveSystem {
     if (kind === 'mini') return `Welle ${state.wave} · Mini-Boss`;
     if (kind === 'swarm') return `Welle ${state.wave} · SCHWARM`;
     if (state.endless) return `Welle ${state.wave} · Endlos`;
+    if (label !== 'Welle') return `Welle ${state.wave} · ${label}`;
     return `Welle ${state.wave} / ${map.waves.length}`;
+  }
+
+  /** Side ids match GameWorld's edge order: west, east, north, south. */
+  private nextSpawnSide() {
+    switch (this.spawnPattern) {
+      case 'west':
+        return 0;
+      case 'east':
+        return 1;
+      case 'north':
+        return 2;
+      case 'south':
+        return 3;
+      case 'north-south':
+        return this.spawnIndex % 2 === 0 ? 2 : 3;
+      case 'east-west':
+        return this.spawnIndex % 2 === 0 ? 1 : 0;
+      case 'clockwise':
+        return [2, 1, 3, 0][this.spawnIndex % 4];
+      default:
+        return undefined;
+    }
   }
 
   finishWave() {
@@ -214,6 +362,19 @@ export class WaveSystem {
     state.bossName = '';
     state.bossHealth = 0;
     state.bossMaxHealth = 0;
+    if (state.objectiveActive && state.objectiveHealth < state.objectiveMaxHealth) {
+      state.objectiveHealth = Math.min(
+        state.objectiveMaxHealth,
+        state.objectiveHealth + state.objectiveMaxHealth * 0.1,
+      );
+      this.world.pushFx({
+        k: 'heal',
+        x: state.objectiveX,
+        y: state.objectiveY,
+        r: state.objectiveRadius,
+        s: 'objective',
+      });
+    }
     state.players.forEach((player) => {
       player.money += reward;
       // The squad goes into the next wave whole: everyone is back on their feet
@@ -286,6 +447,7 @@ export class WaveSystem {
 
   checkDefeat() {
     const state = this.world.state;
+    if (state.phase === 'gameover') return true;
     if (state.players.size === 0) return true;
     const defeated = [...state.players.values()].every((player) => !player.alive);
     if (defeated) this.endRun(false);
@@ -294,6 +456,13 @@ export class WaveSystem {
 
   /** True while the field still holds enemies or the queue still has some. */
   enemiesLeft() {
-    return this.spawnQueue.length + this.world.state.zombies.size;
+    const remaining = this.spawnQueue.length + this.world.state.zombies.size;
+    if (remaining > 0) return remaining;
+    const state = this.world.state;
+    if (state.objectiveActive && state.objectiveKind === 'escort') {
+      const checkpoint = Math.min(1, state.wave / Math.max(1, this.world.map.waves.length));
+      if (state.objectiveProgress + 0.0001 < checkpoint) return 1;
+    }
+    return 0;
   }
 }

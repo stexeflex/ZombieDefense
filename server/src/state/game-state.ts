@@ -222,6 +222,16 @@ export class GameState extends Schema {
   @type('string') waveKind: WaveKind = 'normal';
   @type('number') enemiesRemaining = 0;
   @type('string') statusText = 'Warte auf Spieler';
+  /** Optional campaign objective such as a relay core or escort wagon. */
+  @type('boolean') objectiveActive = false;
+  @type('string') objectiveKind = '';
+  @type('string') objectiveTitle = '';
+  @type('number') objectiveX = 0;
+  @type('number') objectiveY = 0;
+  @type('number') objectiveRadius = 0;
+  @type('number') objectiveHealth = 0;
+  @type('number') objectiveMaxHealth = 0;
+  @type('number') objectiveProgress = 0;
   @type('string') bossName = '';
   @type('number') bossHealth = 0;
   @type('number') bossMaxHealth = 0;

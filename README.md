@@ -1,7 +1,7 @@
 # Zombie Defense
 
 Kooperatives 2D-Top-down-Spiel für 1–4 Freunde. Ein Spieler erstellt eine
-Lobby, teilt den Link und kämpft sich durch zehn Karten mit festen Wellen,
+Lobby, teilt den Link und kämpft sich durch 15 Karten mit festen Wellen,
 Mini-Bossen und einem eigenen Endboss pro Karte.
 
 Der aktuelle Stand ist ein spielbarer Online-Prototyp. Er braucht keine
@@ -16,8 +16,11 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 - Link-Lobbys mit fünfstelligem Code, 1–4 Spieler über Colyseus/WebSockets
 - autoritative Bewegung, Zombie-KI, Treffer und Wellen auf dem Server
-- zehn Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
+- 15 Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
 - jede Karte endet mit ihrem **eigenen** Endboss und schaltet die nächste frei
+- späte Karten bringen gerichtete Angriffe, extrem dichte Kleinwellen, eine
+  kompakte Killbox, ein offenes Großfeld sowie echte Verteidigungs- und
+  Eskortmissionen
 - **Endlosmodus** auf jeder freigeschalteten Karte: nach der letzten geplanten
   Welle geht es weiter, alle zehn Wellen kommt der Boss der Karte zurück
 - Dash auf der Leertaste: zwei Ladungen, kurzer Cooldown, schluckt 40 % des
@@ -27,7 +30,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Kopfgeld wird **gleichmäßig geteilt**: jeder im Trupp bekommt denselben
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
-- dreizehn Zombiearten plus zehn Bosse
+- dreizehn Zombiearten plus fünfzehn Bosse
 - sechsundzwanzig Waffen von der Pistole bis zum Sonnenwerfer, darunter fünf
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
@@ -56,18 +59,27 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 ### Karten
 
-| Karte              | Wellen | Härte | Endboss        | Gold bei Sieg |
-| ------------------ | ------ | ----- | -------------- | ------------- |
-| Vorposten 07       | 10     | ×1    | Fleischkönig   | 570           |
-| Industriehafen     | 12     | ×1,45 | Brutmutter     | 1101          |
-| Militärbasis Nord  | 14     | ×2    | Feldmarschall  | 1932          |
-| Krater-Quarantäne  | 16     | ×2,8  | Artillerist    | 3159          |
-| Metro Sektor 9     | 17     | ×3,6  | Sogfürst       | 4577          |
-| Stahlwerk Kessel 3 | 18     | ×4,4  | Schlackenherr  | 6233          |
-| Zitadelle Alpha    | 20     | ×5,2  | Zerreißer      | 8652          |
-| Nekropole          | 22     | ×6    | Schwarmkönigin | 11748         |
-| Reaktorblock 4     | 24     | ×6,8  | Seuchenfürst   | 15721         |
-| Abgrund-Kathedrale | 26     | ×7,6  | OMEGA          | 22970         |
+| Karte              | Wellen | Härte | Endboss         | Besonderheit                  | Gold bei Sieg |
+| ------------------ | ------ | ----- | --------------- | ----------------------------- | ------------- |
+| Vorposten 07       | 10     | ×1    | Fleischkönig    | offener Einstieg              | 570           |
+| Industriehafen     | 12     | ×1,45 | Brutmutter      | Container-Gassen              | 1101          |
+| Militärbasis Nord  | 14     | ×2    | Feldmarschall   | lange Feuergassen             | 1932          |
+| Krater-Quarantäne  | 16     | ×2,8  | Artillerist     | offenes Feld                  | 3159          |
+| Metro Sektor 9     | 17     | ×3,6  | Sogfürst        | Tunnelkreuzung                | 4577          |
+| Stahlwerk Kessel 3 | 18     | ×4,4  | Schlackenherr   | enge Gießhalle                | 6233          |
+| Zitadelle Alpha    | 20     | ×5,2  | Zerreißer       | Festungsring                  | 8652          |
+| Nekropole          | 22     | ×6    | Schwarmkönigin  | kompakte Arena                | 11748         |
+| Reaktorblock 4     | 24     | ×6,8  | Seuchenfürst    | offenes Großfeld              | 15721         |
+| Abgrund-Kathedrale | 26     | ×7,6  | OMEGA           | alte Endlinie                 | 22970         |
+| Bunker K-11        | 28     | ×8,4  | Bastionsbrecher | Killbox, einseitige Kleinflut | 32264         |
+| Relais Helios      | 28     | ×9,2  | Sirene Null     | Signalkern verteidigen        | 39545         |
+| Damm 13            | 29     | ×10   | Tiefenwurm      | West-/Ost-Frontwechsel        | 48993         |
+| Route Lazarus      | 30     | ×10,9 | Straßenkönig    | Konvoi eskortieren            | 60500         |
+| Eklipsen-Riss      | 32     | ×11,8 | EKLIPSE         | rotierende Angriffsseiten     | 77347         |
+
+Beim Signalkern und beim Konvoi endet der Run auch dann, wenn das Missionsziel
+zerstört wird. Der Konvoi muss pro Welle einen Streckenabschnitt schaffen,
+fährt mit Begleitschutz schneller und wartet bei starkem Feinddruck.
 
 ### Endlosmodus
 
@@ -83,18 +95,23 @@ sich im Endlosmodus nichts, dafür bleibt die Kampagne da.
 
 Jede Karte hat genau einen Endboss, und jeder kann etwas anderes:
 
-| Boss           | Kann                                                                      |
-| -------------- | ------------------------------------------------------------------------- |
-| Fleischkönig   | Sturmangriff, Schockwelle, ruft Nachschub                                 |
-| Brutmutter     | zerfällt beim Sterben in Brutlinge, die selbst wieder zerfallen           |
-| Feldmarschall  | heilt sich und die ganze Horde, ruft Panzerträger                         |
-| Artillerist    | Bombenhagel aus der Ferne, angekündigt mit roten Warnkreisen              |
-| Sogfürst       | saugt den Trupp zu sich und stößt ihn wieder weg                          |
-| Schlackenherr  | hinterlässt brennende Lavapfützen                                         |
-| Zerreißer      | gewaltige Druckwelle, der rote Kreis ist die einzige Warnung              |
-| Schwarmkönigin | endloser Nachschub, zerfällt beim Sterben                                 |
-| Seuchenfürst   | Giftpfützen und Heilschwaden für die Horde                                |
-| OMEGA          | Druckwelle, Bombenhagel, Sog, Lava, Sturm — nur heilen kann es sich nicht |
+| Boss            | Kann                                                                      |
+| --------------- | ------------------------------------------------------------------------- |
+| Fleischkönig    | Sturmangriff, Schockwelle, ruft Nachschub                                 |
+| Brutmutter      | zerfällt beim Sterben in Brutlinge, die selbst wieder zerfallen           |
+| Feldmarschall   | heilt sich und die ganze Horde, ruft Panzerträger                         |
+| Artillerist     | Bombenhagel aus der Ferne, angekündigt mit roten Warnkreisen              |
+| Sogfürst        | saugt den Trupp zu sich und stößt ihn wieder weg                          |
+| Schlackenherr   | hinterlässt brennende Lavapfützen                                         |
+| Zerreißer       | gewaltige Druckwelle, der rote Kreis ist die einzige Warnung              |
+| Schwarmkönigin  | endloser Nachschub, zerfällt beim Sterben                                 |
+| Seuchenfürst    | Giftpfützen und Heilschwaden für die Horde                                |
+| OMEGA           | Druckwelle, Bombenhagel, Sog, Lava, Sturm — nur heilen kann es sich nicht |
+| Bastionsbrecher | massive Panzerung, Belagerungsschläge und Mörserfeuer                     |
+| Sirene Null     | beschleunigt und heilt ihre Angriffswelle                                 |
+| Tiefenwurm      | Giftspur, schnelle Jagd und drei Schlitzer beim Tod                       |
+| Straßenkönig    | Bombardement, Sprenglinge und Druckwellen gegen den Konvoi                |
+| EKLIPSE         | Feuer, Gift, Gravitation und Elite-Nachschub zugleich                     |
 
 Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 (gepanzert, ruft Verstärkung), Schlitzer (springt heran) und Mörserträger

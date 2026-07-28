@@ -187,6 +187,9 @@
                   <span>{{ snapshot.endless ? '∞' : map.waves.length }} Wellen</span>
                   <span>Härte ×{{ map.difficulty }}</span>
                   <span>☠ {{ bossName(map.id) }}</span>
+                  @if (map.mission) {
+                    <span class="mission-tag">◎ {{ map.mission.title }}</span>
+                  }
                   @if (!snapshot.endless) {
                     <span>◆ {{ campaignVictoryGold(map.id) }}</span>
                   }
@@ -286,13 +289,7 @@
                   ? 'Bauphase'
                   : snapshot.phase === 'gameover'
                     ? 'Run beendet'
-                    : snapshot.waveKind === 'boss'
-                      ? 'ENDBOSS'
-                      : snapshot.waveKind === 'mini'
-                        ? 'Mini-Boss'
-                        : snapshot.waveKind === 'swarm'
-                          ? 'SCHWARM'
-                          : 'Welle'
+                    : snapshot.waveLabel
               }}
             </span>
             <strong
@@ -307,6 +304,35 @@
               }}</small>
             }
           </div>
+
+          @if (snapshot.objectiveActive && (snapshot.objectiveMaxHealth ?? 0) > 0) {
+            <div class="objective-bar" [class.escort]="snapshot.objectiveKind === 'escort'">
+              <div class="objective-name">
+                <span>
+                  {{ snapshot.objectiveKind === 'escort' ? 'ESKORTE' : 'VERTEIDIGUNG' }} ·
+                  {{ snapshot.objectiveTitle }}
+                </span>
+                <b>
+                  {{ snapshot.objectiveHealth | number: '1.0-0' }} /
+                  {{ snapshot.objectiveMaxHealth | number: '1.0-0' }}
+                </b>
+              </div>
+              <div class="objective-track">
+                <span
+                  [style.width.%]="
+                    ((snapshot.objectiveHealth ?? 0) / (snapshot.objectiveMaxHealth ?? 1)) * 100
+                  "
+                ></span>
+              </div>
+              @if (snapshot.objectiveKind === 'escort') {
+                <div class="objective-progress">
+                  <small>Strecke</small>
+                  <i><span [style.width.%]="(snapshot.objectiveProgress ?? 0) * 100"></span></i>
+                  <b>{{ (snapshot.objectiveProgress ?? 0) * 100 | number: '1.0-0' }} %</b>
+                </div>
+              }
+            </div>
+          }
 
           @if (boss(); as bossState) {
             <div class="boss-bar">

@@ -25,7 +25,12 @@ export type ZombieType =
   | 'render'
   | 'swarmqueen'
   | 'plague'
-  | 'omega';
+  | 'omega'
+  | 'bastion'
+  | 'siren'
+  | 'tunneler'
+  | 'roadking'
+  | 'eclipse';
 
 export type ZombieRank = 'trash' | 'elite' | 'mini' | 'boss';
 
@@ -487,6 +492,143 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
       { kind: 'split', count: 1, type: 'warden' },
     ],
   },
+  bastion: {
+    label: 'Bastionsbrecher',
+    health: 11400,
+    speed: 38,
+    damage: 92,
+    radius: 72,
+    reward: 5200,
+    rank: 'boss',
+    threat: 'extreme Frontpanzerung und Belagerungsschläge',
+    armor: 0.48,
+    abilities: [
+      { kind: 'slam', every: 7.5, radius: 360, damage: 102, telegraph: 1.35 },
+      {
+        kind: 'mortar',
+        every: 8,
+        shots: 4,
+        radius: 118,
+        damage: 72,
+        telegraph: 1.2,
+        range: 1500,
+      },
+      { kind: 'summon', every: 12, count: 3, type: 'armored' },
+    ],
+  },
+  siren: {
+    label: 'Sirene Null',
+    health: 12100,
+    speed: 62,
+    damage: 78,
+    radius: 60,
+    reward: 5900,
+    rank: 'boss',
+    threat: 'beschleunigt und heilt ihre Angriffswelle',
+    abilities: [
+      { kind: 'haste', radius: 620, factor: 1.55 },
+      { kind: 'heal', every: 5.5, radius: 580, amount: 0.09, self: false },
+      { kind: 'summon', every: 7, count: 4, type: 'screamer' },
+      { kind: 'vortex', every: 10, radius: 720, force: 360, duration: 1.2, push: false },
+    ],
+  },
+  tunneler: {
+    label: 'Tiefenwurm',
+    health: 12900,
+    speed: 76,
+    damage: 88,
+    radius: 68,
+    reward: 6800,
+    rank: 'boss',
+    threat: 'giftige Jagd, Sturmangriffe und Nachwuchs beim Tod',
+    abilities: [
+      { kind: 'charge', every: 5.8, speed: 330, duration: 1.45 },
+      {
+        kind: 'puddle',
+        every: 4.5,
+        hazard: 'poison',
+        radius: 92,
+        dps: 38,
+        life: 9,
+        count: 4,
+        spread: 520,
+      },
+      { kind: 'slam', every: 9, radius: 275, damage: 78, telegraph: 0.9 },
+      { kind: 'split', count: 3, type: 'stalker' },
+    ],
+  },
+  roadking: {
+    label: 'Straßenkönig',
+    health: 14100,
+    speed: 58,
+    damage: 98,
+    radius: 74,
+    reward: 7900,
+    rank: 'boss',
+    threat: 'jagt den Konvoi mit Bomben und Sprenglingen',
+    armor: 0.24,
+    abilities: [
+      {
+        kind: 'mortar',
+        every: 4.8,
+        shots: 7,
+        radius: 120,
+        damage: 78,
+        telegraph: 1.05,
+        range: 1750,
+      },
+      { kind: 'charge', every: 7.5, speed: 300, duration: 1.8 },
+      { kind: 'vortex', every: 11, radius: 680, force: 700, duration: 0.45, push: true },
+      { kind: 'summon', every: 8.5, count: 5, type: 'exploder' },
+    ],
+  },
+  eclipse: {
+    label: 'EKLIPSE',
+    health: 15800,
+    speed: 58,
+    damage: 108,
+    radius: 82,
+    reward: 9800,
+    rank: 'boss',
+    threat: 'wechselt zwischen Feuersturm, Giftnebel und Gravitation',
+    armor: 0.28,
+    abilities: [
+      { kind: 'slam', every: 7.8, radius: 520, damage: 128, telegraph: 1.5 },
+      {
+        kind: 'mortar',
+        every: 5.5,
+        shots: 8,
+        radius: 136,
+        damage: 86,
+        telegraph: 1.15,
+        range: 1800,
+      },
+      { kind: 'vortex', every: 9, radius: 980, force: 360, duration: 1.55, push: false },
+      { kind: 'vortex', every: 14, radius: 760, force: 760, duration: 0.5, push: true },
+      {
+        kind: 'puddle',
+        every: 4.2,
+        hazard: 'lava',
+        radius: 108,
+        dps: 44,
+        life: 10,
+        count: 2,
+        spread: 420,
+      },
+      {
+        kind: 'puddle',
+        every: 6.8,
+        hazard: 'poison',
+        radius: 124,
+        dps: 36,
+        life: 12,
+        count: 3,
+        spread: 580,
+      },
+      { kind: 'summon', every: 10, count: 3, type: 'screamer' },
+      { kind: 'split', count: 2, type: 'warden' },
+    ],
+  },
 };
 
 export const ZOMBIE_TYPES = Object.keys(ZOMBIES) as ZombieType[];
@@ -504,6 +646,11 @@ export const BOSSES: ZombieType[] = [
   'swarmqueen',
   'plague',
   'omega',
+  'bastion',
+  'siren',
+  'tunneler',
+  'roadking',
+  'eclipse',
 ];
 
 export type AbilityOf<K extends ZombieAbility['kind']> = Extract<ZombieAbility, { kind: K }>;

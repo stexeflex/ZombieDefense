@@ -63,6 +63,10 @@ export class ArenaScene extends Phaser.Scene {
   private readonly drones = new Map<string, DroneView>();
   private readonly projectiles = new Map<string, ProjectileView>();
   private readonly hazards = new Map<string, HazardView>();
+  private objectiveRoot?: Phaser.GameObjects.Container;
+  private objectiveGraphics?: Phaser.GameObjects.Graphics;
+  private objectiveLabel?: Phaser.GameObjects.Text;
+  private objectiveKind = '';
   private readonly subscriptions = new Subscription();
   /** Set once Phaser tore the scene down, see `detach()`. */
   private detached = false;
@@ -325,6 +329,25 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0, 0);
     this.world.add(ground);
 
+    if (this.map.mission?.kind === 'escort') {
+      const route = this.add.graphics();
+      const routeColor = Phaser.Display.Color.HexStringToColor(this.map.theme.accent).color;
+      route.lineStyle(8, routeColor, 0.12);
+      route.beginPath();
+      this.map.mission.path.forEach((point, index) => {
+        if (index === 0) route.moveTo(point.x, point.y);
+        else route.lineTo(point.x, point.y);
+      });
+      route.strokePath();
+      route.lineStyle(2, routeColor, 0.34);
+      route.strokePoints(this.map.mission.path, false, false);
+      for (const point of this.map.mission.path) {
+        route.fillStyle(routeColor, 0.38);
+        route.fillCircle(point.x, point.y, 7);
+      }
+      this.world.add(route);
+    }
+
     for (const decor of this.map.decor) {
       const image = this.add
         .image(decor.x, decor.y, `decor-${decor.kind}`)
@@ -415,7 +438,11 @@ export class ArenaScene extends Phaser.Scene {
     const inRange = me ? Math.hypot(me.root.x - spot.x, me.root.y - spot.y) <= PLACE_RANGE : true;
     const money = this.snapshot?.players[this.gameService.sessionId()]?.money ?? 0;
     const affordable = money >= this.gameService.defensePrice(selected);
-    const valid = inRange && affordable && canPlaceDefense(spot, others, this.map.obstacles);
+    const valid =
+      inRange &&
+      affordable &&
+      this.objectiveClear(spot.x, spot.y, Math.max(config.width, config.height) / 2) &&
+      canPlaceDefense(spot, others, this.map.obstacles);
 
     this.ghost
       .setVisible(true)
@@ -450,6 +477,7 @@ export class ArenaScene extends Phaser.Scene {
     const valid =
       inRange &&
       affordable &&
+      this.objectiveClear(spot.x, spot.y, Math.max(config.width, config.height) / 2) &&
       canPlaceVehicle(
         spot,
         Object.values(this.snapshot?.defenses ?? {}),
@@ -467,6 +495,15 @@ export class ArenaScene extends Phaser.Scene {
     if (valid) this.ghost.clearTint();
     else this.ghost.setTint(0xff5f71);
     this.ghostRange.setVisible(false);
+  }
+
+  private objectiveClear(x: number, y: number, radius: number) {
+    const snapshot = this.snapshot;
+    if (!snapshot?.objectiveActive) return true;
+    return (
+      Math.hypot((snapshot.objectiveX ?? 0) - x, (snapshot.objectiveY ?? 0) - y) >
+      (snapshot.objectiveRadius ?? 0) + radius + 24
+    );
   }
 
   // ------------------------------------------------------------- build focus
@@ -641,6 +678,90 @@ export class ArenaScene extends Phaser.Scene {
       (hazard) => this.createHazard(hazard),
       (view, hazard) => this.updateHazard(view, hazard),
     );
+    this.syncObjective(snapshot);
+  }
+
+  private syncObjective(snapshot: GameSnapshot) {
+    if (!snapshot.objectiveActive) {
+      this.objectiveRoot?.destroy(true);
+      this.objectiveRoot = undefined;
+      this.objectiveGraphics = undefined;
+      this.objectiveLabel = undefined;
+      this.objectiveKind = '';
+      return;
+    }
+
+    const kind = snapshot.objectiveKind ?? '';
+    if (!this.objectiveRoot || this.objectiveKind !== kind) {
+      this.objectiveRoot?.destroy(true);
+      this.objectiveKind = kind;
+      this.objectiveGraphics = this.add.graphics();
+      this.objectiveLabel = this.add
+        .text(0, 0, '', {
+          align: 'center',
+          color: '#eafff2',
+          fontFamily: 'Inter, Arial, sans-serif',
+          fontStyle: 'bold',
+          fontSize: '12px',
+          stroke: '#04100b',
+          strokeThickness: 4,
+        })
+        .setOrigin(0.5, 1);
+      this.objectiveRoot = this.add
+        .container(0, 0, [this.objectiveGraphics, this.objectiveLabel])
+        .setDepth(7);
+    }
+
+    const radius = snapshot.objectiveRadius ?? 56;
+    const health = Math.max(0, snapshot.objectiveHealth ?? 0);
+    const maxHealth = Math.max(1, snapshot.objectiveMaxHealth ?? 1);
+    const healthShare = health / maxHealth;
+    const progress = Math.max(0, Math.min(1, snapshot.objectiveProgress ?? 0));
+    const escort = kind === 'escort';
+    const color = escort ? 0xffa35c : 0x67f6ff;
+    const graphics = this.objectiveGraphics!;
+    graphics.clear();
+    graphics.fillStyle(color, 0.07);
+    graphics.fillCircle(0, 0, radius + 42);
+    graphics.lineStyle(2, color, 0.48);
+    graphics.strokeCircle(0, 0, radius + 42);
+
+    if (escort) {
+      graphics.fillStyle(0x11191d, 1);
+      graphics.fillRoundedRect(-48, -25, 96, 50, 12);
+      graphics.lineStyle(3, color, 0.9);
+      graphics.strokeRoundedRect(-48, -25, 96, 50, 12);
+      graphics.fillStyle(0x303a40, 1);
+      graphics.fillCircle(-30, 28, 10);
+      graphics.fillCircle(30, 28, 10);
+      graphics.fillStyle(color, 0.8);
+      graphics.fillRect(-24, -16, 48, 18);
+    } else {
+      graphics.fillStyle(0x10262b, 1);
+      graphics.fillCircle(0, 0, 42);
+      graphics.lineStyle(5, color, 0.9);
+      graphics.strokeCircle(0, 0, 42);
+      graphics.fillStyle(color, 0.72);
+      graphics.fillCircle(0, 0, 17);
+      graphics.lineStyle(2, 0xffffff, 0.5);
+      graphics.strokeCircle(0, 0, 26);
+    }
+
+    graphics.fillStyle(0x2d1619, 0.95);
+    graphics.fillRect(-62, -radius - 35, 124, 7);
+    graphics.fillStyle(healthShare > 0.35 ? color : 0xff5f71, 1);
+    graphics.fillRect(-62, -radius - 35, 124 * healthShare, 7);
+    if (escort) {
+      graphics.fillStyle(0x182027, 0.95);
+      graphics.fillRect(-62, radius + 27, 124, 5);
+      graphics.fillStyle(color, 0.9);
+      graphics.fillRect(-62, radius + 27, 124 * progress, 5);
+    }
+
+    this.objectiveLabel!.setPosition(0, -radius - 40).setText(
+      `${snapshot.objectiveTitle ?? 'Missionsziel'} · ${Math.round(health)} / ${Math.round(maxHealth)}`,
+    );
+    this.objectiveRoot!.setPosition(snapshot.objectiveX ?? 0, snapshot.objectiveY ?? 0);
   }
 
   private syncEntities<T extends { id: string; x: number; y: number }, V extends BaseView>(

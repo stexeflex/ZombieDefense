@@ -98,8 +98,8 @@ function dps(weapon: WeaponType) {
 }
 
 describe('map campaign', () => {
-  it('offers ten maps that get harder and pay out more', () => {
-    expect(MAPS).toHaveLength(10);
+  it('offers fifteen maps that get harder and pay out more', () => {
+    expect(MAPS).toHaveLength(15);
     for (let index = 1; index < MAPS.length; index += 1) {
       expect(MAPS[index].difficulty).toBeGreaterThan(MAPS[index - 1].difficulty);
       expect(MAPS[index].reward).toBeGreaterThan(MAPS[index - 1].reward);
@@ -177,6 +177,29 @@ describe('map campaign', () => {
     expect(swarmWaves.length).toBeGreaterThan(0);
   });
 
+  it('adds directed assaults, a holdout and a real escort objective', () => {
+    const relay = MAPS.find((map) => map.id === 'relay');
+    const convoy = MAPS.find((map) => map.id === 'convoy');
+    const lateWaves = MAPS.slice(10).flatMap((map) => map.waves);
+
+    expect(relay?.mission?.kind).toBe('holdout');
+    expect(convoy?.mission?.kind).toBe('escort');
+    if (convoy?.mission?.kind === 'escort') {
+      expect(convoy.mission.path.length).toBeGreaterThanOrEqual(5);
+      expect(convoy.mission.maxHealth).toBeGreaterThan(5000);
+    }
+    expect(
+      lateWaves.filter((wave) => wave.spawnPattern && wave.spawnPattern !== 'all').length,
+    ).toBe(lateWaves.length);
+    expect(lateWaves.some((wave) => (wave.spawnDelayScale ?? 1) < 0.35)).toBe(true);
+  });
+
+  it('makes map eight compact and map nine deliberately open', () => {
+    expect(MAPS[7].mission?.title).toBe('Kompakt-Arena');
+    expect(MAPS[8].mission?.title).toBe('Offenes Großfeld');
+    expect(MAPS[7].obstacles.length).toBeGreaterThan(MAPS[8].obstacles.length);
+  });
+
   it('keeps making waves for the endless mode', () => {
     const boss = MAPS[0].boss;
     // Every third wave brings mini bosses, every fifth a swarm, every tenth the
@@ -252,6 +275,21 @@ describe('enemy roster', () => {
     expect(
       timedAbilities('render').some((ability) => ability.kind === 'slam' && ability.telegraph),
     ).toBe(true);
+    expect(ZOMBIES.bastion.armor).toBeGreaterThan(0.4);
+    expect(ZOMBIES.siren.abilities?.some((ability) => ability.kind === 'haste')).toBe(true);
+    expect(splitAbility('tunneler')).toBeDefined();
+    expect(
+      timedAbilities('roadking').some(
+        (ability) => ability.kind === 'summon' && ability.type === 'exploder',
+      ),
+    ).toBe(true);
+    expect(
+      new Set(
+        timedAbilities('eclipse')
+          .filter((ability) => ability.kind === 'puddle')
+          .map((ability) => (ability.kind === 'puddle' ? ability.hazard : '')),
+      ).size,
+    ).toBe(2);
   });
 
   it('lets the final boss borrow from everyone but never heal itself', () => {

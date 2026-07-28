@@ -1,10 +1,21 @@
 import type { WaveKind } from './snapshots.js';
 import type { ZombieType } from './zombies.js';
 
+/**
+ * Where a wave enters the arena. Directed assaults make a formation matter
+ * without changing the basic edge-spawn rules.
+ */
+export type SpawnPattern =
+  'all' | 'north' | 'east' | 'south' | 'west' | 'north-south' | 'east-west' | 'clockwise';
+
 export interface WaveDefinition {
   kind: WaveKind;
   label: string;
   zombies: ZombieType[];
+  /** Optional edge pattern; older maps keep using all four sides. */
+  spawnPattern?: SpawnPattern;
+  /** Multiplier for the normal delay between individual spawns. */
+  spawnDelayScale?: number;
 }
 
 export interface RosterEntry {
@@ -27,6 +38,12 @@ export interface WavePlan {
   swarmWaves: number[];
   roster: RosterEntry[];
   seed: number;
+  /** Per-wave attacks from a deliberate side or pair of sides. */
+  spawnPatterns?: Partial<Record<number, SpawnPattern>>;
+  /** Per-wave pacing. Values below one produce a tightly packed rush. */
+  spawnDelayScales?: Partial<Record<number, number>>;
+  /** A special title shown instead of the generic wave label. */
+  labels?: Partial<Record<number, string>>;
 }
 
 function seeded(seed: number) {
@@ -205,6 +222,10 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
   for (let wave = 1; wave <= plan.waves; wave += 1) {
     const size = plan.base + (wave - 1) * plan.step;
     const seed = plan.seed + wave * 17;
+    const flavour = {
+      spawnPattern: plan.spawnPatterns?.[wave],
+      spawnDelayScale: plan.spawnDelayScales?.[wave],
+    };
 
     if (wave === plan.waves) {
       // The finale is about the boss, not about a long clean-up afterwards, so
@@ -212,8 +233,9 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
       const escort = Math.min(size * 0.8, 110);
       waves.push({
         kind: 'boss',
-        label: 'ENDBOSS',
+        label: plan.labels?.[wave] ?? 'ENDBOSS',
         zombies: [plan.boss, ...shuffled(pack(horde(escort, plan.roster, wave)), seed)],
+        ...flavour,
       });
       continue;
     }
@@ -222,23 +244,26 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
       miniIndex += 1;
       waves.push({
         kind: 'mini',
-        label: 'Mini-Boss',
+        label: plan.labels?.[wave] ?? 'Mini-Boss',
         zombies: [...leaders, ...shuffled(pack(horde(size * 0.65, plan.roster, wave)), seed)],
+        ...flavour,
       });
       continue;
     }
     if (plan.swarmWaves.includes(wave)) {
       waves.push({
         kind: 'swarm',
-        label: 'SCHWARM',
+        label: plan.labels?.[wave] ?? 'SCHWARM',
         zombies: shuffled(pack(swarm(size, plan.roster, wave)), seed),
+        ...flavour,
       });
       continue;
     }
     waves.push({
       kind: 'normal',
-      label: 'Welle',
+      label: plan.labels?.[wave] ?? 'Welle',
       zombies: shuffled(pack(horde(size, plan.roster, wave)), seed),
+      ...flavour,
     });
   }
 

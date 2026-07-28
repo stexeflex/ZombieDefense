@@ -371,6 +371,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.waves.spawn(delta);
     this.playerSystem.update(delta);
     this.vehicles.update(delta, true);
+    this.waves.updateMission(delta);
     this.zombieSystem.update(delta);
     this.projectiles.update(delta);
     this.turrets.update(delta);

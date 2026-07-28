@@ -50,14 +50,29 @@ export class ZombieSystem {
       if (!this.applyGroundDefenses(id, zombie, delta)) return;
 
       const target = this.world.nearestLivingPlayer(zombie.x, zombie.y);
-      if (!target) return;
+      const state = this.world.state;
+      const playerDistance = target
+        ? Math.hypot(target.x - zombie.x, target.y - zombie.y)
+        : Infinity;
+      const objectiveDistance = state.objectiveActive
+        ? Math.hypot(state.objectiveX - zombie.x, state.objectiveY - zombie.y)
+        : Infinity;
+      // Mission objectives pull a meaningful part of the horde. Players can
+      // still peel enemies away by meeting them before they reach the target.
+      const attacksObjective =
+        state.objectiveActive && (!target || objectiveDistance <= playerDistance * 0.5);
+      if (!target && !attacksObjective) return;
+      const targetX = attacksObjective ? state.objectiveX : target!.x;
+      const targetY = attacksObjective ? state.objectiveY : target!.y;
 
-      const navigation = this.navigationTarget(zombie, target.x, target.y);
+      const navigation = this.navigationTarget(zombie, targetX, targetY);
       const angle = Math.atan2(navigation.y - zombie.y, navigation.x - zombie.x);
       const navigationDistance = Math.hypot(navigation.x - zombie.x, navigation.y - zombie.y);
       zombie.rotation = angle;
-      const contact = zombie.radius + PLAYER_RADIUS;
-      const distance = Math.hypot(target.x - zombie.x, target.y - zombie.y);
+      const contact =
+        zombie.radius +
+        (attacksObjective ? Math.max(34, state.objectiveRadius * 0.72) : PLAYER_RADIUS);
+      const distance = Math.hypot(targetX - zombie.x, targetY - zombie.y);
       const stepX = Math.cos(angle) * zombie.speed * delta;
       const stepY = Math.sin(angle) * zombie.speed * delta;
       const blocking = this.world.blockingDefense(zombie, stepX, stepY);
@@ -134,17 +149,21 @@ export class ZombieSystem {
         if (zombie.attackCooldown <= 0) {
           zombie.attackCooldown = this.attackDelay(zombie.type, 1);
           zombie.attacking = 0.3;
-          const crewed = this.world.vehicleOf(target.id);
+          if (attacksObjective) {
+            this.world.damageObjective(zombie.damage * this.structureBonus(zombie));
+            return;
+          }
+          const crewed = this.world.vehicleOf(target!.id);
           if (crewed) {
             this.world.hullMelee(crewed, zombie.damage * this.structureBonus(zombie));
             return;
           }
           // A swing that runs into a dash gets its own cue instead of blood.
-          const landed = this.world.damagePlayer(target, zombie.damage);
+          const landed = this.world.damagePlayer(target!, zombie.damage);
           this.world.pushFx(
             landed
-              ? { k: 'blood', x: target.x, y: target.y, s: 'player' }
-              : { k: 'deflect', x: target.x, y: target.y, s: 'dash' },
+              ? { k: 'blood', x: target!.x, y: target!.y, s: 'player' }
+              : { k: 'deflect', x: target!.x, y: target!.y, s: 'dash' },
           );
         }
       }

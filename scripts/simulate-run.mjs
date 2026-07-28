@@ -136,6 +136,10 @@ console.log('\n== Erste Welle auf Vorposten 07 ==');
   let ticks = 0;
   while (room.state.phase === 'combat' && ticks < 6000) {
     makeInvincible(player);
+    player.weapon = 'laser';
+    player.ammo = 9999;
+    player.reserveAmmo = 9999;
+    player.reloading = 0;
     step(room, 1, 'p1');
     ticks += 1;
   }
@@ -2051,7 +2055,7 @@ console.log('\n== Boss-Fähigkeiten ==');
 console.log('\n== Jede Karte hat ihren eigenen Boss ==');
 {
   const bosses = MAPS.map((map) => map.boss);
-  check('Zehn Karten', MAPS.length === 10, `(${MAPS.length})`);
+  check('Fünfzehn Karten', MAPS.length === 15, `(${MAPS.length})`);
   check('Kein Boss doppelt', new Set(bosses).size === bosses.length);
   check(
     'Jeder Boss ist als Boss eingestuft',
@@ -2069,18 +2073,60 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
   );
   check('Vier Mini-Bosse plus Brutling', MINI_BOSSES.length === 4);
   check('Vierzehn Türme', TURRET_ORDER.length === 14, `(${TURRET_ORDER.length})`);
+  check(
+    'Signalkern-Mission ist eingeplant',
+    MAPS.some((map) => map.mission?.kind === 'holdout'),
+  );
+  check(
+    'Konvoi-Mission ist eingeplant',
+    MAPS.some((map) => map.mission?.kind === 'escort'),
+  );
   const swarmWaves = MAPS.flatMap((map) => map.waves).filter((wave) => wave.kind === 'swarm');
   check('Schwarmwellen sind eingeplant', swarmWaves.length > 0, `(${swarmWaves.length})`);
 }
 
+console.log('\n== Kampagnen-Missionsziele ==');
+{
+  const relayRoom = makeRoom('relay');
+  join(relayRoom, 'p1');
+  startCombat(relayRoom);
+  check(
+    'Signalkern wird als Missionsziel aktiviert',
+    relayRoom.state.objectiveActive && relayRoom.state.objectiveKind === 'holdout',
+  );
+  const relayHealth = relayRoom.state.objectiveHealth;
+  relayRoom.systems.world.damageObjective(250);
+  check('Signalkern kann Schaden nehmen', relayRoom.state.objectiveHealth < relayHealth);
+  relayRoom.systems.world.damageObjective(relayRoom.state.objectiveMaxHealth * 1000);
+  check('Zerstörter Signalkern beendet den Run', relayRoom.state.phase === 'gameover');
+
+  const convoyRoom = makeRoom('convoy');
+  const escort = join(convoyRoom, 'p1');
+  startCombat(convoyRoom);
+  escort.x = convoyRoom.state.objectiveX;
+  escort.y = convoyRoom.state.objectiveY;
+  const before = convoyRoom.state.objectiveProgress;
+  convoyRoom.systems.waves.updateMission(1);
+  check(
+    'Konvoi fährt mit Begleitschutz voran',
+    convoyRoom.state.objectiveProgress > before &&
+      convoyRoom.state.objectiveProgress <= 1 / convoyRoom.systems.world.map.waves.length,
+  );
+}
+
 console.log('\n== Kampagne pro Karte ==');
-MAPS.forEach((map, mapIndex) => {
+const requestedMaps = process.argv.slice(2);
+const campaignMaps =
+  requestedMaps.length > 0 ? MAPS.filter((map) => requestedMaps.includes(map.id)) : MAPS;
+const campaignStallLimit = requestedMaps.length > 0 ? 24000 : 72000;
+campaignMaps.forEach((map) => {
+  const mapIndex = MAPS.indexOf(map);
   const room = makeRoom(map.id);
   let reward = null;
   room.broadcast = (type, payload) => {
     if (type === 'permanent_reward') reward = payload;
   };
-  // Wer Karte 9 erreicht, hat längst Gold in Upgrades gesteckt. Der Bot startet
+  // Wer die späten Karten erreicht, hat längst Gold in Upgrades gesteckt. Der Bot startet
   // deshalb auf Karte 1 nackt und wird mit jeder Karte stärker.
   const player = join(room, 'p1', {
     upgrades: {
@@ -2101,6 +2147,79 @@ MAPS.forEach((map, mapIndex) => {
     player.ammo = 9999;
     player.reserveAmmo = 9999;
     player.reloading = 0;
+    // Mission bots actually play the objective: they hold beside the relay or
+    // follow the escort instead of camping at the original player spawn.
+    if (room.state.objectiveActive) {
+      player.x = room.state.objectiveX + room.state.objectiveRadius + 110;
+      player.y = room.state.objectiveY;
+      let nearest;
+      let nearestDistance = Infinity;
+      room.state.zombies.forEach((zombie) => {
+        const distance = Math.hypot(zombie.x - player.x, zombie.y - player.y);
+        if (distance >= nearestDistance) return;
+        nearestDistance = distance;
+        nearest = zombie;
+      });
+      // Walk around the objective when an attacker sits on its far side.
+      if (nearest && nearestDistance > 145 && nearestDistance < 420) {
+        const baseAngle = Math.atan2(player.y - nearest.y, player.x - nearest.x);
+        for (let slot = 0; slot < 8; slot += 1) {
+          const angle = baseAngle + (slot * Math.PI) / 4;
+          const x = nearest.x + Math.cos(angle) * 118;
+          const y = nearest.y + Math.sin(angle) * 118;
+          if (!room.systems.world.canStand(x, y, 18)) continue;
+          if (!room.systems.world.canTravel(x, y, nearest.x, nearest.y, 18)) continue;
+          player.x = x;
+          player.y = y;
+          nearestDistance = 118;
+          break;
+        }
+      }
+      if (nearestDistance < 145) player.weapon = 'worldbreaker';
+    } else {
+      let nearest;
+      let nearestDistance = Infinity;
+      room.state.zombies.forEach((zombie) => {
+        const distance = Math.hypot(zombie.x - player.x, zombie.y - player.y);
+        if (distance >= nearestDistance) return;
+        nearestDistance = distance;
+        nearest = zombie;
+      });
+      let bossEngaged = false;
+      if (nearest && ZOMBIES[nearest.type].rank === 'boss') {
+        for (let slot = 0; slot < 12; slot += 1) {
+          const angle = (slot * Math.PI) / 6;
+          const x = Math.max(
+            ARENA.padding,
+            Math.min(ARENA.width - ARENA.padding, nearest.x + Math.cos(angle) * 118),
+          );
+          const y = Math.max(
+            ARENA.padding,
+            Math.min(ARENA.height - ARENA.padding, nearest.y + Math.sin(angle) * 118),
+          );
+          if (!room.systems.world.canStand(x, y, 18)) continue;
+          player.x = x;
+          player.y = y;
+          player.weapon = 'worldbreaker';
+          bossEngaged = true;
+          break;
+        }
+      }
+      const sightBlocked =
+        nearest && !room.systems.world.canTravel(player.x, player.y, nearest.x, nearest.y, 18);
+      if (!bossEngaged && nearest && (sightBlocked || nearestDistance > 850)) {
+        for (let slot = 0; slot < 12; slot += 1) {
+          const angle = (slot * Math.PI) / 6;
+          const x = nearest.x + Math.cos(angle) * 240;
+          const y = nearest.y + Math.sin(angle) * 240;
+          if (!room.systems.world.canStand(x, y, 18)) continue;
+          if (!room.systems.world.canTravel(x, y, nearest.x, nearest.y, 18)) continue;
+          player.x = x;
+          player.y = y;
+          break;
+        }
+      }
+    }
     if (room.state.phase === 'build') room.systems.waves.startNextWave();
     step(room, 1, 'p1');
     ticks += 1;
@@ -2110,7 +2229,7 @@ MAPS.forEach((map, mapIndex) => {
     }
     // Die letzten Karten sind Marathons: eine Welle darf lange dauern, aber
     // nach einer Stunde Spielzeit hängt sie wirklich.
-    if (ticks - waveStart > 72000) {
+    if (ticks - waveStart > campaignStallLimit) {
       stalled = true;
       break;
     }
@@ -2118,7 +2237,17 @@ MAPS.forEach((map, mapIndex) => {
   check(
     `${map.name}: alle ${map.waves.length} Wellen geschafft`,
     !stalled && reward !== null && reward.victory,
-    stalled ? `(Welle ${currentWave} hängt)` : '',
+    stalled
+      ? `(Welle ${currentWave} hängt: ${room.state.zombies.size} aktiv, ` +
+          `${room.systems.waves.spawnQueue.length} warten, Ziel ${Math.round(room.state.objectiveProgress * 100)} %, ` +
+          `${[...room.state.zombies.values()]
+            .slice(0, 4)
+            .map(
+              (zombie) =>
+                `${zombie.type}@${Math.round(zombie.x)},${Math.round(zombie.y)}:${Math.round(zombie.health)}`,
+            )
+            .join(' ')})`
+      : '',
   );
   console.log(
     `  info ${Math.round((ticks * 0.05) / 60)} min Kampfzeit, ${player.kills} Abschüsse,` +

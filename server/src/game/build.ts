@@ -197,6 +197,7 @@ export class BuildSystem {
       : 0;
     if (player.money < price) return;
     if (Math.hypot(player.x - x, player.y - y) > PLACE_RANGE) return;
+    if (!this.world.objectiveClear(x, y, Math.max(config.width, config.height) / 2)) return;
     if (
       !canPlaceDefense(
         { type, x, y, rotation },
@@ -253,6 +254,7 @@ export class BuildSystem {
       (Math.round((Number(payload.rotation) || 0) / (Math.PI / 2)) * (Math.PI / 2)) % Math.PI;
     if (player.money < price) return;
     if (Math.hypot(player.x - x, player.y - y) > PLACE_RANGE) return;
+    if (!this.world.objectiveClear(x, y, Math.max(config.width, config.height) / 2)) return;
     if (
       !canPlaceVehicle(
         { type, x, y, rotation },

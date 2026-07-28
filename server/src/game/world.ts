@@ -99,6 +99,8 @@ export const EMPTY_INPUT: PlayerInput = {
 export class GameWorld {
   readonly runtime = new Map<string, RuntimePlayer>();
   fxQueue: FxEvent[] = [];
+  /** WaveSystem owns the loss transition; the world only reports a destroyed objective. */
+  onObjectiveDestroyed?: () => void;
   private entityCounter = 0;
 
   constructor(
@@ -156,12 +158,12 @@ export class GameWorld {
 
   // ----------------------------------------------------------------- spawning
 
-  spawnZombie(type: ZombieType, at?: { x: number; y: number }) {
+  spawnZombie(type: ZombieType, at?: { x: number; y: number }, edgeSide?: number) {
     const config = ZOMBIES[type];
     const zombie = new ZombieState();
     zombie.id = this.nextId('z');
     zombie.type = type;
-    const spawn = at ?? this.edgeSpawn(config.radius);
+    const spawn = at ?? this.edgeSpawn(config.radius, edgeSide);
     zombie.x = spawn.x;
     zombie.y = spawn.y;
     const waveScale = 1 + Math.max(0, this.state.wave - 1) * 0.07;
@@ -262,9 +264,9 @@ export class GameWorld {
    * buildings or players, so every corner remains useful for defenses and no
    * enemy appears inside somebody's fortification.
    */
-  edgeSpawn(radius = ZOMBIES.normal.radius) {
+  edgeSpawn(radius = ZOMBIES.normal.radius, forcedSide?: number) {
     const randomCandidate = () =>
-      this.edgeSpawnCandidate(Math.floor(Math.random() * 4), Math.random(), radius);
+      this.edgeSpawnCandidate(forcedSide ?? Math.floor(Math.random() * 4), Math.random(), radius);
 
     const start = Math.floor(Math.random() * 64);
     for (const avoidPlayers of [true, false]) {
@@ -276,7 +278,7 @@ export class GameWorld {
       for (let index = 0; index < 64; index += 1) {
         const slot = (start + index * 17) % 64;
         const candidate = this.edgeSpawnCandidate(
-          Math.floor(slot / 16),
+          forcedSide ?? Math.floor(slot / 16),
           ((slot % 16) + 0.5) / 16,
           radius,
         );
@@ -458,6 +460,39 @@ export class GameWorld {
       const distance = Math.hypot(vehicle.x - x, vehicle.y - y);
       this.damageVehicle(vehicle, damage * Math.max(0.3, 1 - distance / radius));
     }
+
+    const state = this.state;
+    if (state.objectiveActive) {
+      const distance = Math.hypot(state.objectiveX - x, state.objectiveY - y);
+      if (distance <= radius + state.objectiveRadius) {
+        this.damageObjective(damage * Math.max(0.3, 1 - distance / radius));
+      }
+    }
+  }
+
+  damageObjective(amount: number) {
+    const state = this.state;
+    if (!state.objectiveActive || amount <= 0 || state.objectiveHealth <= 0) return;
+    // Mission structures are fortified targets, not oversized players. Their
+    // armor keeps one leaked pack from deleting a long campaign in seconds.
+    state.objectiveHealth = Math.max(0, state.objectiveHealth - amount * 0.0015);
+    this.pushFx({
+      k: 'structure',
+      x: state.objectiveX,
+      y: state.objectiveY,
+      r: state.objectiveRadius,
+      s: state.objectiveKind,
+    });
+    if (state.objectiveHealth <= 0) this.onObjectiveDestroyed?.();
+  }
+
+  /** Objectives reserve their own footprint just like a map prop. */
+  objectiveClear(x: number, y: number, radius: number) {
+    const state = this.state;
+    if (!state.objectiveActive) return true;
+    return (
+      Math.hypot(state.objectiveX - x, state.objectiveY - y) > state.objectiveRadius + radius + 24
+    );
   }
 
   // ----------------------------------------------------------------- vehicles

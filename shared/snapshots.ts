@@ -181,6 +181,16 @@ export interface GameSnapshot {
   waveKind: WaveKind;
   enemiesRemaining: number;
   statusText: string;
+  /** Campaign-only structure that the squad must defend or escort. */
+  objectiveActive?: boolean;
+  objectiveKind?: '' | 'holdout' | 'escort';
+  objectiveTitle?: string;
+  objectiveX?: number;
+  objectiveY?: number;
+  objectiveRadius?: number;
+  objectiveHealth?: number;
+  objectiveMaxHealth?: number;
+  objectiveProgress?: number;
   bossName: string;
   bossHealth: number;
   bossMaxHealth: number;

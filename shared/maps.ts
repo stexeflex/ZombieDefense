@@ -1,6 +1,6 @@
 import { ARENA } from './arena.js';
 import type { WaveDefinition } from './waves.js';
-import { buildWaves, type WavePlan } from './waves.js';
+import { buildWaves, type SpawnPattern, type WavePlan } from './waves.js';
 import type { ZombieType } from './zombies.js';
 
 export type ObstacleKind =
@@ -36,6 +36,31 @@ export interface MapTheme {
   fog: string;
 }
 
+export type MapMission =
+  | {
+      kind: 'survival';
+      title: string;
+      briefing: string;
+    }
+  | {
+      kind: 'holdout';
+      title: string;
+      briefing: string;
+      x: number;
+      y: number;
+      radius: number;
+      maxHealth: number;
+    }
+  | {
+      kind: 'escort';
+      title: string;
+      briefing: string;
+      radius: number;
+      maxHealth: number;
+      speed: number;
+      path: Array<{ x: number; y: number }>;
+    };
+
 export interface GameMap {
   id: string;
   name: string;
@@ -50,6 +75,8 @@ export interface GameMap {
   /** The one boss this map ends with — every map has its own. */
   boss: ZombieType;
   theme: MapTheme;
+  /** Optional campaign objective that changes how the map is won or lost. */
+  mission?: MapMission;
   waves: WaveDefinition[];
   obstacles: MapObstacle[];
   decor: MapDecor[];
@@ -376,6 +403,94 @@ const ABYSS_STRUCTURES: MapObstacle[] = [
   obstacle('crate', 1440, 960),
 ];
 
+/** A deliberately cramped inner bunker with only four narrow breach lanes. */
+const POCKET_STRUCTURES: MapObstacle[] = [
+  obstacle('wall', 760, 510),
+  obstacle('wall', 1640, 510),
+  obstacle('wall', 760, 1090),
+  obstacle('wall', 1640, 1090),
+  obstacle('wall', 650, 690, Math.PI / 2),
+  obstacle('wall', 650, 930, Math.PI / 2),
+  obstacle('wall', 1750, 690, Math.PI / 2),
+  obstacle('wall', 1750, 930, Math.PI / 2),
+  obstacle('container', 420, 800, Math.PI / 2),
+  obstacle('container', 1980, 800, Math.PI / 2),
+  obstacle('ruin', 430, 350),
+  obstacle('ruin', 1970, 1250),
+];
+
+/** Cover points around a clear relay core that must stay alive. */
+const RELAY_STRUCTURES: MapObstacle[] = [
+  obstacle('wall', 820, 520, 0, 0.85),
+  obstacle('wall', 1580, 520, 0, 0.85),
+  obstacle('wall', 820, 1080, 0, 0.85),
+  obstacle('wall', 1580, 1080, 0, 0.85),
+  obstacle('wall', 600, 800, Math.PI / 2, 0.85),
+  obstacle('wall', 1800, 800, Math.PI / 2, 0.85),
+  obstacle('container', 350, 410),
+  obstacle('container', 2050, 1190),
+  obstacle('pipe', 1200, 250),
+  obstacle('pipe', 1200, 1350),
+  obstacle('ruin', 380, 1210),
+  obstacle('ruin', 2020, 390),
+];
+
+/** A long causeway: almost every wave has a readable attack direction. */
+const CAUSEWAY_STRUCTURES: MapObstacle[] = [
+  obstacle('container', 520, 430),
+  obstacle('container', 920, 430),
+  obstacle('container', 1480, 430),
+  obstacle('container', 1880, 430),
+  obstacle('container', 520, 1170),
+  obstacle('container', 920, 1170),
+  obstacle('container', 1480, 1170),
+  obstacle('container', 1880, 1170),
+  obstacle('wall', 780, 650, Math.PI / 2),
+  obstacle('wall', 1620, 950, Math.PI / 2),
+  obstacle('pipe', 1180, 330),
+  obstacle('pipe', 1220, 1270),
+  obstacle('car', 980, 690),
+  obstacle('car', 1420, 910),
+];
+
+/** Broken roadside cover leaves one continuous route for the mission wagon. */
+const CONVOY_STRUCTURES: MapObstacle[] = [
+  obstacle('container', 560, 410),
+  obstacle('container', 1040, 420),
+  obstacle('container', 1540, 420),
+  obstacle('container', 2020, 430),
+  obstacle('container', 430, 1210),
+  obstacle('container', 920, 1200),
+  obstacle('container', 1430, 1210),
+  obstacle('container', 1940, 1200),
+  obstacle('wall', 720, 610),
+  obstacle('wall', 1680, 990),
+  obstacle('car', 880, 710),
+  obstacle('car', 1510, 880),
+  obstacle('ruin', 220, 330),
+  obstacle('ruin', 2180, 1270),
+  obstacle('sandbag', 1180, 560),
+  obstacle('sandbag', 1280, 1100),
+];
+
+/** The finale uses offset rings and diagonal sightline breaks. */
+const ECLIPSE_STRUCTURES: MapObstacle[] = [
+  obstacle('ruin', 520, 420),
+  obstacle('ruin', 1880, 420),
+  obstacle('ruin', 520, 1180),
+  obstacle('ruin', 1880, 1180),
+  obstacle('wall', 850, 560, Math.PI / 2),
+  obstacle('wall', 1550, 1040, Math.PI / 2),
+  obstacle('wall', 1550, 560),
+  obstacle('wall', 850, 1040),
+  obstacle('rock', 1200, 260, 0, 1.55),
+  obstacle('rock', 1200, 1340, 0, 1.55),
+  obstacle('rock', 300, 800, 0, 1.35),
+  obstacle('rock', 2100, 800, 0, 1.35),
+  obstacle('pipe', 1050, 470, Math.PI / 2),
+  obstacle('pipe', 1350, 1130, Math.PI / 2),
+];
+
 // ---------------------------------------------------------------- wave plans
 
 /** Which enemies a map sends and from which wave on they show up. */
@@ -408,6 +523,37 @@ const LATE_ROSTER: WavePlan['roster'] = [
   { type: 'spitter', from: 1, share: 1.2 },
   { type: 'screamer', from: 2, share: 1 },
 ];
+
+/** Cheap bodies dominate these late missions; the pressure is in their count. */
+const SWARM_ROSTER: WavePlan['roster'] = [
+  { type: 'crawler', from: 1, share: 7 },
+  { type: 'fast', from: 1, share: 5 },
+  { type: 'normal', from: 1, share: 2 },
+  { type: 'exploder', from: 3, share: 0.8 },
+  { type: 'spitter', from: 5, share: 0.6 },
+  { type: 'screamer', from: 7, share: 0.55 },
+  { type: 'armored', from: 9, share: 0.5 },
+];
+
+/** Heavy escorts punish a squad that only builds for raw crowd control. */
+const SIEGE_ROSTER: WavePlan['roster'] = [
+  { type: 'normal', from: 1, share: 2 },
+  { type: 'fast', from: 1, share: 2.4 },
+  { type: 'crawler', from: 1, share: 2.8 },
+  { type: 'exploder', from: 1, share: 2.2 },
+  { type: 'big', from: 1, share: 2 },
+  { type: 'armored', from: 1, share: 2.8 },
+  { type: 'spitter', from: 1, share: 1.4 },
+  { type: 'screamer', from: 1, share: 1.2 },
+];
+
+function patternedWaves(waves: number, patterns: SpawnPattern[]) {
+  const result: Partial<Record<number, SpawnPattern>> = {};
+  for (let wave = 1; wave <= waves; wave += 1) {
+    result[wave] = patterns[(wave - 1) % patterns.length];
+  }
+  return result;
+}
 
 // -------------------------------------------------------------------- maps
 
@@ -641,7 +787,7 @@ export const MAPS: GameMap[] = [
     name: 'Nekropole',
     subtitle: 'Gräberfeld der ersten Welle',
     description:
-      'Zweiundzwanzig Wellen zwischen Grabmalen. Die Schwarmkönigin schickt ohne Pause Nachschub und zerfällt beim Sterben in Brutlinge.',
+      'Eine bewusst kompakte Grabstadt mit kurzen Fluchtwegen. Zweiundzwanzig Wellen, dichter Schwarmdruck und kaum Platz für endlose Turmreihen.',
     difficulty: 6,
     moneyScale: 3.3,
     reward: 5250,
@@ -654,6 +800,11 @@ export const MAPS: GameMap[] = [
       edge: '#3d3a4c',
       fog: '#08070b',
     },
+    mission: {
+      kind: 'survival',
+      title: 'Kompakt-Arena',
+      briefing: 'Kurze Wege, enge Grabgassen und Angriffe, die schnell im Zentrum stehen.',
+    },
     waves: buildWaves({
       waves: 22,
       boss: 'swarmqueen',
@@ -665,7 +816,7 @@ export const MAPS: GameMap[] = [
       roster: LATE_ROSTER,
       seed: 6001,
     }),
-    obstacles: scatter(NECROPOLIS_STRUCTURES, ['rock', 'tree', 'crate', 'ruin'], 22, 71255),
+    obstacles: scatter(NECROPOLIS_STRUCTURES, ['rock', 'tree', 'crate', 'ruin'], 32, 71255),
     decor: decorate(2277, ['bones', 'crack', 'rubble', 'grass', 'blood'], 145),
   },
   {
@@ -673,7 +824,7 @@ export const MAPS: GameMap[] = [
     name: 'Reaktorblock 4',
     subtitle: 'Kühlkreis im Notbetrieb',
     description:
-      'Vierundzwanzig Wellen im Strahlenschatten. Der Seuchenfürst vergiftet den Boden und flickt seine Horde schneller zusammen, als sie fällt.',
+      'Eine ungewohnt weite, offene Reaktorfläche mit langen Lauf- und Schusswegen. Der Seuchenfürst zwingt den Trupp trotzdem ständig aus seiner Stellung.',
     difficulty: 6.8,
     moneyScale: 3.7,
     reward: 7250,
@@ -686,6 +837,11 @@ export const MAPS: GameMap[] = [
       edge: '#2c5236',
       fog: '#050d08',
     },
+    mission: {
+      kind: 'survival',
+      title: 'Offenes Großfeld',
+      briefing: 'Wenig feste Deckung, lange Sichtlinien und viel Raum für mobile Verteidigung.',
+    },
     waves: buildWaves({
       waves: 24,
       boss: 'plague',
@@ -697,7 +853,12 @@ export const MAPS: GameMap[] = [
       roster: LATE_ROSTER,
       seed: 6801,
     }),
-    obstacles: scatter(REACTOR_STRUCTURES, ['barrel', 'pipe', 'crate', 'container'], 20, 83117),
+    obstacles: scatter(
+      REACTOR_STRUCTURES.slice(0, 12),
+      ['barrel', 'pipe', 'crate', 'container'],
+      7,
+      83117,
+    ),
     decor: decorate(1188, ['puddle', 'crack', 'marking', 'rubble', 'blood'], 150),
   },
   {
@@ -705,7 +866,7 @@ export const MAPS: GameMap[] = [
     name: 'Abgrund-Kathedrale',
     subtitle: 'Wo alles herkam',
     description:
-      'Sechsundzwanzig Wellen bis zum Ende. OMEGA bringt fast jede Fähigkeit der bisherigen Bosse mit — heilen kann es sich als einziges nicht.',
+      'Die alte Endlinie mit sechsundzwanzig Wellen. OMEGA bringt fast jede Fähigkeit der bisherigen Bosse mit — heilen kann es sich als einziges nicht.',
     difficulty: 7.6,
     moneyScale: 4.2,
     reward: 11250,
@@ -731,6 +892,288 @@ export const MAPS: GameMap[] = [
     }),
     obstacles: scatter(ABYSS_STRUCTURES, ['rock', 'crate', 'sandbag', 'ruin'], 22, 95531),
     decor: decorate(3355, ['blood', 'bones', 'crack', 'rubble', 'marking'], 155),
+  },
+  {
+    id: 'pocket',
+    name: 'Bunker K-11',
+    subtitle: 'Die Schließkammer',
+    description:
+      'Eine winzige Kampfzone mit vier schmalen Einbrüchen. Ganze Kriecherteppiche kommen eng gepackt aus nur einer oder zwei Richtungen.',
+    difficulty: 8.4,
+    moneyScale: 4.65,
+    reward: 14500,
+    boss: 'bastion',
+    theme: {
+      ground: '#16191b',
+      groundAlt: '#1e2326',
+      grid: '#2d3438',
+      accent: '#ffbd59',
+      edge: '#4b555d',
+      fog: '#080a0b',
+    },
+    mission: {
+      kind: 'survival',
+      title: 'Killbox',
+      briefing: 'Kaum Platz, dafür klar lesbare Einbruchskorridore und extrem dichte Kleinwellen.',
+    },
+    waves: buildWaves({
+      waves: 28,
+      boss: 'bastion',
+      base: 58,
+      step: 5.7,
+      minis: ['stalker', 'brute', 'mortar', 'warden'],
+      miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27],
+      swarmWaves: [4, 7, 10, 13, 16, 19, 22, 25],
+      roster: SWARM_ROSTER,
+      seed: 8401,
+      spawnPatterns: {
+        ...patternedWaves(28, ['north-south']),
+        4: 'west',
+        7: 'east',
+        10: 'north',
+        13: 'south',
+        16: 'west',
+        19: 'east',
+        22: 'north',
+        25: 'south',
+      },
+      spawnDelayScales: {
+        4: 0.3,
+        7: 0.3,
+        10: 0.28,
+        13: 0.28,
+        16: 0.26,
+        19: 0.26,
+        22: 0.24,
+        25: 0.22,
+      },
+      labels: {
+        4: 'KRIECHERTEPPICH',
+        10: 'NORDSTURM',
+        16: 'WESTBRUCH',
+        22: 'KLEINVIEH-FLUT',
+      },
+    }),
+    obstacles: scatter(POCKET_STRUCTURES, ['crate', 'barrel', 'sandbag'], 9, 104729),
+    decor: decorate(10111, ['marking', 'crack', 'rubble', 'blood'], 120),
+  },
+  {
+    id: 'relay',
+    name: 'Relais Helios',
+    subtitle: 'Notruf im Niemandsland',
+    description:
+      'Haltet den Signalkern am Leben. Die Horde kreist von Welle zu Welle um die Stellung, während Sirene Null ihre Angreifer antreibt.',
+    difficulty: 9.2,
+    moneyScale: 5.05,
+    reward: 18000,
+    boss: 'siren',
+    theme: {
+      ground: '#0d181c',
+      groundAlt: '#122228',
+      grid: '#1b333b',
+      accent: '#67f6ff',
+      edge: '#2b5360',
+      fog: '#040c0f',
+    },
+    mission: {
+      kind: 'holdout',
+      title: 'Signalkern verteidigen',
+      briefing:
+        'Der Kern steht im Zentrum. Gegner greifen ihn direkt an; fällt er, ist die Mission verloren.',
+      x: CENTER_X,
+      y: CENTER_Y,
+      radius: 62,
+      maxHealth: 16000,
+    },
+    waves: buildWaves({
+      waves: 28,
+      boss: 'siren',
+      base: 60,
+      step: 5.8,
+      minis: ['mortar', 'stalker', 'warden', 'brute'],
+      miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27],
+      swarmWaves: [5, 11, 17, 23, 26],
+      roster: LATE_ROSTER,
+      seed: 9201,
+      spawnPatterns: patternedWaves(28, ['north', 'east', 'south', 'west']),
+      spawnDelayScales: { 5: 0.36, 11: 0.34, 17: 0.32, 23: 0.3, 26: 0.28 },
+      labels: { 7: 'OSTFLANKE', 14: 'SÜDFLANKE', 21: 'WESTFLANKE', 27: 'LETZTER RING' },
+    }),
+    obstacles: scatter(RELAY_STRUCTURES, ['crate', 'barrel', 'rock', 'sandbag'], 13, 117017),
+    decor: decorate(12012, ['marking', 'puddle', 'crack', 'rubble'], 145),
+  },
+  {
+    id: 'causeway',
+    name: 'Damm 13',
+    subtitle: 'Der lange Durchbruch',
+    description:
+      'Eine langgezogene Feuerstraße. Angriffe wechseln fast immer zwischen West und Ost; nur Schwärme brechen überraschend über eine einzelne Flanke herein.',
+    difficulty: 10,
+    moneyScale: 5.5,
+    reward: 22500,
+    boss: 'tunneler',
+    theme: {
+      ground: '#19160f',
+      groundAlt: '#241f14',
+      grid: '#352d1d',
+      accent: '#a8ff63',
+      edge: '#594b28',
+      fog: '#0d0a04',
+    },
+    mission: {
+      kind: 'survival',
+      title: 'Frontwechsel',
+      briefing:
+        'West und Ost wechseln sich ab. Schwarmwellen konzentrieren sich auf nur eine Seite.',
+    },
+    waves: buildWaves({
+      waves: 29,
+      boss: 'tunneler',
+      base: 62,
+      step: 5.8,
+      minis: ['brute', 'stalker', 'mortar', 'warden'],
+      miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27],
+      swarmWaves: [5, 10, 16, 22, 26],
+      roster: SIEGE_ROSTER,
+      seed: 10001,
+      spawnPatterns: {
+        ...patternedWaves(29, ['west', 'east']),
+        5: 'north',
+        10: 'south',
+        16: 'north',
+        22: 'south',
+        26: 'west',
+      },
+      spawnDelayScales: { 5: 0.32, 10: 0.3, 16: 0.28, 22: 0.26, 26: 0.24 },
+      labels: {
+        5: 'NORDFLUT',
+        10: 'SÜDFLUT',
+        16: 'DAMMBRUCH',
+        22: 'GEGENSTURM',
+        26: 'WESTWAND',
+      },
+    }),
+    obstacles: scatter(CAUSEWAY_STRUCTURES, ['crate', 'barrel', 'car', 'sandbag'], 11, 130027),
+    decor: decorate(13013, ['crack', 'marking', 'rubble', 'puddle', 'blood'], 150),
+  },
+  {
+    id: 'convoy',
+    name: 'Route Lazarus',
+    subtitle: 'Der letzte Konvoi',
+    description:
+      'Eskortiert den gepanzerten Wagen quer durch die Arena. Er fährt auch allein langsam weiter, mit Begleitschutz aber doppelt so schnell.',
+    difficulty: 10.9,
+    moneyScale: 6,
+    reward: 28000,
+    boss: 'roadking',
+    theme: {
+      ground: '#1b1210',
+      groundAlt: '#271916',
+      grid: '#39231e',
+      accent: '#ff6f45',
+      edge: '#5f352a',
+      fog: '#0f0705',
+    },
+    mission: {
+      kind: 'escort',
+      title: 'Konvoi eskortieren',
+      briefing:
+        'Der Wagen muss pro Welle einen Streckenabschnitt schaffen. Bleibt in seiner Nähe und haltet Angreifer fern.',
+      radius: 58,
+      maxHealth: 30000,
+      speed: 62,
+      path: [
+        { x: 420, y: 820 },
+        { x: 720, y: 820 },
+        { x: 1040, y: 760 },
+        { x: 1370, y: 900 },
+        { x: 1710, y: 820 },
+        { x: 2200, y: 820 },
+      ],
+    },
+    waves: buildWaves({
+      waves: 30,
+      boss: 'roadking',
+      base: 65,
+      step: 5.7,
+      minis: ['mortar', 'stalker', 'brute', 'warden'],
+      miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27, 29],
+      swarmWaves: [5, 11, 17, 23, 28],
+      roster: SIEGE_ROSTER,
+      seed: 10901,
+      spawnPatterns: patternedWaves(30, ['north-south', 'east-west', 'clockwise']),
+      spawnDelayScales: { 5: 0.34, 11: 0.32, 17: 0.3, 23: 0.28, 28: 0.24 },
+      labels: {
+        6: 'BLOCKADE',
+        12: 'HINTERHALT',
+        18: 'KREUZFEUER',
+        24: 'TODESKORRIDOR',
+        29: 'LETZTE AUSFAHRT',
+      },
+    }),
+    obstacles: scatter(
+      CONVOY_STRUCTURES.map((entry) => (entry.kind === 'car' ? { ...entry, solid: false } : entry)),
+      ['barrel', 'sandbag', 'tree'],
+      12,
+      141041,
+    ),
+    decor: decorate(14014, ['marking', 'crack', 'rubble', 'blood', 'bones'], 160),
+  },
+  {
+    id: 'eclipse',
+    name: 'Eklipsen-Riss',
+    subtitle: 'Jenseits der Endlinie',
+    description:
+      'Die finale Arena dreht ihre Einbruchsseite mit jeder Welle weiter. Feuer, Gift, Gravitation und Elitehorden gipfeln im Kampf gegen EKLIPSE.',
+    difficulty: 11.8,
+    moneyScale: 6.7,
+    reward: 36000,
+    boss: 'eclipse',
+    theme: {
+      ground: '#100d1d',
+      groundAlt: '#18122a',
+      grid: '#261c40',
+      accent: '#ff477e',
+      edge: '#513069',
+      fog: '#05030b',
+    },
+    mission: {
+      kind: 'survival',
+      title: 'Rotierende Apokalypse',
+      briefing: 'Die Angriffsrichtung wandert im Uhrzeigersinn; Spezialwellen brechen das Muster.',
+    },
+    waves: buildWaves({
+      waves: 32,
+      boss: 'eclipse',
+      base: 70,
+      step: 5.5,
+      minis: ['warden', 'mortar', 'stalker', 'brute'],
+      miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 31],
+      swarmWaves: [4, 8, 13, 17, 22, 26, 29],
+      roster: SIEGE_ROSTER,
+      seed: 11801,
+      spawnPatterns: patternedWaves(32, ['north', 'east', 'south', 'west']),
+      spawnDelayScales: {
+        4: 0.34,
+        8: 0.32,
+        13: 0.3,
+        17: 0.28,
+        22: 0.26,
+        26: 0.24,
+        29: 0.22,
+      },
+      labels: {
+        4: 'FINSTERNIS',
+        8: 'BLUTMOND',
+        13: 'GIFTSTURM',
+        17: 'FEUERREGEN',
+        22: 'SCHWERKRAFTBRUCH',
+        26: 'ELITEFLUT',
+        29: 'DAS LETZTE LICHT',
+      },
+    }),
+    obstacles: scatter(ECLIPSE_STRUCTURES, ['rock', 'ruin', 'crate', 'pipe'], 18, 155051),
+    decor: decorate(15015, ['blood', 'bones', 'crack', 'rubble', 'puddle'], 175),
   },
 ];
 

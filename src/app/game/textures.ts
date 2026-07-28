@@ -557,6 +557,11 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   swarmqueen: { skin: '#5f8a3f', cloth: '#22331a', accent: '#9be36f', eye: '#e8ff9a' },
   plague: { skin: '#4a8a5f', cloth: '#183322', accent: '#8dff6b', eye: '#d8ffb8' },
   omega: { skin: '#8a2f6a', cloth: '#2e0f26', accent: '#ff5fd0', eye: '#fff0ff' },
+  bastion: { skin: '#59616b', cloth: '#20262d', accent: '#ffbd59', eye: '#fff2b3' },
+  siren: { skin: '#694b8f', cloth: '#241936', accent: '#67f6ff', eye: '#d8ffff' },
+  tunneler: { skin: '#75573c', cloth: '#2e2117', accent: '#a8ff63', eye: '#f2ff9a' },
+  roadking: { skin: '#8f3d2f', cloth: '#331713', accent: '#ff6f45', eye: '#ffe078' },
+  eclipse: { skin: '#29264d', cloth: '#0d0b20', accent: '#ff477e', eye: '#7cf7ff' },
 };
 
 function paintZombieBody(type: ZombieType, radius: number): Painter {
