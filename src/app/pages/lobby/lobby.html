@@ -345,14 +345,20 @@
                 >{{ weaponShort(game.player()?.weapon) }} ·
                 {{ weaponName(game.player()?.weapon) }}</small
               >
-              <strong>
-                {{ game.player()?.ammo
-                }}<span
-                  >/
-                  {{ game.player()?.weapon === 'pistol' ? '∞' : game.player()?.reserveAmmo }}</span
-                >
-              </strong>
-              @if (game.player()?.reloading) {
+              @if (meleeEquipped()) {
+                <strong>NAH<span>/∞</span></strong>
+              } @else {
+                <strong>
+                  {{ game.player()?.ammo
+                  }}<span
+                    >/
+                    {{
+                      game.player()?.weapon === 'pistol' ? '∞' : game.player()?.reserveAmmo
+                    }}</span
+                  >
+                </strong>
+              }
+              @if (!meleeEquipped() && game.player()?.reloading) {
                 <em>Nachladen …</em>
               }
             </div>
@@ -418,14 +424,27 @@
               }}</span
             >
             <span><kbd>Leertaste</kbd> {{ dashHint() }}</span>
-            <span><kbd>Maus</kbd> Zielen &amp; schießen</span>
+            <span
+              ><kbd>Maus</kbd> Zielen &amp; {{ meleeEquipped() ? 'zuschlagen' : 'schießen' }}</span
+            >
             <span><kbd>E</kbd> {{ game.myVehicle() ? 'Aussteigen' : 'Fahrzeug betreten' }}</span>
             @if (snapshot.phase === 'build') {
-              <span><kbd>R</kbd> {{ game.selectedBuild() ? 'Bau drehen' : 'Nachladen' }}</span>
+              <span
+                ><kbd>R</kbd>
+                {{
+                  game.selectedBuild()
+                    ? 'Bau drehen'
+                    : meleeEquipped()
+                      ? 'Nahkampf braucht kein Nachladen'
+                      : 'Nachladen'
+                }}</span
+              >
               <span><kbd>F</kbd> Reparieren</span>
               <span><kbd>V</kbd> Verkaufen</span>
             } @else {
-              <span><kbd>R</kbd> Nachladen</span>
+              @if (!meleeEquipped()) {
+                <span><kbd>R</kbd> Nachladen</span>
+              }
               <span><kbd>G</kbd> Granate</span>
             }
             @if (game.arsenal().length > 1) {
@@ -567,7 +586,14 @@
                   [class.active]="shopTab() === 'weapons'"
                   (click)="shopTab.set('weapons')"
                 >
-                  Waffen
+                  Fernkampf
+                </button>
+                <button
+                  type="button"
+                  [class.active]="shopTab() === 'melee'"
+                  (click)="shopTab.set('melee')"
+                >
+                  Nahkampf
                 </button>
                 <button
                   type="button"
@@ -594,8 +620,8 @@
 
               @if (shopTab() === 'weapons') {
                 <p class="shop-hint">
-                  Gekaufte Waffen bleiben im Arsenal. Verkaufen gibt den Kaufpreis zurück, abzüglich
-                  der fehlenden Munition — nachkaufen ist also nie billiger als auffüllen.
+                  Fernkampf braucht Munition. Waffenschaden gilt für alle Waffen; Nachladen,
+                  Magazingröße und Munitionsreserve gelten nur für Fernkampf.
                 </p>
                 <div class="shop-scroll">
                   @if (game.canBuyAmmo()) {
@@ -637,6 +663,65 @@
                         <span
                           ><b>{{ weapon.label }}</b
                           ><small>{{ weapon.description }}</small></span
+                        >
+                        <strong>
+                          {{
+                            game.player()?.weapon === weapon.type
+                              ? 'Ausgerüstet'
+                              : owns(weapon.type)
+                                ? 'Ausrüsten'
+                                : '$ ' + weaponPrice(weapon.type)
+                          }}
+                        </strong>
+                      </button>
+                      @if (owns(weapon.type)) {
+                        <button
+                          class="sell-item"
+                          type="button"
+                          [class.armed]="saleArmed() === weapon.type"
+                          (click)="sellWeapon(weapon.type)"
+                        >
+                          <span>
+                            {{
+                              saleArmed() === weapon.type
+                                ? '↩ Wirklich verkaufen?'
+                                : '✖ ' + weapon.label + ' verkaufen'
+                            }}
+                          </span>
+                          <strong>+$ {{ weaponRefund(weapon.type) }}</strong>
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else if (shopTab() === 'melee') {
+                <p class="shop-hint">
+                  Nahkampf kostet keine Munition und muss nie nachladen. Waffenschaden gilt auch
+                  hier; Angriffstempo und Reichweite haben eigene Nahkampf-Upgrades.
+                </p>
+                <div class="shop-scroll">
+                  @for (weapon of meleeWeapons; track weapon.type) {
+                    <div class="weapon-shop-entry">
+                      <button
+                        class="shop-item"
+                        type="button"
+                        [class.selected]="game.player()?.weapon === weapon.type"
+                        [class.deal]="!owns(weapon.type) && weaponDeal(weapon.type)"
+                        [disabled]="
+                          (!owns(weapon.type) &&
+                            (game.player()?.money ?? 0) < weaponPrice(weapon.type)) ||
+                          game.player()?.weapon === weapon.type
+                        "
+                        (click)="weaponAction(weapon.type)"
+                      >
+                        <span class="item-icon">{{ weapon.short }}</span>
+                        <span
+                          ><b>{{ weapon.label }}</b
+                          ><small>{{ weapon.description }}</small>
+                          <small
+                            >{{ weapon.damage }} Schaden · {{ weapon.range }} Reichweite · keine
+                            Munition</small
+                          ></span
                         >
                         <strong>
                           {{

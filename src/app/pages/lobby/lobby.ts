@@ -16,6 +16,7 @@ import {
   campaignRunReward,
   dashReduction,
   findMap,
+  isMeleeWeapon,
   reserveCapacity,
   vehicleArmorReduction,
   vehicleMaxHealth,
@@ -30,7 +31,7 @@ import { ProgressService } from '../../core/progress.service';
 import { GameCanvas } from '../../game/game-canvas';
 import { UpgradeShop } from '../../shared/upgrade-shop';
 
-type ShopTab = 'weapons' | 'barricades' | 'turrets' | 'vehicles';
+type ShopTab = 'weapons' | 'melee' | 'barricades' | 'turrets' | 'vehicles';
 
 /** How long an armed sell button waits for the confirming second click. */
 const SALE_CONFIRM_MS = 4000;
@@ -71,7 +72,10 @@ export class Lobby implements OnInit, OnDestroy {
   readonly players = computed(() => Object.values(this.game.snapshot()?.players ?? {}));
   readonly readyCount = computed(() => this.players().filter((player) => player.ready).length);
   readonly maps = MAPS;
-  readonly weapons = WEAPON_ORDER.filter((type) => type !== 'pistol').map((type) => ({
+  readonly weapons = WEAPON_ORDER.filter((type) => type !== 'pistol' && !isMeleeWeapon(type)).map(
+    (type) => ({ type, ...WEAPONS[type] }),
+  );
+  readonly meleeWeapons = WEAPON_ORDER.filter((type) => isMeleeWeapon(type)).map((type) => ({
     type,
     ...WEAPONS[type],
   }));
@@ -256,11 +260,15 @@ export class Lobby implements OnInit, OnDestroy {
 
   ammoMissing() {
     const player = this.game.player();
-    if (!player || player.weapon === 'pistol') return 0;
+    if (!player || player.weapon === 'pistol' || isMeleeWeapon(player.weapon)) return 0;
     return Math.max(
       0,
       reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo) - player.reserveAmmo,
     );
+  }
+
+  meleeEquipped() {
+    return isMeleeWeapon(this.game.player()?.weapon);
   }
 
   /** One pip per dash charge; filled ones are ready to use. */

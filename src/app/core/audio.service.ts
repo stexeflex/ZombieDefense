@@ -9,6 +9,7 @@ export type SoundName =
   | 'shot-frost'
   | 'shot-rocket'
   | 'shot-tesla'
+  | 'melee'
   | 'explosion'
   | 'hit'
   | 'zombie-death'
@@ -28,9 +29,11 @@ export type MusicTrack = 'none' | 'build' | 'combat' | 'boss';
 
 const WEAPON_SOUND: Record<WeaponType, SoundName> = {
   pistol: 'shot',
+  crowbar: 'melee',
   smg: 'shot',
   rifle: 'shot',
   shotgun: 'shot-heavy',
+  fireaxe: 'melee',
   nailgun: 'shot-heavy',
   magnum: 'shot-heavy',
   sniper: 'shot-heavy',
@@ -38,15 +41,18 @@ const WEAPON_SOUND: Record<WeaponType, SoundName> = {
   lmg: 'shot-heavy',
   elephant: 'shot-heavy',
   flamer: 'shot-flame',
+  chainsaw: 'melee',
   cryo: 'shot-frost',
   rocket: 'shot-rocket',
   firerocket: 'shot-rocket',
   tesla: 'shot-tesla',
   laser: 'shot-energy',
   railgun: 'shot-energy',
+  phaselance: 'melee',
   gravity: 'shot-tesla',
   nova: 'shot-energy',
   ionstorm: 'shot-tesla',
+  worldbreaker: 'melee',
   sun: 'shot-rocket',
 };
 
@@ -132,6 +138,10 @@ export class AudioService {
       case 'shot-tesla':
         this.burst(at, 0.14, 3200, 0.34 * volume, 'highpass');
         this.tone(at, 'square', 900, 1700, 0.12, 0.12 * volume);
+        break;
+      case 'melee':
+        this.burst(at, 0.12, 1700, 0.28 * volume, 'bandpass');
+        this.tone(at, 'triangle', 420, 120, 0.14, 0.18 * volume);
         break;
       case 'explosion':
         this.burst(at, 0.75, 420, 0.85 * volume, 'lowpass');

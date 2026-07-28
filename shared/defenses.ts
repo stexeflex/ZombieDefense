@@ -8,6 +8,9 @@ export type DefenseType =
   | 'spike'
   | 'blastwall'
   | 'steel'
+  | 'shockwall'
+  | 'cryowall'
+  | 'titanwall'
   | 'mg'
   | 'flame'
   | 'frost'
@@ -144,6 +147,47 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     height: 28,
     thorns: 10,
     description: 'Hält auch Kolossen lange stand',
+  },
+  shockwall: {
+    label: 'Schockgitter',
+    short: 'ϟ',
+    kind: 'barricade',
+    cost: 1100,
+    health: 3100,
+    width: 66,
+    height: 30,
+    thorns: 92,
+    slow: 0.32,
+    slowSeconds: 1.5,
+    description: 'Mittel-teuer: elektrisiert Angreifer und bremst ihren nächsten Anlauf',
+  },
+  cryowall: {
+    label: 'Kryo-Bollwerk',
+    short: '❆',
+    kind: 'barricade',
+    cost: 1900,
+    health: 5400,
+    width: 68,
+    height: 34,
+    thorns: 38,
+    slow: 0.62,
+    slowSeconds: 3,
+    description: 'Teuer: massive Kühlwand, die Angreifer lange auf Kriechtempo zwingt',
+  },
+  titanwall: {
+    label: 'Titan-Reaktorwall',
+    short: '⬢',
+    kind: 'barricade',
+    cost: 3400,
+    health: 9800,
+    width: 72,
+    height: 38,
+    thorns: 58,
+    slow: 0.28,
+    slowSeconds: 1.8,
+    blastRadius: 220,
+    blastDamage: 720,
+    description: 'Sehr teuer: Titanfestung mit explosivem Reaktorkern als letzter Vergeltung',
   },
   mg: {
     label: 'MG-Turm',
@@ -386,6 +430,9 @@ export const BARRICADE_ORDER: DefenseType[] = [
   'stone',
   'blastwall',
   'steel',
+  'shockwall',
+  'cryowall',
+  'titanwall',
 ];
 export const TURRET_ORDER: DefenseType[] = [
   'mg',

@@ -28,11 +28,11 @@ Aufruf kann das Laden deshalb kurz dauern.
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
 - dreizehn Zombiearten plus zehn Bosse
-- einundzwanzig Waffen von der Pistole bis zum Sonnenwerfer, darunter
-  Ionensturm und Gravitationswerfer für sehr teure Endgame-Builds
+- sechsundzwanzig Waffen von der Pistole bis zum Sonnenwerfer, darunter fünf
+  munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- sechs Barrikaden und vierzehn Türme vom günstigen MG bis zum Donnerkranz,
+- neun Barrikaden und vierzehn Türme vom günstigen MG bis zum Donnerkranz,
   inklusive Drohnenhangar mit drei fliegenden Jagddrohnen
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
   mehrere Spieler; langsamere, deutlich robustere Hüllen machen Insassen
@@ -102,29 +102,44 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 
 ### Waffen
 
-| Waffe                | Preis | Besonderheit                                        |
-| -------------------- | ----- | --------------------------------------------------- |
-| Pistole              | 0     | Startwaffe                                          |
-| Maschinenpistole     | 450   | sehr hohe Feuerrate                                 |
-| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner               |
-| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz                 |
-| Nagelwerfer          | 1400  | schwere Nägel durchbohren mehrere Gegner            |
-| Schwere Magnum       | 1550  | harter Einzeltreffer, durchschlägt niemanden        |
-| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner               |
-| Säurewerfer          | 2000  | lässt klar türkise, verbündete Säurelachen liegen   |
-| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                               |
-| Elefantenbüchse      | 2500  | zwölf Schuss, 720 Schaden pro Treffer               |
-| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand             |
-| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner    |
-| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                            |
-| Feuer-Raketenwerfer  | 3600  | Feuerexplosion, die weiterbrennt                    |
-| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner               |
-| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner              |
-| Railgun              | 5700  | Magnetgeschoss durchbohrt bis zu vierzehn Gegner    |
-| Gravitationswerfer   | 6600  | zieht Horden in eine verlangsamende Singularität    |
-| Nova-Kanone          | 7600  | fünf explosive Plasmalanzen in einer breiten Salve  |
-| Ionensturm           | 10800 | drei Blitze springen gleichzeitig durch die Horde   |
-| Sonnenwerfer         | 15000 | Mini-Sonne mit riesigem Brand- und Explosionsradius |
+| Waffe                | Preis | Besonderheit                                             |
+| -------------------- | ----- | -------------------------------------------------------- |
+| Pistole              | 0     | Startwaffe                                               |
+| Brecheisen           | 300   | Nahkampf, trifft zwei Gegner und braucht keine Munition  |
+| Maschinenpistole     | 450   | sehr hohe Feuerrate                                      |
+| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner                    |
+| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz                      |
+| Feuerwehr-Axt        | 1200  | Nahkampf, stößt Gruppen zurück und knackt Rüstung        |
+| Nagelwerfer          | 1400  | schwere Nägel durchbohren mehrere Gegner                 |
+| Schwere Magnum       | 1550  | harter Einzeltreffer, durchschlägt niemanden             |
+| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner                    |
+| Säurewerfer          | 2000  | lässt klar türkise, verbündete Säurelachen liegen        |
+| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                                    |
+| Elefantenbüchse      | 2500  | zwölf Schuss, 720 Schaden pro Treffer                    |
+| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand                  |
+| Kettensäge           | 2800  | schneller Nahkampf gegen drei Ziele zugleich             |
+| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner         |
+| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                                 |
+| Feuer-Raketenwerfer  | 3600  | Feuerexplosion, die weiterbrennt                         |
+| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner                    |
+| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner                   |
+| Railgun              | 5700  | Magnetgeschoss durchbohrt bis zu vierzehn Gegner         |
+| Phasenlanze          | 6200  | langer Nahkampfstich, ignoriert den Großteil der Rüstung |
+| Gravitationswerfer   | 6600  | zieht Horden in eine verlangsamende Singularität         |
+| Nova-Kanone          | 7600  | fünf explosive Plasmalanzen in einer breiten Salve       |
+| Ionensturm           | 10800 | drei Blitze springen gleichzeitig durch die Horde        |
+| Weltenbrecher        | 13000 | gewaltiger Nahkampf-Rundschlag gegen ganze Horden        |
+| Sonnenwerfer         | 15000 | Mini-Sonne mit riesigem Brand- und Explosionsradius      |
+
+### Barrikaden
+
+Die drei neuen Premium-Bauten ergänzen die sechs bisherigen Barrikaden:
+
+| Barrikade         | Preis | Leben | Besonderheit                             |
+| ----------------- | ----- | ----- | ---------------------------------------- |
+| Schockgitter      | 1100  | 3100  | hoher Gegenschaden und kurzer Slow       |
+| Kryo-Bollwerk     | 1900  | 5400  | zwingt Angreifer lange auf Kriechtempo   |
+| Titan-Reaktorwall | 3400  | 9800  | extrem robust, detoniert beim Zerbrechen |
 
 ### Türme
 
@@ -290,8 +305,9 @@ klickenden Spieler eine frische Lobby und zieht keinen Mitspieler mit. Der Shop 
 und in der Lobby offen, solange der Run noch nicht läuft — dort gekaufte
 Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
-- **Stufen-Upgrades** – maximales Spielerleben, Panzerung, Tempo, Waffenschaden, Nachladen,
-  Magazin, Munitionsvorrat, Granaten, Barrikaden, Turmschaden, Turmreichweite,
+- **Stufen-Upgrades** – maximales Spielerleben, Panzerung, Tempo, Waffenschaden,
+  Nahkampf-Angriffstempo und -Reichweite, Nachladen, Magazin, Munitionsvorrat,
+  Granaten, Barrikaden, Turmschaden, Turmreichweite,
   Fahrzeugpanzerung, Hüllenpanzerung, Motorleistung, Rammschaden, Bordwaffen,
   Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schadensreduktion,
   Dash-Schaden und Dash-Schild
@@ -304,6 +320,10 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als
 gefüllten Balken — vierzig Striche wären nicht lesbar.
+
+`Waffenschaden` gilt für Fern- und Nahkampf. `Nachladen`, `Magazingröße` und
+`Munitionsreserve` gelten nur für Fernkampf; Nahkampf hat dafür eigene Upgrades
+für Angriffstempo und Reichweite.
 
 Dash-Schaden und Dash-Schild bleiben gesperrt, solange der Vorteil fehlt, der sie
 überhaupt wirksam macht: Dash-Schaden braucht Stoßdash oder Klingendash,

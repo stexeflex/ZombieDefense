@@ -116,7 +116,6 @@ export class EffectLayer {
         this.burst('blood', event.s === 'down' ? 22 : 8, event.x, event.y);
         if (event.s === 'down') this.addDecal(event.x, event.y, 70);
         this.audio.play('hurt', 0.7);
-        this.scene.cameras.main.shake(120, 0.004);
         break;
       // The blow was dodged, so it stays bright and bloodless.
       case 'deflect':
@@ -155,9 +154,6 @@ export class EffectLayer {
                 : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
         this.audio.play(acidBurst ? 'shot-flame' : 'explosion', acidBurst ? 0.5 : 0.9);
-        if (!acidBurst) {
-          this.scene.cameras.main.shake(220, Math.min(0.014, 0.004 + radius / 22000));
-        }
         break;
       }
       case 'burn':
@@ -176,6 +172,9 @@ export class EffectLayer {
         break;
       case 'muzzle':
         this.muzzleFlash(event);
+        break;
+      case 'melee':
+        this.meleeSwing(event);
         break;
       case 'structure':
         this.burst('shard', 3, event.x, event.y);
@@ -218,7 +217,6 @@ export class EffectLayer {
           ? 0xff6fd8
           : 0xff4f6b;
     this.shockwave(event.x, event.y, (event.r ?? 60) * 2.4, color);
-    this.scene.cameras.main.shake(320, 0.01);
     if (event.s === 'spawn') this.audio.play('boss-roar', 0.9);
     if (event.s === 'mortar' || event.s === 'split') this.audio.play('explosion', 0.4);
   }
@@ -298,6 +296,50 @@ export class EffectLayer {
     });
     if (weapon && WEAPONS[weapon]) this.audio.play(this.audio.weaponSound(weapon), 0.55);
     else this.audio.play('shot', 0.28);
+  }
+
+  private meleeSwing(event: FxEvent) {
+    const weapon = event.s as WeaponType;
+    const config = WEAPONS[weapon];
+    if (!config) return;
+    const angle = event.a ?? 0;
+    const radius = event.r ?? config.range;
+    const arc = config.meleeArc ?? Math.PI / 2;
+    const color =
+      weapon === 'worldbreaker'
+        ? 0xffd35c
+        : weapon === 'phaselance'
+          ? 0x7eeaff
+          : weapon === 'chainsaw'
+            ? 0xff7a4a
+            : weapon === 'fireaxe'
+              ? 0xffcc66
+              : 0xd8dfdb;
+    const slash = this.scene.add.graphics().setDepth(74);
+    slash.lineStyle(7, color, 0.92);
+    slash.beginPath();
+    slash.arc(event.x, event.y, radius, angle - arc / 2, angle + arc / 2);
+    slash.strokePath();
+    slash.lineStyle(2, 0xffffff, 0.78);
+    slash.beginPath();
+    slash.arc(event.x, event.y, radius - 7, angle - arc / 2, angle + arc / 2);
+    slash.strokePath();
+    this.scene.tweens.add({
+      targets: slash,
+      alpha: 0,
+      duration: Math.min(180, Math.max(75, config.fireDelay * 0.22)),
+      ease: 'Quad.Out',
+      onComplete: () => slash.destroy(),
+    });
+    const tipX = event.x + Math.cos(angle) * radius;
+    const tipY = event.y + Math.sin(angle) * radius;
+    this.burst(
+      weapon === 'phaselance' || weapon === 'worldbreaker' ? 'energy' : 'spark',
+      5,
+      tipX,
+      tipY,
+    );
+    this.audio.play(this.audio.weaponSound(weapon), 0.58);
   }
 
   shockwave(x: number, y: number, radius: number, color: number) {

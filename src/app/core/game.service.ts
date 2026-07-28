@@ -11,6 +11,7 @@ import {
   WEAPONS,
   discountedCost,
   findMap,
+  isMeleeWeapon,
   repairCost,
   reserveCapacity,
   vehicleTopSpeed,
@@ -148,16 +149,16 @@ export class GameService {
   readonly ammoFull = computed(() => {
     const player = this.player();
     if (!player) return false;
-    if (player.weapon === 'pistol') return true;
+    if (player.weapon === 'pistol' || isMeleeWeapon(player.weapon)) return true;
     return (
       player.reserveAmmo >= reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo)
     );
   });
 
-  /** The pistol is the endless fallback and therefore never needs bought ammunition. */
+  /** The fallback pistol and every melee weapon use no bought ammunition. */
   readonly canBuyAmmo = computed(() => {
     const player = this.player();
-    return Boolean(player && player.weapon !== 'pistol');
+    return Boolean(player && player.weapon !== 'pistol' && !isMeleeWeapon(player.weapon));
   });
 
   /** What a weapon costs this player right now, starter perk included. */

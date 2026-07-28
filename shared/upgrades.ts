@@ -14,6 +14,8 @@ export interface PermanentUpgrades {
   reloadSpeed: number;
   magazineSize: number;
   reserveAmmo: number;
+  meleeSpeed: number;
+  meleeRange: number;
   grenadeDamage: number;
   grenadeCooldown: number;
   grenadeRadius: number;
@@ -44,6 +46,8 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   reloadSpeed: 0,
   magazineSize: 0,
   reserveAmmo: 0,
+  meleeSpeed: 0,
+  meleeRange: 0,
   grenadeDamage: 0,
   grenadeCooldown: 0,
   grenadeRadius: 0,

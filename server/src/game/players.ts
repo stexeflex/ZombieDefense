@@ -26,6 +26,7 @@ import {
   WEAPONS,
   circleOverlapsVehicle,
   healthRegenPerSecond,
+  isMeleeWeapon,
   magazineCapacity,
   pushOutOfVehicle,
   reserveCapacity,
@@ -77,7 +78,7 @@ export class PlayerSystem {
       }
       if (!combat) return;
       if (runtime.input.shoot && player.reloading === 0) this.shoot(player, runtime.upgrades);
-      if (player.ammo <= 0 && player.reloading === 0) {
+      if (!isMeleeWeapon(player.weapon) && player.ammo <= 0 && player.reloading === 0) {
         if (player.reserveAmmo <= 0) this.fallBackToPistol(player, runtime);
         this.beginReload(player, runtime.upgrades);
       }
@@ -431,6 +432,10 @@ export class PlayerSystem {
 
   private shoot(player: PlayerState, upgrades: PermanentUpgrades) {
     const config = WEAPONS[player.weapon];
+    if (isMeleeWeapon(player.weapon)) {
+      this.swingMelee(player, upgrades);
+      return;
+    }
     let shots = 0;
     while (player.fireCooldown <= 0 && player.ammo > 0 && shots < 4) {
       shots += 1;
@@ -477,6 +482,67 @@ export class PlayerSystem {
     }
   }
 
+  /** Instant server-authoritative arc attack; melee never creates ammo or projectiles. */
+  private swingMelee(player: PlayerState, upgrades: PermanentUpgrades) {
+    const config = WEAPONS[player.weapon];
+    const reach = config.range * (1 + upgrades.meleeRange * 0.01);
+    const arc = config.meleeArc ?? Math.PI / 2;
+    const maxTargets = config.meleeTargets ?? 1;
+    let swings = 0;
+    while (player.fireCooldown <= 0 && swings < 2) {
+      swings += 1;
+      player.fireCooldown += config.fireDelay / 1000 / (1 + upgrades.meleeSpeed * 0.02);
+      player.firing = Math.max(player.firing, Math.min(0.22, config.fireDelay / 2000));
+      this.world.pushFx({
+        k: 'melee',
+        x: player.x,
+        y: player.y,
+        a: player.rotation,
+        r: reach,
+        s: player.weapon,
+      });
+
+      const victims = [...this.world.state.zombies.entries()]
+        .map(([id, zombie]) => {
+          const dx = zombie.x - player.x;
+          const dy = zombie.y - player.y;
+          const distance = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          const difference = Math.atan2(
+            Math.sin(angle - player.rotation),
+            Math.cos(angle - player.rotation),
+          );
+          return { id, zombie, distance, difference };
+        })
+        .filter(
+          ({ zombie, distance, difference }) =>
+            distance <= reach + zombie.radius &&
+            Math.abs(difference) <= arc / 2 &&
+            !this.world.segmentHitsObstacle(player.x, player.y, zombie.x, zombie.y),
+        )
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, maxTargets);
+
+      const damage = config.damage * (1 + upgrades.weaponDamage * 0.02);
+      for (const { id, zombie } of victims) {
+        this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: player.weapon });
+        if (config.knockback) {
+          zombie.x = this.world.clamp(
+            zombie.x + Math.cos(player.rotation) * config.knockback,
+            12,
+            ARENA.width - 12,
+          );
+          zombie.y = this.world.clamp(
+            zombie.y + Math.sin(player.rotation) * config.knockback,
+            12,
+            ARENA.height - 12,
+          );
+        }
+        this.world.damageZombie(id, zombie, damage, player.id, config.armorPierce ?? 0);
+      }
+    }
+  }
+
   /**
    * A dry weapon would otherwise leave a wave unfinishable, so the pistol is an
    * endless fallback.
@@ -512,12 +578,14 @@ export class PlayerSystem {
 
   beginReload(player: PlayerState, upgrades: PermanentUpgrades) {
     const config = WEAPONS[player.weapon];
+    if (isMeleeWeapon(player.weapon)) return;
     const magazine = this.magazineSize(player.weapon, upgrades);
     if (player.ammo >= magazine || player.reserveAmmo <= 0) return;
     player.reloading = config.reload / 1000 / (1 + upgrades.reloadSpeed * 0.02);
   }
 
   private completeReload(player: PlayerState, upgrades: PermanentUpgrades) {
+    if (isMeleeWeapon(player.weapon)) return;
     const missing = this.magazineSize(player.weapon, upgrades) - player.ammo;
     const amount = Math.min(missing, player.reserveAmmo);
     player.ammo += amount;

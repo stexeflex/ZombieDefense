@@ -37,10 +37,11 @@ describe('ProgressService run rewards', () => {
 describe('ProgressService upgrade shop', () => {
   beforeEach(() => localStorage.clear());
 
-  it('groups every levelled upgrade into the six readable shop sections', () => {
+  it('groups every levelled upgrade into the seven readable shop sections', () => {
     expect(UPGRADE_GROUPS.map((group) => group.label)).toEqual([
       'Spieler',
-      'Waffen',
+      'Waffen (alle)',
+      'Nahkampf',
       'Granaten',
       'Türme',
       'Fahrzeuge',

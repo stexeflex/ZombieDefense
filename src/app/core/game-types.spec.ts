@@ -64,6 +64,7 @@ import {
   endlessSpeedScale,
   endlessWave,
   healthRegenPerSecond,
+  isMeleeWeapon,
   magazineCapacity,
   repairCost,
   reserveCapacity,
@@ -271,8 +272,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists twenty-one weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(21);
+  it('lists twenty-six weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(26);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -305,6 +306,21 @@ describe('weapon balance', () => {
     expect(WEAPONS.sun.splashRadius).toBeGreaterThan(WEAPONS.rocket.splashRadius!);
     expect(WEAPONS.sun.burnSeconds).toBeGreaterThan(WEAPONS.firerocket.burnSeconds!);
     expect(WEAPONS.sun.cost).toBeGreaterThan(WEAPONS.ionstorm.cost);
+  });
+
+  it('offers five ammo-free melee weapons from cheap to endgame', () => {
+    const melee = WEAPON_ORDER.filter(isMeleeWeapon);
+    expect(melee).toEqual(['crowbar', 'fireaxe', 'chainsaw', 'phaselance', 'worldbreaker']);
+    for (const weapon of melee) {
+      const config = WEAPONS[weapon];
+      expect(config.ammoCost).toBe(0);
+      expect(config.meleeArc).toBeGreaterThan(0);
+      expect(config.meleeTargets).toBeGreaterThan(0);
+      expect(config.range).toBeLessThan(160);
+      expect(ammoRefillCost(weapon, 0)).toBe(0);
+    }
+    expect(WEAPONS.worldbreaker.damage).toBeGreaterThan(WEAPONS.phaselance.damage);
+    expect(WEAPONS.phaselance.armorPierce).toBeGreaterThan(WEAPONS.fireaxe.armorPierce!);
   });
 
   it('lets acid leave puddles instead of setting anything on fire', () => {
@@ -366,8 +382,8 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers six barricades and fourteen turrets', () => {
-    expect(BARRICADE_ORDER).toHaveLength(6);
+  it('offers nine barricades and fourteen turrets', () => {
+    expect(BARRICADE_ORDER).toHaveLength(9);
     expect(TURRET_ORDER).toHaveLength(14);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
@@ -458,6 +474,15 @@ describe('defenses', () => {
     expect(DEFENSES.spike.thorns).toBeGreaterThan(0);
     expect(DEFENSES.blastwall.blastRadius).toBeGreaterThan(0);
     expect(DEFENSES.blastwall.blastDamage).toBeGreaterThan(0);
+  });
+
+  it('gives the three premium barricades distinct control and last-stand roles', () => {
+    expect(DEFENSES.shockwall.cost).toBeGreaterThan(DEFENSES.steel.cost);
+    expect(DEFENSES.shockwall.thorns).toBeGreaterThan(DEFENSES.spike.thorns!);
+    expect(DEFENSES.cryowall.slow).toBeGreaterThan(DEFENSES.shockwall.slow!);
+    expect(DEFENSES.cryowall.health).toBeGreaterThan(DEFENSES.shockwall.health);
+    expect(DEFENSES.titanwall.health).toBeGreaterThan(DEFENSES.cryowall.health);
+    expect(DEFENSES.titanwall.blastDamage).toBeGreaterThan(DEFENSES.blastwall.blastDamage!);
   });
 });
 
@@ -686,7 +711,11 @@ describe('arsenal and ammunition', () => {
   it('caps spare ammunition at one full resupply', () => {
     for (const weapon of WEAPON_ORDER) {
       expect(reserveCapacity(weapon)).toBe(WEAPONS[weapon].reserve);
-      expect(reserveCapacity(weapon)).toBeGreaterThan(WEAPONS[weapon].magazine);
+      if (isMeleeWeapon(weapon)) {
+        expect(reserveCapacity(weapon)).toBe(0);
+      } else {
+        expect(reserveCapacity(weapon)).toBeGreaterThan(WEAPONS[weapon].magazine);
+      }
     }
   });
 
@@ -707,6 +736,7 @@ describe('arsenal and ammunition', () => {
     expect(oneRound).toBeLessThan(halfRefill);
     expect(ammoRefillCost('rifle', capacity)).toBe(0);
     expect(ammoRefillCost('pistol', 0)).toBe(0);
+    expect(ammoRefillCost('chainsaw', 0)).toBe(0);
   });
 
   it('deducts missing ammunition from a weapon sale', () => {

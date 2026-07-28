@@ -342,8 +342,9 @@ export class GameWorld {
     zombie.chilled = Math.max(zombie.chilled, seconds);
   }
 
-  damageZombie(id: string, zombie: ZombieState, amount: number, ownerId: string) {
-    const dealt = Math.max(0, amount * (1 - zombie.armor));
+  damageZombie(id: string, zombie: ZombieState, amount: number, ownerId: string, armorPierce = 0) {
+    const remainingArmor = zombie.armor * (1 - this.clamp(armorPierce, 0, 1));
+    const dealt = Math.max(0, amount * (1 - remainingArmor));
     zombie.health -= dealt;
     if (ownerId && this.state.players.has(ownerId)) {
       zombie.damageBy.set(ownerId, (zombie.damageBy.get(ownerId) ?? 0) + dealt);

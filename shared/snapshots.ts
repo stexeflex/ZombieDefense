@@ -17,6 +17,8 @@ export type FxKind =
   | 'burn'
   | 'chain'
   | 'muzzle'
+  /** A visible close-range swing from a player weapon. */
+  | 'melee'
   | 'structure'
   | 'wreck'
   | 'boss'

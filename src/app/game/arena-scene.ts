@@ -19,6 +19,7 @@ import {
   distanceToVehicle,
   driveVehicle,
   findMap,
+  isMeleeWeapon,
   repairCost,
   snapDefense,
   vehicleFootprint,
@@ -778,7 +779,9 @@ export class ArenaScene extends Phaser.Scene {
       view.weapon.setTexture(`weapon-${player.weapon}`);
     }
     view.weapon.setVisible(player.alive);
-    view.weapon.x = player.firing > 0 ? 6 : 10;
+    const melee = isMeleeWeapon(player.weapon);
+    view.weapon.x = melee ? 7 : player.firing > 0 ? 6 : 10;
+    view.weapon.setRotation(melee && player.firing > 0 ? -0.62 : 0);
 
     if (player.hurt > 0) view.body.setTint(0xff8a8a);
     else if (!player.alive) view.body.setTint(0x8a9a92);

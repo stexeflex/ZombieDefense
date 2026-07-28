@@ -1,8 +1,10 @@
 export type WeaponType =
   | 'pistol'
+  | 'crowbar'
   | 'smg'
   | 'rifle'
   | 'shotgun'
+  | 'fireaxe'
   | 'nailgun'
   | 'magnum'
   | 'sniper'
@@ -10,15 +12,18 @@ export type WeaponType =
   | 'lmg'
   | 'elephant'
   | 'flamer'
+  | 'chainsaw'
   | 'cryo'
   | 'rocket'
   | 'firerocket'
   | 'tesla'
   | 'laser'
   | 'railgun'
+  | 'phaselance'
   | 'gravity'
   | 'nova'
   | 'ionstorm'
+  | 'worldbreaker'
   | 'sun';
 
 export interface WeaponConfig {
@@ -38,6 +43,16 @@ export interface WeaponConfig {
   pierce: number;
   range: number;
   ammoCost: number;
+  /** Melee weapons attack instantly in an arc and never consume ammunition. */
+  mode?: 'melee';
+  /** Width of a melee swing in radians. */
+  meleeArc?: number;
+  /** Maximum enemies one melee swing can connect with. */
+  meleeTargets?: number;
+  /** Distance enemies are pushed away by a melee hit. */
+  knockback?: number;
+  /** Share of enemy armor ignored by a melee hit, from 0 to 1. */
+  armorPierce?: number;
   splashRadius?: number;
   splashDamage?: number;
   chain?: number;
@@ -74,6 +89,27 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     range: 720,
     ammoCost: 40,
     description: 'Zuverlässige Startwaffe',
+  },
+  crowbar: {
+    label: 'Brecheisen',
+    short: 'BE',
+    cost: 300,
+    damage: 62,
+    fireDelay: 560,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 84,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 1.75,
+    meleeTargets: 2,
+    knockback: 24,
+    description: 'Günstiger Nahkampf: trifft zwei Gegner und stößt sie zurück',
   },
   smg: {
     label: 'Maschinenpistole',
@@ -125,6 +161,28 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     range: 400,
     ammoCost: 110,
     description: 'Brutal auf kurze Distanz',
+  },
+  fireaxe: {
+    label: 'Feuerwehr-Axt',
+    short: 'AX',
+    cost: 1200,
+    damage: 168,
+    fireDelay: 820,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 98,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 1.6,
+    meleeTargets: 4,
+    knockback: 48,
+    armorPierce: 0.2,
+    description: 'Schwere Axt: spaltet Gruppen und knackt einen Teil der Panzerung',
   },
   nailgun: {
     label: 'Nagelwerfer',
@@ -252,6 +310,28 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     burnSeconds: 2.6,
     description: 'Kurze Reichweite, setzt Horden in Brand',
   },
+  chainsaw: {
+    label: 'Kettensäge',
+    short: 'KS',
+    cost: 2800,
+    damage: 38,
+    fireDelay: 105,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 92,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 1.05,
+    meleeTargets: 3,
+    knockback: 8,
+    armorPierce: 0.12,
+    description: 'Dauerbiss auf kurze Distanz, zerlegt drei Ziele zugleich',
+  },
   cryo: {
     label: 'Frostkanone',
     short: 'FK',
@@ -364,6 +444,28 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     ammoCost: 380,
     description: 'Magnetgeschoss durchbohrt eine komplette Horde',
   },
+  phaselance: {
+    label: 'Phasenlanze',
+    short: 'PL',
+    cost: 6200,
+    damage: 330,
+    fireDelay: 520,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 148,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 0.95,
+    meleeTargets: 8,
+    knockback: 64,
+    armorPierce: 0.7,
+    description: 'Extrem lange Energieklinge, durchdringt Rüstung und ganze Reihen',
+  },
   gravity: {
     label: 'Gravitationswerfer',
     short: 'GW',
@@ -424,6 +526,28 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     chainRange: 245,
     description: 'Drei Ionenblitze springen durch die ganze Horde',
   },
+  worldbreaker: {
+    label: 'Weltenbrecher',
+    short: 'WB',
+    cost: 13000,
+    damage: 980,
+    fireDelay: 1300,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 132,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 2.75,
+    meleeTargets: 14,
+    knockback: 165,
+    armorPierce: 0.5,
+    description: 'Gravitationshammer: vernichtender Rundschlag gegen eine ganze Horde',
+  },
   sun: {
     label: 'Sonnenwerfer',
     short: 'SO',
@@ -449,9 +573,11 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
 
 export const WEAPON_ORDER: WeaponType[] = [
   'pistol',
+  'crowbar',
   'smg',
   'rifle',
   'shotgun',
+  'fireaxe',
   'nailgun',
   'magnum',
   'sniper',
@@ -459,24 +585,33 @@ export const WEAPON_ORDER: WeaponType[] = [
   'lmg',
   'elephant',
   'flamer',
+  'chainsaw',
   'cryo',
   'rocket',
   'firerocket',
   'tesla',
   'laser',
   'railgun',
+  'phaselance',
   'gravity',
   'nova',
   'ionstorm',
+  'worldbreaker',
   'sun',
 ];
 
+export function isMeleeWeapon(weapon: WeaponType | undefined) {
+  return Boolean(weapon && WEAPONS[weapon]?.mode === 'melee');
+}
+
 /** Upper limit for carried spare ammunition, one full resupply. */
 export function reserveCapacity(weapon: WeaponType, reserveLevel = 0) {
+  if (isMeleeWeapon(weapon)) return 0;
   return Math.round(WEAPONS[weapon].reserve * (1 + reserveLevel * 0.02));
 }
 
 export function magazineCapacity(weapon: WeaponType, magazineLevel = 0) {
+  if (isMeleeWeapon(weapon)) return 1;
   return Math.max(1, Math.round(WEAPONS[weapon].magazine * (1 + magazineLevel * 0.02)));
 }
 
@@ -491,7 +626,7 @@ export function ammoRefillCost(
   reserveLevel = 0,
   moneyScale = 1,
 ) {
-  if (weapon === 'pistol') return 0;
+  if (weapon === 'pistol' || isMeleeWeapon(weapon)) return 0;
   const missing = Math.max(0, reserveCapacity(weapon, reserveLevel) - currentReserve);
   return Math.ceil((missing * WEAPONS[weapon].ammoCost * moneyScale) / WEAPONS[weapon].reserve);
 }
@@ -511,6 +646,7 @@ export function weaponSellValue(
   moneyScale = 1,
 ) {
   if (weapon === 'pistol') return 0;
+  if (isMeleeWeapon(weapon)) return Math.max(0, Math.floor(purchasePrice));
   const fullLoad = magazineCapacity(weapon, magazineLevel) + reserveCapacity(weapon, reserveLevel);
   const rounds = Math.max(0, currentAmmo) + Math.max(0, currentReserve);
   const missing = Math.max(0, fullLoad - rounds);

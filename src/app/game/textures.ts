@@ -20,9 +20,11 @@ export const PLAYER_COLORS = ['#69f0ae', '#57b8ff', '#ffcc66', '#ff6b8a'];
 /** Distance from the player centre to the muzzle of each weapon. */
 export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   pistol: 30,
+  crowbar: 58,
   smg: 38,
   rifle: 48,
   shotgun: 46,
+  fireaxe: 62,
   nailgun: 48,
   magnum: 40,
   sniper: 58,
@@ -30,15 +32,18 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   lmg: 52,
   elephant: 60,
   flamer: 40,
+  chainsaw: 54,
   cryo: 44,
   rocket: 50,
   firerocket: 54,
   tesla: 42,
   laser: 48,
   railgun: 62,
+  phaselance: 68,
   gravity: 50,
   nova: 52,
   ionstorm: 54,
+  worldbreaker: 64,
   sun: 60,
 };
 
@@ -293,6 +298,23 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     fillRounded(ctx, 8, 10, 22, 7, 2, '#c8d4cd', '#1b2723', 1.5);
     fillRounded(ctx, 4, 12, 8, 12, 2, '#8f9d96', '#1b2723', 1.5);
   },
+  crowbar: (ctx) => {
+    ctx.strokeStyle = '#c8d1cc';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(8, 24);
+    ctx.lineTo(59, 8);
+    ctx.lineTo(67, 4);
+    ctx.stroke();
+    ctx.strokeStyle = '#7e8b85';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(59, 8);
+    ctx.lineTo(68, 14);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  },
   smg: (ctx) => {
     fillRounded(ctx, 6, 9, 34, 8, 2, '#3d4a44', '#141d19', 1.5);
     fillRounded(ctx, 34, 10, 14, 5, 2, '#9aa8a1', '#141d19', 1.5);
@@ -309,6 +331,20 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     fillRounded(ctx, 4, 10, 40, 9, 3, '#5b4130', '#1c1410', 1.5);
     fillRounded(ctx, 40, 9, 20, 10, 3, '#95a49c', '#141d19', 1.5);
     fillRounded(ctx, 18, 19, 16, 7, 3, '#3c2c20');
+  },
+  fireaxe: (ctx) => {
+    fillRounded(ctx, 5, 14, 56, 6, 3, '#8a5633', '#2a170c', 1.5);
+    ctx.fillStyle = '#cbd3cf';
+    ctx.strokeStyle = '#4d5a54';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(53, 4);
+    ctx.lineTo(70, 8);
+    ctx.lineTo(66, 26);
+    ctx.lineTo(52, 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
   },
   nailgun: (ctx) => {
     fillRounded(ctx, 3, 8, 38, 12, 3, '#545f58', '#161d19', 1.5);
@@ -363,6 +399,19 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     fillRounded(ctx, 44, 8, 14, 12, 4, '#8f5a2a', '#241407', 1.5);
     circle(ctx, 56, 14, 4, '#ffb347');
   },
+  chainsaw: (ctx) => {
+    fillRounded(ctx, 2, 10, 26, 15, 5, '#9a3428', '#2a100c', 2);
+    fillRounded(ctx, 24, 8, 45, 12, 5, '#9da7a2', '#252d29', 2);
+    ctx.strokeStyle = '#dbe2de';
+    ctx.lineWidth = 2;
+    for (let x = 30; x < 66; x += 6) {
+      ctx.beginPath();
+      ctx.moveTo(x, 7);
+      ctx.lineTo(x + 3, 3);
+      ctx.stroke();
+    }
+    fillRounded(ctx, 4, 23, 16, 8, 3, '#3d4742', '#171d1a', 1.5);
+  },
   cryo: (ctx) => {
     fillRounded(ctx, 0, 7, 16, 18, 5, '#2b4a5a', '#0e1c24', 2);
     fillRounded(ctx, 14, 11, 28, 7, 3, '#3d4f57', '#121d22', 1.5);
@@ -405,6 +454,19 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     circle(ctx, 62, 15, 5, '#baf7ff', '#4ce0ff', 2);
     fillRounded(ctx, 11, 19, 9, 13, 2, '#1d2c32');
   },
+  phaselance: (ctx) => {
+    fillRounded(ctx, 0, 12, 24, 7, 3, '#263a42', '#0b171c', 1.5);
+    fillRounded(ctx, 21, 10, 11, 11, 4, '#3d6672', '#10232a', 1.5);
+    ctx.strokeStyle = '#7eeaff';
+    ctx.lineWidth = 6;
+    ctx.shadowColor = '#7eeaff';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(30, 15);
+    ctx.lineTo(70, 15);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  },
   gravity: (ctx) => {
     fillRounded(ctx, 1, 8, 34, 14, 5, '#29243e', '#100d1a', 2);
     circle(ctx, 37, 15, 12, '#171126', '#a67cff', 2);
@@ -429,6 +491,20 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
       circle(ctx, 59, y + 2, 3.5, '#baf5ff', '#62d9ff', 1.2);
     }
     fillRounded(ctx, 10, 21, 9, 11, 2, '#122b3d');
+  },
+  worldbreaker: (ctx) => {
+    fillRounded(ctx, 0, 13, 44, 7, 3, '#6a4827', '#201307', 2);
+    fillRounded(ctx, 38, 3, 30, 27, 7, '#48535a', '#151c20', 2);
+    circle(ctx, 54, 16, 8, '#5c4931', '#ffd35c', 2);
+    ctx.strokeStyle = '#ffd35c';
+    ctx.lineWidth = 2;
+    for (let index = 0; index < 4; index += 1) {
+      const angle = (index * Math.PI) / 2;
+      ctx.beginPath();
+      ctx.moveTo(54 + Math.cos(angle) * 9, 16 + Math.sin(angle) * 9);
+      ctx.lineTo(54 + Math.cos(angle) * 13, 16 + Math.sin(angle) * 13);
+      ctx.stroke();
+    }
   },
   sun: (ctx) => {
     fillRounded(ctx, 1, 6, 43, 19, 8, '#50351b', '#1b0e05', 2);
@@ -735,6 +811,44 @@ const DEFENSE_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     ctx.fillStyle = 'rgba(255, 200, 80, 0.16)';
     ctx.fillRect(2, h * 0.42, w - 4, 3);
     noise(ctx, w, h, 40, ['rgba(255,255,255,0.12)', 'rgba(0,0,0,0.2)'], 1, 2, 55);
+  },
+  shockwall: (ctx, w, h) => {
+    fillRounded(ctx, 1, 1, w - 2, h - 2, 5, '#263933', '#0d1713', 2);
+    ctx.strokeStyle = '#69f0ae';
+    ctx.lineWidth = 2;
+    for (let x = 8; x < w - 6; x += 12) {
+      ctx.beginPath();
+      ctx.moveTo(x, 4);
+      ctx.lineTo(x + 5, h / 2);
+      ctx.lineTo(x, h - 4);
+      ctx.stroke();
+    }
+    circle(ctx, 6, h / 2, 3, '#d6ffe7', '#69f0ae', 1);
+    circle(ctx, w - 6, h / 2, 3, '#d6ffe7', '#69f0ae', 1);
+  },
+  cryowall: (ctx, w, h) => {
+    fillRounded(ctx, 1, 1, w - 2, h - 2, 6, '#31515e', '#10242c', 2);
+    ctx.fillStyle = '#83dff2';
+    for (let x = 5; x < w - 4; x += 14) {
+      ctx.beginPath();
+      ctx.moveTo(x, h - 4);
+      ctx.lineTo(x + 7, 4);
+      ctx.lineTo(x + 13, h - 4);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(220,250,255,0.62)';
+    ctx.fillRect(4, 4, w - 8, 3);
+  },
+  titanwall: (ctx, w, h) => {
+    fillRounded(ctx, 1, 1, w - 2, h - 2, 7, '#343c42', '#101519', 3);
+    ctx.fillStyle = '#59656c';
+    for (const x of [7, w / 2 - 3, w - 13]) ctx.fillRect(x, 3, 6, h - 6);
+    fillRounded(ctx, w / 2 - 13, 6, 26, h - 12, 7, '#5b4529', '#211608', 2);
+    circle(ctx, w / 2, h / 2, 7, '#ffb52e', '#fff0a6', 2);
+    ctx.strokeStyle = '#ffcc66';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(4, 4, w - 8, h - 8);
   },
 };
 

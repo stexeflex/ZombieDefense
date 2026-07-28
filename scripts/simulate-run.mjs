@@ -37,6 +37,7 @@ const {
   endlessRunReward,
   endlessSpeedScale,
   healthRegenPerSecond,
+  isMeleeWeapon,
   magazineCapacity,
   reserveCapacity,
   sellValue,
@@ -210,8 +211,12 @@ console.log('\n== Alle Waffen treffen ==');
     room.state.zombies.clear();
     room.state.projectiles.clear();
     const pack = [];
+    const firstX = isMeleeWeapon(weapon) ? 660 : 760;
     for (let index = 0; index < 8; index += 1) {
-      const zombie = room.systems.world.spawnZombie('normal', { x: 760 + index * 26, y: 800 });
+      const zombie = room.systems.world.spawnZombie('normal', {
+        x: firstX + index * 26,
+        y: 800,
+      });
       zombie.health = 400;
       zombie.maxHealth = 400;
       pack.push(zombie);
@@ -224,13 +229,13 @@ console.log('\n== Alle Waffen treffen ==');
     const runtime = room.systems.world.runtime.get('p1');
     for (let tick = 0; tick < 40; tick += 1) {
       pack.forEach((zombie, index) => {
-        zombie.x = 760 + index * 26;
+        zombie.x = firstX + index * 26;
         zombie.y = 800;
       });
       player.ammo = 9999;
       player.reserveAmmo = 9999;
       player.reloading = 0;
-      runtime.input = { ...IDLE, shoot: true, aimX: 760, aimY: 800 };
+      runtime.input = { ...IDLE, shoot: true, aimX: firstX, aimY: 800 };
       room.update(50);
     }
     const after = pack.reduce((sum, zombie) => sum + Math.max(0, zombie.health), 0);
