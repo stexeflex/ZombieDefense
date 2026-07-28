@@ -112,10 +112,6 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     state.lobbyCode = this.cleanCode(options.lobbyCode);
     state.endless = Boolean(options.endless);
     this.setState(state);
-    // The browser consumes our compact, interpolated `snapshot` messages.
-    // Colyseus would otherwise also send its own schema patches every 50 ms,
-    // duplicating the busiest combat traffic without a listener on the client.
-    this.patchRate = null;
 
     this.world = new GameWorld(state, findMap(options.mapId ?? DEFAULT_MAP_ID));
     this.abilities = new AbilitySystem(this.world);
@@ -136,6 +132,12 @@ export class ZombieRoom extends Room<{ state: GameState }> {
 
     this.applyMap(options.mapId ?? DEFAULT_MAP_ID);
     this.setSimulationInterval((deltaMs) => this.update(deltaMs), 50);
+    // This must happen after the simulation interval exists. Otherwise
+    // Colyseus starts a fallback clock beside the game loop; that clock steals
+    // most of deltaTime and makes authoritative movement crawl and snap back.
+    // The browser consumes our compact, interpolated `snapshot` messages, so
+    // the regular schema patches would only duplicate combat traffic.
+    this.patchRate = null;
     this.registerMessages();
   }
 

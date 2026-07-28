@@ -120,6 +120,32 @@ function startCombat(room) {
   room.systems.waves.startNextWave();
 }
 
+console.log('\n== Echtzeit-Spielschritt ==');
+{
+  const room = new ZombieRoom();
+  room.clients = [];
+  room.broadcast = () => {};
+  room.onCreate({ lobbyCode: 'CLOCK', mapId: 'outpost' });
+  const player = join(room, 'clock-player');
+  room.systems.waves.startRun();
+  const runtime = room.systems.world.runtime.get(player.id);
+  runtime.input = { ...IDLE, right: true, aimX: player.x + 100, aimY: player.y };
+  const startX = player.x;
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  room.setSimulationInterval();
+  const travelled = player.x - startX;
+  check(
+    'Serverbewegung erhält die volle verstrichene Zeit',
+    travelled > 40,
+    `(${Math.round(travelled)} px in 300 ms)`,
+  );
+  check(
+    'Dabei bleibt der ungenutzte Colyseus-Doppelkanal aus',
+    room.patchRate === null,
+    `(Patchrate ${room.patchRate})`,
+  );
+}
+
 console.log('\n== Erste Welle auf Vorposten 07 ==');
 {
   const room = makeRoom('outpost');
