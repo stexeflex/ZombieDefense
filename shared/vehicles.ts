@@ -2,7 +2,8 @@ import { ARENA } from './arena.js';
 import { boxesOverlap, defenseBox, type PlacedDefense } from './defenses.js';
 import type { MapObstacle } from './maps.js';
 
-export type VehicleType = 'quad' | 'car' | 'van' | 'pickup' | 'workshop' | 'apc' | 'tank';
+export type VehicleType =
+  'quad' | 'car' | 'van' | 'pickup' | 'workshop' | 'steamroller' | 'bulldozer' | 'apc' | 'tank';
 
 /** Mounted weapon that aims and fires on its own while somebody is on board. */
 export interface VehicleGun {
@@ -35,6 +36,12 @@ export interface VehicleConfig {
   turn: number;
   /** Damage dealt to a zombie the hull runs into at full speed. */
   ram: number;
+  /** Extra distance enemies are shoved in the driving direction on impact. */
+  ramPush?: number;
+  /** Only contacts in front of the hull count as a damaging ram. */
+  frontRamOnly?: boolean;
+  /** Incoming melee multiplier at the front and at exposed sides/rear. */
+  directionalArmor?: { frontArc: number; front: number; exposed: number };
   gun?: VehicleGun;
   /** Health per second for the crew. */
   heal?: number;
@@ -138,6 +145,40 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     description:
       'Fahrende Werkstatt: flickt Barrikaden und Türme in der Nähe und liefert Nachschub',
   },
+  steamroller: {
+    label: 'Dampfwalze',
+    short: 'DW',
+    cost: 4500,
+    health: 4300,
+    width: 112,
+    height: 58,
+    seats: 2,
+    speed: 82,
+    grip: 2.2,
+    turn: 1.45,
+    ram: 330,
+    ramPush: 46,
+    perk: 'Die Walze verursacht extremen Überrollschaden',
+    description: 'Sehr langsam, aber ihr schwerer Zylinder zerquetscht getroffene Gegner',
+  },
+  bulldozer: {
+    label: 'Planierraupe',
+    short: 'PR',
+    cost: 5000,
+    health: 4800,
+    width: 116,
+    height: 62,
+    seats: 2,
+    speed: 94,
+    grip: 2.4,
+    turn: 0.92,
+    ram: 155,
+    ramPush: 105,
+    frontRamOnly: true,
+    directionalArmor: { frontArc: Math.PI * 0.72, front: 0.68, exposed: 1.35 },
+    perk: 'Schiebt Gegner mit dem Frontschild weit vor sich her',
+    description: 'Träge beim Drehen und an Seiten sowie Heck deutlich verwundbarer',
+  },
   apc: {
     label: 'Schützenpanzer',
     short: '🚛',
@@ -176,7 +217,7 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
       splashDamage: 120,
     },
     perk: 'Sprengkanone walzt ganze Reihen nieder',
-    description: 'Endgame: kriecht über das Feld und räumt mit Kettenkanone und Gewicht auf',
+    description: 'Kriecht über das Feld und räumt mit Kettenkanone und Gewicht auf',
   },
 };
 
@@ -186,6 +227,8 @@ export const VEHICLE_ORDER: VehicleType[] = [
   'van',
   'pickup',
   'workshop',
+  'steamroller',
+  'bulldozer',
   'apc',
   'tank',
 ];

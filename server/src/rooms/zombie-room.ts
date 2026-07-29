@@ -525,6 +525,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       players: this.playerSystem,
       abilities: this.abilities,
       vehicles: this.vehicles,
+      projectiles: this.projectiles,
       turrets: this.turrets,
       drones: this.drones,
     };

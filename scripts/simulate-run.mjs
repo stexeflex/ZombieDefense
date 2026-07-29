@@ -892,6 +892,34 @@ console.log('\n== Fahrzeuge ==');
       Math.hypot(attacker.x - car.x, attacker.y - car.y) > VEHICLES.car.height / 2,
   );
 }
+{
+  // Das Räumschild schützt nur vorne; Seiten und Heck bleiben die Schwachstelle.
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', {
+    type: 'bulldozer',
+    x: 1280,
+    y: 800,
+    rotation: 0,
+  });
+  const bulldozer = [...room.state.vehicles.values()][0];
+  const full = bulldozer.health;
+  room.systems.world.hullMelee(bulldozer, 100, bulldozer.x + 100, bulldozer.y);
+  const frontDamage = full - bulldozer.health;
+  const beforeRear = bulldozer.health;
+  room.systems.world.hullMelee(bulldozer, 100, bulldozer.x - 100, bulldozer.y);
+  const rearDamage = beforeRear - bulldozer.health;
+  check(
+    'Planierraupe ist an Seiten und Heck verwundbarer als vorne',
+    rearDamage > frontDamage * 1.5,
+    `(${Math.round(frontDamage)} vorne, ${Math.round(rearDamage)} hinten)`,
+  );
+}
 
 console.log('\n== Endlos-Skalierung ==');
 {
@@ -1074,6 +1102,35 @@ console.log('\n== Neue Barrikaden ==');
   check(
     'Eine dichte Horde zertrampelt den Stacheldraht schnell',
     !room.state.defenses.has(wire.id),
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 1150;
+  room.systems.build.placeDefense('p1', {
+    type: 'mine',
+    x: 1200,
+    y: 1050,
+    rotation: 0,
+  });
+  const mine = [...room.state.defenses.values()][0];
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  makeInvincible(player);
+  const victim = room.systems.world.spawnZombie('big', { x: mine.x, y: mine.y });
+  const before = victim.health;
+  room.update(50);
+  check('Kontaktmine verschwindet beim ersten Feindkontakt', !room.state.defenses.has(mine.id));
+  check(
+    'Kontaktmine verursacht sofort hohen Explosionsschaden',
+    !room.state.zombies.has(victim.id) || victim.health < before - 200,
+    `(${Math.round(before - victim.health)} Schaden)`,
   );
 }
 
@@ -2007,6 +2064,60 @@ console.log('\n== Sonderzombies ==');
     `(${distantZombie.health}/${distantHealth} HP)`,
   );
 }
+{
+  const room = makeRoom('outpost');
+  join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  const carrier = room.systems.world.spawnZombie('shieldbearer', { x: 1400, y: 800 });
+  carrier.rotation = Math.PI;
+  carrier.baseSpeed = 0;
+  carrier.speed = 0;
+  const frontHealth = carrier.health;
+  const rocket = room.systems.world.createProjectile('p1', 1180, 800, 0, 999, 1000, 'rocket');
+  rocket.pierce = 99;
+  rocket.splashRadius = 180;
+  rocket.splashDamage = 999;
+  room.systems.projectiles.update(0.3);
+  check(
+    'Frontschild entfernt auch explosive und durchdringende Projektile',
+    carrier.health === frontHealth && !room.state.projectiles.has(rocket.id),
+  );
+  const flank = room.systems.world.createProjectile(
+    'p1',
+    1400,
+    1020,
+    -Math.PI / 2,
+    120,
+    1000,
+    'rifle',
+  );
+  room.systems.projectiles.update(0.3);
+  check(
+    'Schildträger bleibt von der Seite verwundbar',
+    carrier.health < frontHealth && !room.state.projectiles.has(flank.id),
+    `(${Math.round(frontHealth - carrier.health)} Schaden)`,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1', { upgrades: { grenadeSplit: 4 } });
+  startCombat(room);
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  room.systems.world.fxQueue.length = 0;
+  player.grenades = 3;
+  room.systems.players.throwGrenade('p1', { x: 1500, y: 900 });
+  const minis = room.systems.world.fxQueue.filter(
+    (event) => event.k === 'explosion' && event.s === 'grenade-mini',
+  );
+  check(
+    'Splitter-Upgrade erzeugt eine Mini-Granate pro Stufe',
+    minis.length === 4,
+    `(${minis.length}/4)`,
+  );
+}
 
 console.log('\n== Boss-Fähigkeiten ==');
 {
@@ -2235,7 +2346,22 @@ campaignMaps.forEach((map) => {
         nearest = zombie;
       });
       let bossEngaged = false;
-      if (nearest && ZOMBIES[nearest.type].rank === 'boss') {
+      if (nearest?.type === 'shieldbearer') {
+        // The tactical bot demonstrates the intended counter: step around the
+        // slowly turning plate and finish the isolated carrier in melee.
+        for (const side of [1, -1]) {
+          const angle = nearest.rotation + side * (Math.PI / 2);
+          const x = nearest.x + Math.cos(angle) * 105;
+          const y = nearest.y + Math.sin(angle) * 105;
+          if (!room.systems.world.canStand(x, y, 18)) continue;
+          if (!room.systems.world.canTravel(x, y, nearest.x, nearest.y, 18)) continue;
+          player.x = x;
+          player.y = y;
+          player.weapon = 'worldbreaker';
+          bossEngaged = true;
+          break;
+        }
+      } else if (nearest && ZOMBIES[nearest.type].rank === 'boss') {
         for (let slot = 0; slot < 12; slot += 1) {
           const angle = (slot * Math.PI) / 6;
           const x = Math.max(

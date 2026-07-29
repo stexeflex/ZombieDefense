@@ -73,6 +73,9 @@ describe('ProgressService upgrade shop', () => {
     expect(upgradeCurrentValue('healthRegen', 16)).toBe('4 Leben pro Sekunde (+0,25 pro Stufe)');
     expect(upgradeCurrentValue('maxHealth', 5)).toContain('110 maximales Leben');
     expect(upgradeCurrentValue('dashCharges', 2)).toContain('4 Dash-Ladungen');
+    expect(upgradeCurrentValue('grenadeSplit', 6)).toContain('6 Mini-Granaten');
+    expect(upgradeCurrentValue('armor', 35)).not.toContain('max.');
+    expect(upgradeCurrentValue('vehicleArmor', 10)).toContain('10 % weniger Schaden');
   });
 
   it('refunds old Wiederbelebung levels once and removes them from the save', () => {

@@ -68,7 +68,9 @@ export class ZombieSystem {
       const navigation = this.navigationTarget(zombie, targetX, targetY);
       const angle = Math.atan2(navigation.y - zombie.y, navigation.x - zombie.x);
       const navigationDistance = Math.hypot(navigation.x - zombie.x, navigation.y - zombie.y);
-      zombie.rotation = angle;
+      zombie.rotation = config.frontShield
+        ? this.turnTowards(zombie.rotation, angle, config.frontShield.turnSpeed * delta)
+        : angle;
       const contact =
         zombie.radius +
         (attacksObjective ? Math.max(34, state.objectiveRadius * 0.72) : PLAYER_RADIUS);
@@ -90,7 +92,12 @@ export class ZombieSystem {
         if (zombie.attackCooldown <= 0) {
           zombie.attackCooldown = this.attackDelay(zombie.type, 0.85);
           zombie.attacking = 0.3;
-          this.world.hullMelee(hull, zombie.damage * this.structureBonus(zombie));
+          this.world.hullMelee(
+            hull,
+            zombie.damage * this.structureBonus(zombie),
+            zombie.x,
+            zombie.y,
+          );
         }
         zombie.stuckTimer = 0;
         zombie.bestDistance = distance;
@@ -155,7 +162,12 @@ export class ZombieSystem {
           }
           const crewed = this.world.vehicleOf(target!.id);
           if (crewed) {
-            this.world.hullMelee(crewed, zombie.damage * this.structureBonus(zombie));
+            this.world.hullMelee(
+              crewed,
+              zombie.damage * this.structureBonus(zombie),
+              zombie.x,
+              zombie.y,
+            );
             return;
           }
           // A swing that runs into a dash gets its own cue instead of blood.
@@ -188,6 +200,10 @@ export class ZombieSystem {
       if (!config.passable) return;
       if (!this.world.circleOverlapsDefense(zombie.x, zombie.y, zombie.radius, defense)) return;
 
+      if (config.triggerOnContact) {
+        broken.push(defense);
+        return;
+      }
       slow = Math.max(slow, config.slow ?? 0);
       if (config.contactWear) {
         defense.health -= config.contactWear * delta;
@@ -281,6 +297,13 @@ export class ZombieSystem {
 
   private attackDelay(type: ZombieType, base: number) {
     return type === 'fast' || type === 'crawler' ? base * 0.7 : base;
+  }
+
+  private turnTowards(current: number, target: number, step: number) {
+    let difference = target - current;
+    while (difference > Math.PI) difference -= Math.PI * 2;
+    while (difference < -Math.PI) difference += Math.PI * 2;
+    return current + Math.max(-step, Math.min(step, difference));
   }
 
   /** Heavies tear through barricades and vehicle hulls far faster than trash. */

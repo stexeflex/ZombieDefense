@@ -947,7 +947,13 @@ export class ArenaScene extends Phaser.Scene {
       limbs.push(this.add.image(0, 0, `zombie-limb-${zombie.type}`).setOrigin(0.1, 0.5));
     }
     const body = this.add.image(0, 0, `zombie-${zombie.type}`);
-    const actor = this.add.container(0, 0, [...limbs, body]);
+    let frontShield: Phaser.GameObjects.Rectangle | undefined;
+    if (config.frontShield) {
+      frontShield = this.add
+        .rectangle(radius + 10, 0, 9, radius * 2.2, 0x50616a, 1)
+        .setStrokeStyle(3, 0xffd166, 0.95);
+    }
+    const actor = this.add.container(0, 0, [...limbs, body, ...(frontShield ? [frontShield] : [])]);
 
     const healthBackground = this.add.rectangle(0, -radius - 13, radius * 2.2, 5, 0x260e14, 0.9);
     const healthBar = this.add
@@ -981,6 +987,7 @@ export class ArenaScene extends Phaser.Scene {
       healthBar,
       healthBackground,
       aura,
+      frontShield,
       walk: Math.random() * Math.PI * 2,
       type: zombie.type,
       radius,
@@ -1365,6 +1372,7 @@ export class ArenaScene extends Phaser.Scene {
     const style = HAZARD_STYLE[hazard.kind] ?? HAZARD_STYLE['warning'];
     const warning = hazard.kind === 'warning';
     const friendlyAcid = hazard.kind === 'acid';
+    const hostilePoison = hazard.kind === 'poison';
     const pool = this.add
       .image(0, 0, 'fx-pool')
       .setDisplaySize(hazard.r * 2, hazard.r * 2)
@@ -1374,10 +1382,25 @@ export class ArenaScene extends Phaser.Scene {
     const fill = this.add.circle(0, 0, 1, style.tint, 0.28).setVisible(warning);
     const ring = this.add
       .circle(0, 0, hazard.r)
-      .setStrokeStyle(warning || friendlyAcid ? 4 : 2, style.tint, warning ? 0.95 : 0.65);
+      .setStrokeStyle(
+        warning || friendlyAcid || hostilePoison ? 4 : 2,
+        hostilePoison ? 0xff704d : style.tint,
+        warning ? 0.95 : 0.72,
+      );
+    const marker = this.add
+      .text(0, 0, '☠', {
+        color: '#fff0b0',
+        fontFamily: 'Arial, sans-serif',
+        fontStyle: 'bold',
+        fontSize: `${Math.max(18, Math.min(34, hazard.r * 0.42))}px`,
+        stroke: '#5c100c',
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setVisible(hostilePoison);
 
     const root = this.add
-      .container(hazard.x, hazard.y, [pool, fill, ring])
+      .container(hazard.x, hazard.y, [pool, fill, ring, marker])
       .setDepth(warning ? 7 : 5);
 
     return {
@@ -1385,6 +1408,7 @@ export class ArenaScene extends Phaser.Scene {
       pool,
       ring,
       fill,
+      marker,
       kind: hazard.kind,
       radius: hazard.r,
       pulse: 0,
@@ -1408,6 +1432,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     const fade = Math.min(1, hazard.life / 1.2);
     view.pool.setAlpha((HAZARD_STYLE[view.kind]?.alpha ?? 0.5) * fade);
+    view.marker.setAlpha(fade);
   }
 
   private animateHazards(deltaMs: number) {
@@ -1423,6 +1448,11 @@ export class ArenaScene extends Phaser.Scene {
       }
       if (view.kind === 'acid') {
         view.ring.setStrokeStyle(4, 0x8ff5ff, 0.55 + Math.sin(view.pulse * 7) * 0.3);
+      } else if (view.kind === 'poison') {
+        view.ring.setStrokeStyle(4, 0xff704d, 0.58 + Math.sin(view.pulse * 8) * 0.3);
+        view.marker
+          .setScale(1 + Math.sin(view.pulse * 4.5) * 0.08)
+          .setRotation(Math.sin(view.pulse * 2.2) * 0.05);
       }
       view.pool.setScale(
         (view.radius * 2 * (1 + Math.sin(view.pulse * 2.2) * 0.03)) / 128,

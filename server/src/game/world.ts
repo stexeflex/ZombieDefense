@@ -567,8 +567,18 @@ export class GameWorld {
   }
 
   /** A blow against the hull cannot reach the crew while the hull survives. */
-  hullMelee(vehicle: VehicleState, damage: number) {
-    this.damageVehicle(vehicle, damage);
+  hullMelee(vehicle: VehicleState, damage: number, attackerX?: number, attackerY?: number) {
+    const directional = VEHICLES[vehicle.type].directionalArmor;
+    if (!directional || attackerX === undefined || attackerY === undefined) {
+      this.damageVehicle(vehicle, damage);
+      return;
+    }
+    let difference = Math.atan2(attackerY - vehicle.y, attackerX - vehicle.x) - vehicle.rotation;
+    while (difference > Math.PI) difference -= Math.PI * 2;
+    while (difference < -Math.PI) difference += Math.PI * 2;
+    const multiplier =
+      Math.abs(difference) <= directional.frontArc / 2 ? directional.front : directional.exposed;
+    this.damageVehicle(vehicle, damage * multiplier);
   }
 
   blockingVehicle(x: number, y: number, radius: number) {

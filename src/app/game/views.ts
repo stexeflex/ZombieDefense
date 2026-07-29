@@ -49,6 +49,8 @@ export interface ZombieView extends BaseView {
   healthBar: Phaser.GameObjects.Rectangle;
   healthBackground: Phaser.GameObjects.Rectangle;
   aura?: Phaser.GameObjects.Arc;
+  /** Solid plate attached to the actor, so its protected direction rotates with it. */
+  frontShield?: Phaser.GameObjects.Rectangle;
   walk: number;
   type: ZombieType;
   radius: number;
@@ -107,6 +109,8 @@ export interface HazardView extends BaseView {
   pool: Phaser.GameObjects.Image;
   ring: Phaser.GameObjects.Arc;
   fill: Phaser.GameObjects.Arc;
+  /** Hostile poison carries an unmistakable danger symbol. */
+  marker: Phaser.GameObjects.Text;
   kind: HazardKind;
   radius: number;
   pulse: number;

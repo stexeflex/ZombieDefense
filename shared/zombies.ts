@@ -7,6 +7,7 @@ export type ZombieType =
   | 'big'
   | 'exploder'
   | 'armored'
+  | 'shieldbearer'
   | 'spitter'
   | 'screamer'
   // mini bosses
@@ -117,6 +118,11 @@ export interface ZombieConfig {
   rank: ZombieRank;
   /** Fraction of incoming damage that bounces off, 0 for soft flesh. */
   armor?: number;
+  /**
+   * Projectiles inside this forward arc vanish on contact. The turn rate keeps
+   * the protected side readable and leaves a real flanking window.
+   */
+  frontShield?: { arc: number; turnSpeed: number };
   explode?: { radius: number; damage: number };
   abilities?: ZombieAbility[];
   /** Short line shown on the map card and the boss bar. */
@@ -182,6 +188,16 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
     reward: 62,
     rank: 'elite',
     armor: 0.35,
+  },
+  shieldbearer: {
+    label: 'Schildträger',
+    health: 440,
+    speed: 48,
+    damage: 24,
+    radius: 27,
+    reward: 72,
+    rank: 'elite',
+    frontShield: { arc: Math.PI * 0.82, turnSpeed: 0.72 },
   },
   spitter: {
     label: 'Speier',

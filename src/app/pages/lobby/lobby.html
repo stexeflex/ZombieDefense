@@ -718,7 +718,8 @@
                         <span class="item-icon">{{ weapon.short }}</span>
                         <span
                           ><b>{{ weapon.label }}</b
-                          ><small>{{ weapon.description }}</small></span
+                          ><small>{{ weapon.description }}</small>
+                          <small class="item-stats">ℹ {{ weaponStats(weapon.type) }}</small></span
                         >
                         <strong>
                           {{
@@ -774,9 +775,8 @@
                         <span
                           ><b>{{ weapon.label }}</b
                           ><small>{{ weapon.description }}</small>
-                          <small
-                            >{{ weapon.damage }} Schaden · {{ weapon.range }} Reichweite · keine
-                            Munition</small
+                          <small class="item-stats"
+                            >ℹ {{ weaponStats(weapon.type) }} · keine Munition</small
                           ></span
                         >
                         <strong>
@@ -823,7 +823,8 @@
                       <span class="item-icon">{{ defense.short }}</span>
                       <span
                         ><b>{{ defense.label }}</b
-                        ><small>{{ defense.health }} HP · {{ defense.description }}</small></span
+                        ><small>{{ defense.description }}</small>
+                        <small class="item-stats">ℹ {{ defenseStats(defense.type) }}</small></span
                       >
                       <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
@@ -843,7 +844,8 @@
                       <span class="item-icon">{{ defense.short }}</span>
                       <span
                         ><b>{{ defense.label }}</b
-                        ><small>{{ defense.description }}</small></span
+                        ><small>{{ defense.description }}</small>
+                        <small class="item-stats">ℹ {{ defenseStats(defense.type) }}</small></span
                       >
                       <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
@@ -868,9 +870,11 @@
                           {{ vehicleHealth(vehicle.type) }} HP · Insassen unverwundbar
                         </small>
                         @if (vehicleArmorPercent() > 0) {
-                          <small>−{{ vehicleArmorPercent() }} % Hüllenschaden</small>
+                          <small>+{{ vehicleArmorPercent() }} % Fahrzeugpanzerung</small>
                         }
+                        <small>{{ vehicle.description }}</small>
                         <small class="vehicle-perk">★ {{ vehicle.perk }}</small>
+                        <small class="item-stats">ℹ {{ vehicleStats(vehicle.type) }}</small>
                       </span>
                       <strong>$ {{ vehiclePrice(vehicle.type) }}</strong>
                     </button>

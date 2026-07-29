@@ -19,6 +19,7 @@ export interface PermanentUpgrades {
   grenadeDamage: number;
   grenadeCooldown: number;
   grenadeRadius: number;
+  grenadeSplit: number;
   barricadeHealth: number;
   turretDamage: number;
   turretRange: number;
@@ -51,6 +52,7 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   grenadeDamage: 0,
   grenadeCooldown: 0,
   grenadeRadius: 0,
+  grenadeSplit: 0,
   barricadeHealth: 0,
   turretDamage: 0,
   turretRange: 0,
@@ -81,6 +83,9 @@ export function upgradeCost(level: number) {
  * resistance that ends in full immunity after six levels.
  */
 export const UPGRADE_LIMITS: Partial<Record<UpgradeKey, number>> = {
+  armor: 35,
+  vehicleArmor: 35,
+  grenadeSplit: 10,
   dashCharges: 3,
   dashResist: 6,
 };
@@ -90,6 +95,7 @@ export function upgradeMaxLevel(key: UpgradeKey) {
 }
 
 export function upgradeLevelCost(key: UpgradeKey, level: number) {
+  if (key === 'grenadeSplit') return 900 + level * 650;
   if (key === 'dashCharges') return 700 + level * 750;
   if (key === 'dashResist') return 500 + level * 450;
   return upgradeCost(level);

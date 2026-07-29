@@ -2,6 +2,9 @@ import { ARENA } from './arena.js';
 import type { MapObstacle } from './maps.js';
 
 export type DefenseType =
+  | 'crate'
+  | 'block'
+  | 'mine'
   | 'wood'
   | 'wire'
   | 'stone'
@@ -38,6 +41,8 @@ export interface DefenseConfig {
   height: number;
   /** Ground defenses can be crossed instead of blocking movement. */
   passable?: boolean;
+  /** A one-use ground trap that destroys itself as soon as a zombie touches it. */
+  triggerOnContact?: boolean;
   /** Damage per second dealt while a zombie crosses this defense. */
   contactDamage?: number;
   /** Health lost per second for every zombie currently crossing it. */
@@ -86,6 +91,41 @@ export interface DefenseConfig {
 }
 
 export const DEFENSES: Record<DefenseType, DefenseConfig> = {
+  crate: {
+    label: 'Kistenblock',
+    short: 'KB',
+    kind: 'barricade',
+    cost: 95,
+    health: 220,
+    width: 28,
+    height: 28,
+    description: 'Kleine quadratische Deckung mit etwa halber Grundfläche',
+  },
+  block: {
+    label: 'Betonblock',
+    short: 'BB',
+    kind: 'barricade',
+    cost: 520,
+    health: 1380,
+    width: 56,
+    height: 56,
+    slow: 0.18,
+    description: 'Große quadratische Deckung mit etwa doppelter Grundfläche',
+  },
+  mine: {
+    label: 'Kontaktmine',
+    short: 'MI',
+    kind: 'barricade',
+    cost: 140,
+    health: 1,
+    width: 34,
+    height: 34,
+    passable: true,
+    triggerOnContact: true,
+    blastRadius: 112,
+    blastDamage: 360,
+    description: 'Explodiert beim ersten Feindkontakt sofort mit hohem Schaden',
+  },
   wood: {
     label: 'Holzbarrikade',
     short: '▤',
@@ -393,7 +433,7 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     range: 900,
     speed: 2500,
     pierce: 5,
-    description: 'Endgame: durchschlägt ganze Reihen auf weite Distanz',
+    description: 'Durchschlägt ganze Reihen auf weite Distanz',
   },
   drone: {
     label: 'Drohnenhangar',
@@ -428,7 +468,7 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     mortarImpactSeconds: 1.75,
     targetTanky: true,
     armorPierce: 0.65,
-    description: 'Teuer: jagt langsame Tanks und schlägt nach langer Warnzeit vernichtend ein',
+    description: 'Jagt langsame Tanks und schlägt nach langer Warnzeit vernichtend ein',
   },
   plasma: {
     label: 'Plasma-Bastion',
@@ -443,7 +483,7 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     range: 1120,
     speed: 3200,
     pierce: 9,
-    description: 'Luxus-Endgame: vernichtet mit Plasma ganze Reihen auf maximale Distanz',
+    description: 'Vernichtet mit Plasma ganze Reihen auf maximale Distanz',
   },
   ring: {
     label: 'Donnerkranz',
@@ -464,10 +504,13 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
 };
 
 export const BARRICADE_ORDER: DefenseType[] = [
+  'crate',
+  'mine',
   'wood',
   'wire',
   'spike',
   'stone',
+  'block',
   'blastwall',
   'steel',
   'shockwall',

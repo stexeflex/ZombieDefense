@@ -623,13 +623,25 @@ export class PlayerSystem {
     const radius = GRENADE_BASE_RADIUS * (1 + upgrades.grenadeRadius * 0.02);
     const damage = GRENADE_BASE_DAMAGE * (1 + upgrades.grenadeDamage * 0.02);
 
-    const victims: Array<[string, ZombieState]> = [];
-    this.world.state.zombies.forEach((zombie, id) => {
-      if (Math.hypot(zombie.x - x, zombie.y - y) <= radius + zombie.radius) {
-        victims.push([id, zombie]);
+    this.grenadeBlast(x, y, radius, damage, player.id, 'grenade');
+    const fragments = Math.min(10, Math.max(0, Math.floor(upgrades.grenadeSplit)));
+    if (fragments > 0) {
+      const miniRadius = 48 * (1 + upgrades.grenadeRadius * 0.01);
+      const spread = radius * 0.68;
+      const offset = ((Math.round(x + y) % 17) / 17) * Math.PI * 2;
+      for (let fragment = 0; fragment < fragments; fragment += 1) {
+        const angle = offset + (fragment * Math.PI * 2) / fragments;
+        const distance = fragments === 1 ? spread * 0.45 : spread * (0.55 + (fragment % 2) * 0.35);
+        this.grenadeBlast(
+          this.world.clamp(x + Math.cos(angle) * distance, 0, ARENA.width),
+          this.world.clamp(y + Math.sin(angle) * distance, 0, ARENA.height),
+          miniRadius,
+          damage * 0.24,
+          player.id,
+          'grenade-mini',
+        );
       }
-    });
-    for (const [id, zombie] of victims) this.world.damageZombie(id, zombie, damage, player.id);
+    }
 
     player.grenades -= 1;
     const rechargeTime = Math.max(
@@ -639,7 +651,24 @@ export class PlayerSystem {
     runtime.grenadeRecharge.push(rechargeTime);
     runtime.grenadeThrowLock = 0.35;
     player.grenadeCooldown = Math.min(...runtime.grenadeRecharge);
-    this.world.pushFx({ k: 'explosion', x, y, r: radius, s: 'grenade' });
+  }
+
+  private grenadeBlast(
+    x: number,
+    y: number,
+    radius: number,
+    damage: number,
+    ownerId: string,
+    source: 'grenade' | 'grenade-mini',
+  ) {
+    const victims: Array<[string, ZombieState]> = [];
+    this.world.state.zombies.forEach((zombie, id) => {
+      if (Math.hypot(zombie.x - x, zombie.y - y) <= radius + zombie.radius) {
+        victims.push([id, zombie]);
+      }
+    });
+    for (const [id, zombie] of victims) this.world.damageZombie(id, zombie, damage, ownerId);
+    this.world.pushFx({ k: 'explosion', x, y, r: radius, s: source });
   }
 
   // ----------------------------------------------------------------- revives

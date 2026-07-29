@@ -120,7 +120,12 @@ export class EffectLayer {
       // The blow was dodged, so it stays bright and bloodless.
       case 'deflect':
         this.burst('energy', 5, event.x, event.y);
-        this.shockwave(event.x, event.y, 46, 0x9fdcff);
+        this.shockwave(
+          event.x,
+          event.y,
+          event.s === 'front-shield' ? 56 : 46,
+          event.s === 'front-shield' ? 0xffd166 : 0x9fdcff,
+        );
         this.audio.play('deflect', 0.55);
         break;
       case 'death':
@@ -153,7 +158,10 @@ export class EffectLayer {
                 ? 0xff4f6b
                 : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
-        this.audio.play(acidBurst ? 'shot-flame' : 'explosion', acidBurst ? 0.5 : 0.9);
+        this.audio.play(
+          acidBurst ? 'shot-flame' : 'explosion',
+          acidBurst ? 0.5 : event.s === 'grenade-mini' ? 0.36 : 0.9,
+        );
         break;
       }
       case 'warning':

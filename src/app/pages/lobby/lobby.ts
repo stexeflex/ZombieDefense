@@ -17,9 +17,13 @@ import {
   dashReduction,
   findMap,
   isMeleeWeapon,
+  magazineCapacity,
   reserveCapacity,
   vehicleArmorReduction,
+  vehicleGunDamage,
   vehicleMaxHealth,
+  vehicleRamDamage,
+  vehicleTopSpeed,
   type DefenseType,
   type VehicleType,
   type WeaponType,
@@ -72,6 +76,9 @@ export class Lobby implements OnInit, OnDestroy {
     document.fullscreenEnabled &&
     typeof document.documentElement.requestFullscreen === 'function';
   readonly volumePercent = computed(() => Math.round(this.audio.volume() * 100));
+  private readonly statFormatter = new Intl.NumberFormat('de-DE', {
+    maximumFractionDigits: 1,
+  });
   readonly players = computed(() => Object.values(this.game.snapshot()?.players ?? {}));
   readonly readyCount = computed(() => this.players().filter((player) => player.ready).length);
   readonly maps = MAPS;
@@ -213,6 +220,81 @@ export class Lobby implements OnInit, OnDestroy {
   /** The hull this player actually gets, upgrades included. */
   vehicleHealth(type: VehicleType) {
     return vehicleMaxHealth(type, this.progress.upgrades().vehicleHealth);
+  }
+
+  /** Exact weapon values after this player's permanent upgrades. */
+  weaponStats(type: WeaponType) {
+    const weapon = WEAPONS[type];
+    const upgrades = this.progress.upgrades();
+    const damage = weapon.damage * (1 + upgrades.weaponDamage * 0.02);
+    const damageLabel =
+      (weapon.pellets ?? 1) > 1
+        ? `${this.stat(damage)} × ${weapon.pellets} Schaden`
+        : `${this.stat(damage)} Schaden`;
+    if (isMeleeWeapon(type)) {
+      const delay = weapon.fireDelay / (1 + upgrades.meleeSpeed * 0.02);
+      const range = weapon.range * (1 + upgrades.meleeRange * 0.01);
+      return `${damageLabel} · ${this.stat(1000 / delay)} Angriffe/s · ${this.stat(range)} Reichweite`;
+    }
+    const magazine = magazineCapacity(type, upgrades.magazineSize);
+    const reserve = reserveCapacity(type, upgrades.reserveAmmo);
+    const reload = weapon.reload / 1000 / (1 + upgrades.reloadSpeed * 0.02);
+    return `${damageLabel} · ${this.stat(1000 / weapon.fireDelay)} Schuss/s · Magazin ${magazine} + ${reserve} · ${this.stat(reload)} s Nachladen`;
+  }
+
+  /** Barricade and turret values after all relevant permanent upgrades. */
+  defenseStats(type: DefenseType) {
+    const defense = DEFENSES[type];
+    const upgrades = this.progress.upgrades();
+    if (defense.kind === 'barricade') {
+      const health = Math.round(defense.health * (1 + upgrades.barricadeHealth * 0.02));
+      const effects: string[] = [`${health} Leben`, `${defense.width} × ${defense.height} Fläche`];
+      if (defense.blastDamage) effects.push(`${this.stat(defense.blastDamage)} Explosionsschaden`);
+      if (defense.contactDamage)
+        effects.push(`${this.stat(defense.contactDamage)} Kontaktschaden/s`);
+      if (defense.thorns) effects.push(`${this.stat(defense.thorns)} Rückschaden`);
+      return effects.join(' · ');
+    }
+
+    const damageBonus = 1 + upgrades.turretDamage * 0.02;
+    const range = (defense.range ?? 0) * (1 + upgrades.turretRange * 0.01);
+    const shots = defense.radialShots ?? defense.pellets ?? defense.targets ?? 1;
+    const damage =
+      shots > 1
+        ? `${this.stat((defense.damage ?? 0) * damageBonus)} × ${shots} Schaden`
+        : `${this.stat((defense.damage ?? 0) * damageBonus)} Schaden`;
+    const effects = [
+      `${defense.health} Leben`,
+      damage,
+      `${this.stat(1 / (defense.fireDelay ?? 1))} Salven/s`,
+      `${this.stat(range)} Reichweite`,
+    ];
+    if (defense.splashDamage) {
+      effects.push(`${this.stat(defense.splashDamage * damageBonus)} Explosionsschaden`);
+    }
+    return effects.join(' · ');
+  }
+
+  /** Upgraded hull values, including the slow turning that defines heavy machines. */
+  vehicleStats(type: VehicleType) {
+    const vehicle = VEHICLES[type];
+    const upgrades = this.progress.upgrades();
+    const effects = [
+      `${vehicleMaxHealth(type, upgrades.vehicleHealth)} Leben`,
+      `${this.stat(vehicleTopSpeed(type, upgrades.vehicleSpeed))} Tempo`,
+      `${this.stat(vehicleRamDamage(type, upgrades.vehicleRam))} Rammschaden`,
+      `${this.stat(vehicle.turn)} Drehtempo`,
+    ];
+    if (vehicle.gun) {
+      effects.push(
+        `${this.stat(vehicleGunDamage(vehicle.gun.damage, upgrades.vehicleGun))} Bordwaffenschaden`,
+      );
+    }
+    return effects.join(' · ');
+  }
+
+  private stat(value: number) {
+    return this.statFormatter.format(value);
   }
 
   selectMap(mapId: string) {

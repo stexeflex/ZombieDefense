@@ -9,7 +9,6 @@ import {
   HEALTH_REGEN_PER_LEVEL,
   PLAYER_BASE_HEALTH,
   START_MONEY_PER_LEVEL,
-  VEHICLE_MAX_ARMOR_REDUCTION,
   VEHICLE_MAX_SPEED_BONUS,
   VEHICLE_SPEED_STEP,
   armorReduction,
@@ -67,7 +66,7 @@ export const UPGRADE_GROUPS: UpgradeGroupDefinition[] = [
   {
     key: 'grenades',
     label: 'Granaten',
-    description: 'Stärkere und schneller verfügbare Explosionen',
+    description: 'Stärkere Explosionen und Granaten, die in Mini-Granaten zerfallen',
     icon: '●',
   },
   {
@@ -120,11 +119,12 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'grenadeDamage', category: 'grenades', label: 'Granatenschaden', icon: '●' },
   { key: 'grenadeCooldown', category: 'grenades', label: 'Granaten-Cooldown', icon: '◷' },
   { key: 'grenadeRadius', category: 'grenades', label: 'Explosionsradius', icon: '◎' },
+  { key: 'grenadeSplit', category: 'grenades', label: 'Splittergranate', icon: '✹' },
   { key: 'barricadeHealth', category: 'turrets', label: 'Barrikadenleben', icon: '▰' },
   { key: 'turretDamage', category: 'turrets', label: 'Turmschaden', icon: '⌖' },
   { key: 'turretRange', category: 'turrets', label: 'Turmreichweite', icon: '◈' },
-  { key: 'vehicleHealth', category: 'vehicles', label: 'Fahrzeughülle', icon: '🚙' },
-  { key: 'vehicleArmor', category: 'vehicles', label: 'Hüllenpanzerung', icon: '⛨' },
+  { key: 'vehicleHealth', category: 'vehicles', label: 'Fahrzeugleben', icon: '🚙' },
+  { key: 'vehicleArmor', category: 'vehicles', label: 'Fahrzeugpanzerung', icon: '⛨' },
   { key: 'vehicleSpeed', category: 'vehicles', label: 'Motorleistung', icon: '⚙' },
   { key: 'vehicleRam', category: 'vehicles', label: 'Rammschaden', icon: '✖' },
   { key: 'vehicleGun', category: 'vehicles', label: 'Bordwaffen', icon: '⌗' },
@@ -166,7 +166,7 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
     case 'maxHealth':
       return `${number(PLAYER_BASE_HEALTH * (1 + safeLevel * 0.02))} maximales Leben (+2 % pro Stufe)`;
     case 'armor':
-      return `${number(armorReduction(safeLevel) * 100)} % weniger Schaden (+1 % pro Stufe, max. 35 %)`;
+      return `${number(armorReduction(safeLevel) * 100)} % weniger Schaden (+1 % pro Stufe)`;
     case 'moveSpeed':
       return percentMultiplier(safeLevel, 'Bewegungstempo');
     case 'weaponDamage':
@@ -187,6 +187,8 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
       return `${number(Math.max(GRENADE_MIN_COOLDOWN, GRENADE_BASE_COOLDOWN / (1 + safeLevel * 0.02)))} s Cooldown (+2 % Tempo pro Stufe, min. ${number(GRENADE_MIN_COOLDOWN)} s)`;
     case 'grenadeRadius':
       return `${number(GRENADE_BASE_RADIUS * (1 + safeLevel * 0.02))} Explosionsradius (+2 % pro Stufe)`;
+    case 'grenadeSplit':
+      return `${number(safeLevel)} Mini-Granaten (+1 pro Stufe)`;
     case 'barricadeHealth':
       return percentMultiplier(safeLevel, 'Barrikadenleben');
     case 'turretDamage':
@@ -194,9 +196,9 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
     case 'turretRange':
       return percentMultiplier(safeLevel, 'Turmreichweite', 1);
     case 'vehicleHealth':
-      return percentMultiplier(safeLevel, 'Hüllenleben');
+      return percentMultiplier(safeLevel, 'Fahrzeugleben');
     case 'vehicleArmor':
-      return `${number(vehicleArmorReduction(safeLevel) * 100)} % weniger Hüllenschaden (+1 % pro Stufe, max. ${number(VEHICLE_MAX_ARMOR_REDUCTION * 100)} %)`;
+      return `${number(vehicleArmorReduction(safeLevel) * 100)} % weniger Schaden (+1 % pro Stufe)`;
     case 'vehicleSpeed':
       return percentMultiplier(
         safeLevel,

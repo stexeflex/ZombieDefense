@@ -204,6 +204,7 @@ export class VehicleSystem {
   // --------------------------------------------------------------------- ram
 
   private ram(vehicle: VehicleState, speed: number) {
+    const config = VEHICLES[vehicle.type];
     const driver = this.driverOf(vehicle);
     const upgrades = this.world.upgradesOf(driver?.id ?? '');
     const topSpeed = vehicleTopSpeed(vehicle.type, upgrades.vehicleSpeed);
@@ -214,16 +215,23 @@ export class VehicleSystem {
     this.world.state.zombies.forEach((zombie, id) => {
       if (vehicle.ramCooldowns.has(id)) return;
       if (!circleOverlapsVehicle(zombie.x, zombie.y, zombie.radius, vehicle)) return;
+      if (config.frontRamOnly) {
+        const ahead =
+          (zombie.x - vehicle.x) * Math.cos(vehicle.rotation) +
+          (zombie.y - vehicle.y) * Math.sin(vehicle.rotation);
+        if (ahead < config.width * 0.24) return;
+      }
       victims.push([id, zombie]);
     });
     if (victims.length === 0) return;
 
     const damage = vehicleRamDamage(vehicle.type, upgrades.vehicleRam) * share;
-    const angle = Math.atan2(vehicle.vy, vehicle.vx);
+    const angle = config.frontRamOnly ? vehicle.rotation : Math.atan2(vehicle.vy, vehicle.vx);
+    const push = config.ramPush ?? 34;
     for (const [id, zombie] of victims) {
       vehicle.ramCooldowns.set(id, VEHICLE_RAM_COOLDOWN);
-      zombie.x = this.world.clamp(zombie.x + Math.cos(angle) * 34, 12, ARENA.width - 12);
-      zombie.y = this.world.clamp(zombie.y + Math.sin(angle) * 34, 12, ARENA.height - 12);
+      zombie.x = this.world.clamp(zombie.x + Math.cos(angle) * push, 12, ARENA.width - 12);
+      zombie.y = this.world.clamp(zombie.y + Math.sin(angle) * push, 12, ARENA.height - 12);
       this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: 'ram' });
       this.world.damageZombie(id, zombie, damage, driver?.id ?? '');
       // Bodywork pays for every body: grinding through a horde wears the hull

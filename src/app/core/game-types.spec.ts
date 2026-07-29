@@ -252,9 +252,22 @@ describe('enemy roster', () => {
   it('covers trash, elites, mini bosses and one boss per map', () => {
     expect(ZOMBIE_TYPES.length).toBeGreaterThanOrEqual(20);
     expect(ZOMBIES.exploder.explode).toBeDefined();
+    expect(ZOMBIES.shieldbearer.frontShield).toBeDefined();
     expect(MINI_BOSSES.every((type) => ZOMBIES[type].rank === 'mini')).toBe(true);
     expect(BOSSES.every((type) => ZOMBIES[type].rank === 'boss')).toBe(true);
     expect(BOSSES).toHaveLength(MAPS.length);
+  });
+
+  it('uses shield carriers as rare isolated threats on every map', () => {
+    for (const map of MAPS) {
+      const carriers = map.waves
+        .flatMap((wave) => wave.zombies)
+        .filter((type) => type === 'shieldbearer');
+      expect(carriers.length).toBeGreaterThan(0);
+      expect(carriers.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 4));
+    }
+    expect(ZOMBIES.shieldbearer.frontShield!.turnSpeed).toBeLessThan(1);
+    expect(ZOMBIES.shieldbearer.frontShield!.arc).toBeLessThan(Math.PI);
   });
 
   it('pays more money for tougher enemies', () => {
@@ -420,8 +433,8 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers nine barricades and sixteen turrets', () => {
-    expect(BARRICADE_ORDER).toHaveLength(9);
+  it('offers twelve barricades and sixteen turrets', () => {
+    expect(BARRICADE_ORDER).toHaveLength(12);
     expect(TURRET_ORDER).toHaveLength(16);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
@@ -432,11 +445,29 @@ describe('defenses', () => {
       const current = DEFENSES[BARRICADE_ORDER[index]];
       const previous = DEFENSES[BARRICADE_ORDER[index - 1]];
       expect(current.cost).toBeGreaterThan(previous.cost);
-      // Wire pays for its ground effect and deliberately breaks before a wall.
-      if (BARRICADE_ORDER[index] !== 'wire' && BARRICADE_ORDER[index - 1] !== 'wire') {
+      // Ground traps pay for their effect and deliberately break before a wall.
+      if (
+        BARRICADE_ORDER[index] !== 'wire' &&
+        BARRICADE_ORDER[index] !== 'mine' &&
+        BARRICADE_ORDER[index - 1] !== 'wire' &&
+        BARRICADE_ORDER[index - 1] !== 'mine'
+      ) {
         expect(current.health).toBeGreaterThan(previous.health);
       }
     }
+  });
+
+  it('gives both square blocks and the contact mine distinct footprints', () => {
+    const woodArea = DEFENSES.wood.width * DEFENSES.wood.height;
+    const smallArea = DEFENSES.crate.width * DEFENSES.crate.height;
+    const largeArea = DEFENSES.block.width * DEFENSES.block.height;
+    expect(DEFENSES.crate.width).toBe(DEFENSES.crate.height);
+    expect(DEFENSES.block.width).toBe(DEFENSES.block.height);
+    expect(smallArea).toBeCloseTo(woodArea / 2, -2);
+    expect(largeArea).toBeCloseTo(woodArea * 2, -3);
+    expect(DEFENSES.mine.passable).toBe(true);
+    expect(DEFENSES.mine.triggerOnContact).toBe(true);
+    expect(DEFENSES.mine.blastDamage).toBeGreaterThan(DEFENSES.blastwall.blastDamage!);
   });
 
   it('gives every turret a range and a fire rate', () => {
@@ -617,8 +648,8 @@ describe('building rules', () => {
 });
 
 describe('vehicles', () => {
-  it('offers seven hulls ordered by price, with room for a squad', () => {
-    expect(VEHICLE_ORDER).toHaveLength(7);
+  it('offers nine hulls ordered by price, with room for a squad', () => {
+    expect(VEHICLE_ORDER).toHaveLength(9);
     for (let index = 1; index < VEHICLE_ORDER.length; index += 1) {
       expect(VEHICLES[VEHICLE_ORDER[index]].cost).toBeGreaterThan(
         VEHICLES[VEHICLE_ORDER[index - 1]].cost,
@@ -667,6 +698,12 @@ describe('vehicles', () => {
     expect(VEHICLES.apc.gun!.damage).toBeGreaterThan(VEHICLES.pickup.gun!.damage);
     expect(VEHICLES.tank.gun!.splashRadius).toBeGreaterThan(0);
     expect(VEHICLES.tank.ram).toBeGreaterThan(VEHICLES.car.ram);
+    expect(VEHICLES.steamroller.ram).toBeGreaterThan(VEHICLES.tank.ram);
+    expect(VEHICLES.steamroller.speed).toBeLessThan(VEHICLES.tank.speed);
+    expect(VEHICLES.bulldozer.ramPush).toBeGreaterThan(90);
+    expect(VEHICLES.bulldozer.frontRamOnly).toBe(true);
+    expect(VEHICLES.bulldozer.directionalArmor!.exposed).toBeGreaterThan(1);
+    expect(VEHICLES.bulldozer.turn).toBeLessThan(VEHICLES.tank.turn);
     for (const type of VEHICLE_ORDER) expect(VEHICLES[type].perk.length).toBeGreaterThan(0);
   });
 
@@ -815,6 +852,10 @@ describe('permanent upgrades', () => {
 
   it('keeps the dash ladder short and expensive', () => {
     expect(upgradeMaxLevel('dashCharges')).toBeLessThan(UPGRADE_MAX_LEVEL);
+    expect(upgradeMaxLevel('armor')).toBe(35);
+    expect(upgradeMaxLevel('vehicleArmor')).toBe(35);
+    expect(upgradeMaxLevel('grenadeSplit')).toBe(10);
+    expect(upgradeLevelCost('grenadeSplit', 0)).toBeGreaterThan(upgradeCost(0) * 10);
     expect(upgradeMaxLevel('weaponDamage')).toBe(UPGRADE_MAX_LEVEL);
   });
 

@@ -1,4 +1,4 @@
-import { ARENA } from '../../../shared/game-types.js';
+import { ARENA, ZOMBIES } from '../../../shared/game-types.js';
 import type { ProjectileState, ZombieState } from '../state/game-state.js';
 import type { GameWorld } from './world.js';
 
@@ -37,6 +37,14 @@ export class ProjectileSystem {
         );
         if (at === undefined) continue;
         if (wallAt !== undefined && at > wallAt) continue;
+
+        if (this.blockedByShield(projectile, zombie)) {
+          const shieldX = zombie.x + Math.cos(zombie.rotation) * (zombie.radius + 5);
+          const shieldY = zombie.y + Math.sin(zombie.rotation) * (zombie.radius + 5);
+          this.world.pushFx({ k: 'deflect', x: shieldX, y: shieldY, s: 'front-shield' });
+          spent = true;
+          break;
+        }
 
         projectile.hitIds.add(zombieId);
         if (projectile.splashRadius > 0) {
@@ -93,6 +101,17 @@ export class ProjectileSystem {
       }
     });
     expired.forEach((id) => this.world.state.projectiles.delete(id));
+  }
+
+  /** The shield eats the complete shot before splash, chain or pierce can trigger. */
+  private blockedByShield(projectile: ProjectileState, zombie: ZombieState) {
+    const shield = ZOMBIES[zombie.type].frontShield;
+    if (!shield) return false;
+    const incoming = Math.atan2(-projectile.vy, -projectile.vx);
+    let difference = incoming - zombie.rotation;
+    while (difference > Math.PI) difference -= Math.PI * 2;
+    while (difference < -Math.PI) difference += Math.PI * 2;
+    return Math.abs(difference) <= shield.arc / 2;
   }
 
   private detonate(projectile: ProjectileState, x: number, y: number) {

@@ -540,6 +540,7 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   big: { skin: '#a5674f', cloth: '#4a3128', accent: '#7d4634', eye: '#ff6b6b' },
   exploder: { skin: '#c64b32', cloth: '#242426', accent: '#ffd23f', eye: '#fff1a8' },
   armored: { skin: '#7a8390', cloth: '#2f353d', accent: '#aab6c2', eye: '#7fd8ff' },
+  shieldbearer: { skin: '#6f8060', cloth: '#303a42', accent: '#ffd166', eye: '#fff0a8' },
   spitter: { skin: '#6fae7a', cloth: '#2c4433', accent: '#9dff8a', eye: '#c6ff5a' },
   screamer: { skin: '#b98fa8', cloth: '#4a2e3f', accent: '#ff9ed8', eye: '#ffe08a' },
   brute: { skin: '#8a5f7a', cloth: '#3a2635', accent: '#c05f8f', eye: '#ff5f9e' },
@@ -567,7 +568,8 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
 function paintZombieBody(type: ZombieType, radius: number): Painter {
   const skin = ZOMBIE_SKINS[type];
   const rank = ZOMBIES[type].rank;
-  const plated = rank === 'mini' || rank === 'boss' || type === 'armored';
+  const plated =
+    rank === 'mini' || rank === 'boss' || type === 'armored' || type === 'shieldbearer';
   const crowned = rank === 'boss';
   const explosive = type === 'exploder';
   const glowing = type === 'spitter';
@@ -751,6 +753,45 @@ function paintZombieLimb(type: ZombieType, length: number, thickness: number): P
 // ----------------------------------------------------------------- defenses
 
 const DEFENSE_PAINTERS: Partial<Record<DefenseType, Painter>> = {
+  crate: (ctx, w, h) => {
+    fillRounded(ctx, 1, 1, w - 2, h - 2, 3, '#825b35', '#2b1b0e', 2.5);
+    ctx.strokeStyle = '#4f321b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(4, 4);
+    ctx.lineTo(w - 4, h - 4);
+    ctx.moveTo(w - 4, 4);
+    ctx.lineTo(4, h - 4);
+    ctx.stroke();
+    ctx.strokeRect(4, 4, w - 8, h - 8);
+  },
+  block: (ctx, w, h) => {
+    fillRounded(ctx, 1, 1, w - 2, h - 2, 5, '#60666a', '#23272a', 3);
+    fillRounded(ctx, 7, 7, w - 14, h - 14, 3, '#747b7f', '#454b4f', 2);
+    ctx.strokeStyle = 'rgba(25, 29, 31, 0.75)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(8, h * 0.64);
+    ctx.lineTo(w * 0.34, h * 0.45);
+    ctx.lineTo(w * 0.56, h * 0.55);
+    ctx.lineTo(w - 8, h * 0.32);
+    ctx.stroke();
+    noise(ctx, w, h, 50, ['rgba(0,0,0,0.2)', 'rgba(255,255,255,0.08)'], 1, 2, 71);
+  },
+  mine: (ctx, w, h) => {
+    circle(ctx, w / 2, h / 2, w / 2 - 2, '#272b2d', '#0d1011', 3);
+    circle(ctx, w / 2, h / 2, w * 0.25, '#8a2f25', '#ff704d', 2);
+    circle(ctx, w / 2, h / 2, w * 0.1, '#ffd166');
+    ctx.strokeStyle = '#9ca5aa';
+    ctx.lineWidth = 3;
+    for (let index = 0; index < 8; index += 1) {
+      const angle = (index * Math.PI) / 4;
+      ctx.beginPath();
+      ctx.moveTo(w / 2 + Math.cos(angle) * w * 0.3, h / 2 + Math.sin(angle) * h * 0.3);
+      ctx.lineTo(w / 2 + Math.cos(angle) * w * 0.46, h / 2 + Math.sin(angle) * h * 0.46);
+      ctx.stroke();
+    }
+  },
   wood: (ctx, w, h) => {
     fillRounded(ctx, 1, 1, w - 2, h - 2, 3, '#6b4a30', '#2c1c11', 2);
     ctx.fillStyle = '#8a6440';
@@ -1193,6 +1234,54 @@ const VEHICLE_PAINTERS: Record<VehicleType, Painter> = {
     ctx.fillRect(w * 0.2, h / 2 - 2, w * 0.36, 4);
     circle(ctx, w - 7, h / 2, 3.5, '#ffe6ae');
     noise(ctx, w, h, 70, ['rgba(0,0,0,0.25)', 'rgba(255,255,255,0.08)'], 1, 3, 31);
+  },
+  steamroller: (ctx, w, h) => {
+    wheels(ctx, w, h, 9, 20);
+    fillRounded(ctx, 4, 7, w * 0.58, h - 14, 7, '#7a4c27', '#241509', 2.5);
+    fillRounded(ctx, w * 0.25, 11, w * 0.28, h - 22, 4, '#253039', '#0d1317', 2);
+    const drumX = w * 0.79;
+    fillRounded(ctx, drumX - 13, 2, 26, h - 4, 12, '#555f64', '#171d20', 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(drumX - 7, 5, 5, h - 10);
+    ctx.strokeStyle = '#2a3033';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.56, h * 0.28);
+    ctx.lineTo(drumX - 10, h * 0.22);
+    ctx.moveTo(w * 0.56, h * 0.72);
+    ctx.lineTo(drumX - 10, h * 0.78);
+    ctx.stroke();
+    noise(ctx, w, h, 60, ['rgba(0,0,0,0.25)', 'rgba(255,255,255,0.06)'], 1, 3, 73);
+  },
+  bulldozer: (ctx, w, h) => {
+    for (const y of [1, h - 13]) {
+      fillRounded(ctx, 5, y, w - 26, 12, 4, '#242821', '#0d100c', 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      for (let x = 10; x < w - 28; x += 10) ctx.fillRect(x, y + 2, 6, 8);
+    }
+    fillRounded(ctx, 10, 13, w - 38, h - 26, 5, '#b27a22', '#2b1c06', 2.5);
+    fillRounded(ctx, w * 0.38, 10, w * 0.25, h - 20, 4, '#28343b', '#0d1519', 2);
+    ctx.strokeStyle = '#675024';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(w - 34, h * 0.3);
+    ctx.lineTo(w - 13, h * 0.18);
+    ctx.moveTo(w - 34, h * 0.7);
+    ctx.lineTo(w - 13, h * 0.82);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(w - 13, 4);
+    ctx.lineTo(w - 2, 10);
+    ctx.lineTo(w - 2, h - 10);
+    ctx.lineTo(w - 13, h - 4);
+    ctx.closePath();
+    ctx.fillStyle = '#5f676b';
+    ctx.fill();
+    ctx.strokeStyle = '#1b2022';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#ffd166';
+    for (let y = 11; y < h - 8; y += 12) ctx.fillRect(w - 8, y, 4, 6);
   },
   apc: (ctx, w, h) => {
     wheels(ctx, w, h, 8, 15);

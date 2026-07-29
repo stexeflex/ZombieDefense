@@ -150,10 +150,14 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 
 ### Barrikaden
 
-Die drei neuen Premium-Bauten ergänzen die sechs bisherigen Barrikaden:
+Kleine und große quadratische Blöcke schließen Lücken, ohne eine ganze lange
+Mauer zu benötigen. Die Kontaktmine ist eine günstige Einmal-Falle:
 
 | Barrikade         | Preis | Leben | Besonderheit                             |
 | ----------------- | ----- | ----- | ---------------------------------------- |
+| Kistenblock       | 95    | 220   | kleine quadratische Deckung              |
+| Kontaktmine       | 140   | 1     | explodiert beim ersten Feindkontakt      |
+| Betonblock        | 520   | 1380  | große quadratische Deckung               |
 | Schockgitter      | 1100  | 3100  | hoher Gegenschaden und kurzer Slow       |
 | Kryo-Bollwerk     | 1900  | 5400  | zwingt Angreifer lange auf Kriechtempo   |
 | Titan-Reaktorwall | 3400  | 9800  | extrem robust, detoniert beim Zerbrechen |
@@ -173,10 +177,10 @@ Die drei neuen Premium-Bauten ergänzen die sechs bisherigen Barrikaden:
 | Blitzturm           | 1900  | Blitz springt auf drei Nachbarn über               |
 | Raketenturm         | 2200  | Sprengraketen gegen Gruppen                        |
 | Dreifachschuss-Turm | 2750  | drei gebuffte Läufe bekämpfen verschiedene Ziele   |
-| Laserturm           | 3200  | Endgame: durchschlägt Reihen auf weite Distanz     |
+| Laserturm           | 3200  | durchschlägt Reihen auf weite Distanz              |
 | Drohnenhangar       | 3600  | drei fliegende Jagddrohnen verfolgen Gegner        |
 | Präzisionsmörser    | 5200  | langsamer Panzertöter mit sehr hohem Einschlag     |
-| Plasma-Bastion      | 6800  | Luxus-Endgame, deutlich stärker als der Laserturm  |
+| Plasma-Bastion      | 6800  | starkes Plasma gegen ganze Reihen                  |
 | Donnerkranz         | 9800  | 24 schwere Geschosse in einer langsamen 360°-Salve |
 
 ### Fahrzeuge
@@ -185,19 +189,21 @@ Fahrzeuge werden wie Bauten in der Bauphase gekauft und abgestellt. Mit `E`
 steigt man ein und wieder aus; wer zuerst einsteigt, fährt. Alle an Bord zielen
 und schießen weiter mit ihrer eigenen Waffe.
 
-| Fahrzeug         | Preis | Plätze | Leben | Besonderheit                          |
-| ---------------- | ----- | ------ | ----- | ------------------------------------- |
-| Quad             | 850   | 1      | 800   | einziges schnelles Fahrzeug, Nitro    |
-| Geländewagen     | 1500  | 2      | 1600  | robuster Allrounder                   |
-| Mannschaftswagen | 2300  | 4      | 2400  | heilt die Besatzung während der Fahrt |
-| Kampf-Pickup     | 2900  | 2      | 1900  | MG feuert selbstständig               |
-| Werkstattwagen   | 3700  | 3      | 2800  | repariert Bauten, liefert Munition    |
-| Schützenpanzer   | 5200  | 4      | 5000  | langsame Festung mit Bordkanone       |
-| Kampfpanzer      | 8200  | 2      | 7600  | schwerste Hülle und Sprengkanone      |
+| Fahrzeug         | Preis | Plätze | Leben | Besonderheit                           |
+| ---------------- | ----- | ------ | ----- | -------------------------------------- |
+| Quad             | 850   | 1      | 800   | einziges schnelles Fahrzeug, Nitro     |
+| Geländewagen     | 1500  | 2      | 1600  | robuster Allrounder                    |
+| Mannschaftswagen | 2300  | 4      | 2400  | heilt die Besatzung während der Fahrt  |
+| Kampf-Pickup     | 2900  | 2      | 1900  | MG feuert selbstständig                |
+| Werkstattwagen   | 3700  | 3      | 2800  | repariert Bauten, liefert Munition     |
+| Dampfwalze       | 4500  | 2      | 4300  | sehr langsam, extremer Überrollschaden |
+| Planierraupe     | 5000  | 2      | 4800  | Frontschub, verwundbare Seiten         |
+| Schützenpanzer   | 5200  | 4      | 5000  | langsame Festung mit Bordkanone        |
+| Kampfpanzer      | 8200  | 2      | 7600  | schwerste Hülle und Sprengkanone       |
 
 Solange das Fahrzeug noch steht, sind alle Insassen vollständig
 unverwundbar. Das bisherige Upgrade _Innenraumschutz_ heißt deshalb jetzt
-_Hüllenpanzerung_ und reduziert den Schaden am Fahrzeug selbst. Bezahlt wird
+_Fahrzeugpanzerung_ und reduziert den Schaden am Fahrzeug selbst. Bezahlt wird
 der sichere Innenraum mit dem Dash: Am Steuer gibt es kein Ausweichen mehr,
 nur das Quad ist schneller als ein Überlebender zu Fuß und macht aus der Ladung
 ein Nitro. Die anderen Fahrzeuge sind bewusst langsame, teure Lebenspuffer.
@@ -331,8 +337,8 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
 - **Stufen-Upgrades** – maximales Spielerleben, Panzerung, Tempo, Waffenschaden,
   Nahkampf-Angriffstempo und -Reichweite, Nachladen, Magazin, Munitionsvorrat,
-  Granaten, Barrikaden, Turmschaden, Turmreichweite,
-  Fahrzeugpanzerung, Hüllenpanzerung, Motorleistung, Rammschaden, Bordwaffen,
+  Granaten inklusive bis zu zehn Mini-Granaten, Barrikaden, Turmschaden,
+  Turmreichweite, Fahrzeugleben, Fahrzeugpanzerung, Motorleistung, Rammschaden, Bordwaffen,
   Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schadensreduktion,
   Dash-Schaden und Dash-Schild
 - **Besondere Vorteile** – günstigere erste Waffe, erste Barrikaden, erster
