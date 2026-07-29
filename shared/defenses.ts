@@ -19,10 +19,12 @@ export type DefenseType =
   | 'shotgun'
   | 'acid'
   | 'tesla'
+  | 'mortar'
   | 'launcher'
   | 'triple'
   | 'laser'
   | 'drone'
+  | 'precision_mortar'
   | 'plasma'
   | 'ring';
 
@@ -67,6 +69,12 @@ export interface DefenseConfig {
   spread?: number;
   /** How many different zombies this turret attacks per volley. */
   targets?: number;
+  /** Delayed arcing shell; the value is its warning and flight time in seconds. */
+  mortarImpactSeconds?: number;
+  /** Prefer the slow enemy with the largest health pool instead of the nearest one. */
+  targetTanky?: boolean;
+  /** Share of armor ignored by a mortar impact. */
+  armorPierce?: number;
   /** Equally spaced shots fired around the complete circle in one volley. */
   radialShots?: number;
   /** Flying drones this building keeps in the air; it has no gun of its own. */
@@ -324,6 +332,21 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     chainRange: 190,
     description: 'Blitz springt auf drei Nachbarn über',
   },
+  mortar: {
+    label: 'Feldmörser',
+    short: 'MÖ',
+    kind: 'turret',
+    cost: 1450,
+    health: 330,
+    width: 48,
+    height: 48,
+    damage: 175,
+    fireDelay: 1.65,
+    range: 720,
+    splashRadius: 118,
+    mortarImpactSeconds: 0.85,
+    description: 'Günstiger Mörser: schnelle, mittelstarke Einschläge mit kurzer Warnung',
+  },
   launcher: {
     label: 'Raketenturm',
     short: '⍟',
@@ -390,6 +413,23 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     droneRange: 320,
     description: 'Startet drei Drohnen, die selbst losfliegen und Gegner jagen',
   },
+  precision_mortar: {
+    label: 'Präzisionsmörser',
+    short: 'PM',
+    kind: 'turret',
+    cost: 5200,
+    health: 560,
+    width: 56,
+    height: 56,
+    damage: 1050,
+    fireDelay: 5.2,
+    range: 1180,
+    splashRadius: 190,
+    mortarImpactSeconds: 1.75,
+    targetTanky: true,
+    armorPierce: 0.65,
+    description: 'Teuer: jagt langsame Tanks und schlägt nach langer Warnzeit vernichtend ein',
+  },
   plasma: {
     label: 'Plasma-Bastion',
     short: '◉',
@@ -439,6 +479,7 @@ export const TURRET_ORDER: DefenseType[] = [
   'flame',
   'frost',
   'scatter',
+  'mortar',
   'marksman',
   'shotgun',
   'acid',
@@ -447,6 +488,7 @@ export const TURRET_ORDER: DefenseType[] = [
   'triple',
   'laser',
   'drone',
+  'precision_mortar',
   'plasma',
   'ring',
 ];

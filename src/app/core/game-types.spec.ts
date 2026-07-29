@@ -420,9 +420,9 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers nine barricades and fourteen turrets', () => {
+  it('offers nine barricades and sixteen turrets', () => {
     expect(BARRICADE_ORDER).toHaveLength(9);
-    expect(TURRET_ORDER).toHaveLength(14);
+    expect(TURRET_ORDER).toHaveLength(16);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
   });
@@ -465,6 +465,11 @@ describe('defenses', () => {
     expect(DEFENSES.acid.acidDps!).toBeGreaterThan(0);
     expect(DEFENSES.shotgun.pellets!).toBeGreaterThan(DEFENSES.scatter.pellets!);
     expect(DEFENSES.triple.targets).toBe(3);
+    expect(DEFENSES.mortar.mortarImpactSeconds).toBeGreaterThan(0.5);
+    expect(DEFENSES.mortar.fireDelay!).toBeLessThan(DEFENSES.precision_mortar.fireDelay!);
+    expect(DEFENSES.precision_mortar.targetTanky).toBe(true);
+    expect(DEFENSES.precision_mortar.damage!).toBeGreaterThan(DEFENSES.mortar.damage! * 5);
+    expect(DEFENSES.precision_mortar.armorPierce).toBeGreaterThan(0.5);
     expect(DEFENSES.plasma.cost).toBeGreaterThan(DEFENSES.laser.cost);
     expect(DEFENSES.plasma.damage! / DEFENSES.plasma.fireDelay!).toBeGreaterThan(
       (DEFENSES.laser.damage! / DEFENSES.laser.fireDelay!) * 2.5,

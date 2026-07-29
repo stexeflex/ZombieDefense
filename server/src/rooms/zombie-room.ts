@@ -127,7 +127,10 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       this.playerSystem,
       this.build,
       (reward) => this.broadcast('permanent_reward', reward),
-      () => this.abilities.clearHazards(),
+      () => {
+        this.abilities.clearHazards();
+        this.turrets.clear();
+      },
     );
 
     this.applyMap(options.mapId ?? DEFAULT_MAP_ID);
@@ -170,15 +173,22 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       // from pulling teammates out of an active wave.
       if (this.state.phase !== 'gameover') return;
       this.waves.returnToLobby();
+      this.snapshotElapsed = 0;
       this.broadcastSnapshot();
     });
+    this.onMessage('abandon_run', (client) => this.requestAbandon(client.sessionId));
     this.onMessage('loadout', (client, options: JoinOptions) => {
       this.applyLoadout(client.sessionId, options);
     });
     this.onMessage('ready', (client, ready: boolean) => {
       const player = this.state.players.get(client.sessionId);
-      if (player && this.state.phase === 'build') player.ready = Boolean(ready);
-      if (this.state.phase === 'build' && this.world.everyoneReady()) this.waves.startNextWave();
+      if (!player || this.state.phase !== 'build') return;
+      player.ready = Boolean(ready);
+      if (this.world.everyoneReady()) this.waves.startNextWave();
+      // Ready votes and especially the combat transition should not sit in the
+      // regular co-op snapshot queue for another network interval.
+      this.snapshotElapsed = 0;
+      this.broadcastSnapshot();
     });
     this.onMessage('buy_weapon', (client, weapon: WeaponType) =>
       this.build.buyWeapon(client.sessionId, weapon),
@@ -269,13 +279,29 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     if (sessionId !== this.state.hostSessionId) return false;
     if (this.state.phase === 'lobby') {
       this.waves.startRun();
+      this.snapshotElapsed = 0;
+      this.broadcastSnapshot();
       return true;
     }
     if (this.state.phase === 'build') {
       this.waves.startNextWave();
+      this.snapshotElapsed = 0;
+      this.broadcastSnapshot();
       return true;
     }
     return false;
+  }
+
+  /** Only the host may concede a live run for the connected squad. */
+  requestAbandon(sessionId: string) {
+    if (sessionId !== this.state.hostSessionId) return false;
+    if (this.state.phase !== 'combat' && this.state.phase !== 'build') return false;
+    // endRun broadcasts the defeat reward before returnToLobby clears the run.
+    this.waves.endRun(false);
+    this.waves.returnToLobby();
+    this.snapshotElapsed = 0;
+    this.broadcastSnapshot();
+    return true;
   }
 
   onLeave(client: Client) {

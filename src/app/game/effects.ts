@@ -156,6 +156,9 @@ export class EffectLayer {
         this.audio.play(acidBurst ? 'shot-flame' : 'explosion', acidBurst ? 0.5 : 0.9);
         break;
       }
+      case 'warning':
+        this.mortarWarning(event);
+        break;
       case 'burn':
         this.burst(event.s === 'acid' ? 'energy' : 'flame', 4, event.x, event.y);
         break;
@@ -219,6 +222,32 @@ export class EffectLayer {
     this.shockwave(event.x, event.y, (event.r ?? 60) * 2.4, color);
     if (event.s === 'spawn') this.audio.play('boss-roar', 0.9);
     if (event.s === 'mortar' || event.s === 'split') this.audio.play('explosion', 0.4);
+  }
+
+  /** Full blast radius plus a closing ring make the delayed shell readable. */
+  private mortarWarning(event: FxEvent) {
+    const radius = event.r ?? 110;
+    const precise = event.s === 'precision_mortar';
+    const color = precise ? 0xffd35c : 0xff9d52;
+    const area = this.scene.add
+      .circle(event.x, event.y, radius, color, 0.055)
+      .setStrokeStyle(2, color, 0.58)
+      .setDepth(8);
+    const countdown = this.scene.add
+      .circle(event.x, event.y, radius, color, 0)
+      .setStrokeStyle(3, color, 0.95)
+      .setDepth(9);
+    this.scene.tweens.add({
+      targets: countdown,
+      scale: 0.08,
+      alpha: 0.35,
+      duration: Math.max(150, (event.d ?? 0.8) * 1000),
+      ease: 'Linear',
+      onComplete: () => {
+        countdown.destroy();
+        area.destroy();
+      },
+    });
   }
 
   private dashTrail(event: FxEvent) {
@@ -286,6 +315,24 @@ export class EffectLayer {
       .setScale(0.42, 0.3)
       .setRotation(angle)
       .setDepth(45);
+    if (weapon === 'railgun') {
+      const beam = this.scene.add
+        .image(x, y, 'fx-glow')
+        .setOrigin(0, 0.5)
+        .setTint(0xbaf7ff)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDisplaySize(640, 17)
+        .setRotation(angle)
+        .setAlpha(0.82)
+        .setDepth(44);
+      this.scene.tweens.add({
+        targets: beam,
+        alpha: 0,
+        scaleY: 0.25,
+        duration: 150,
+        onComplete: () => beam.destroy(),
+      });
+    }
     this.scene.tweens.add({
       targets: flash,
       scaleX: 0.1,

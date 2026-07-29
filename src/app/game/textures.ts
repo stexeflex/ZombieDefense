@@ -959,6 +959,13 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     ctx.globalAlpha = 1;
     circle(ctx, 34, 13.5, 4, '#0e1c1b', '#4ce0d5', 1.5);
   },
+  precision_mortar: (ctx) => {
+    fillRounded(ctx, 0, 3, 28, 22, 7, '#343d42', '#101518', 2.5);
+    fillRounded(ctx, 20, 6, 31, 15, 6, '#66747b', '#151d21', 2);
+    circle(ctx, 50, 13.5, 8, '#12181b', '#ffd35c', 2.5);
+    fillRounded(ctx, 4, 0, 16, 6, 2, '#695a2f', '#ffd35c', 1.2);
+    circle(ctx, 11, 13.5, 4.5, '#213038', '#aeeeff', 1.5);
+  },
   flame: (ctx) => {
     fillRounded(ctx, 0, 5, 20, 16, 6, '#7a3324', '#1d0f0b', 2);
     fillRounded(ctx, 18, 9, 24, 8, 3, '#43504a', '#141d19', 2);
@@ -1014,6 +1021,12 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
       ctx.lineTo(36 + Math.cos(angle) * 13, 13 + Math.sin(angle) * 13);
       ctx.stroke();
     }
+  },
+  mortar: (ctx) => {
+    fillRounded(ctx, 0, 5, 25, 18, 6, '#3d463a', '#121811', 2);
+    fillRounded(ctx, 18, 7, 28, 13, 5, '#687064', '#1a2018', 2);
+    circle(ctx, 45, 13.5, 7, '#171d16', '#ff9d52', 2);
+    circle(ctx, 9, 13.5, 4, '#b8783d', '#ffd09b', 1.5);
   },
   laser: (ctx) => {
     fillRounded(ctx, 0, 7, 26, 14, 5, '#2e2b3e', '#121019', 2);
@@ -1545,9 +1558,11 @@ export function createGameTextures(scene: Phaser.Scene) {
     shotgun: '#ffd591',
     acid: '#42e9ff',
     tesla: '#9fdcff',
+    mortar: '#ff9d52',
     launcher: '#ff8f5a',
     triple: '#c9f7a8',
     drone: '#4ce0d5',
+    precision_mortar: '#ffd35c',
     laser: '#ff8fd8',
     plasma: '#7eeaff',
     ring: '#ffd35c',

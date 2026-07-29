@@ -140,7 +140,7 @@ export const PROJECTILE_STYLE: Record<
   firerocket: { texture: 'fx-glow', tint: 0xff7a3a, scaleX: 0.7, scaleY: 0.55 },
   tesla: { texture: 'fx-energy', tint: 0x9fdcff, scaleX: 1.4, scaleY: 1.1 },
   laser: { texture: 'fx-spark', tint: 0xff8fd8, scaleX: 4.2, scaleY: 0.6 },
-  railgun: { texture: 'fx-glow', tint: 0xbaf7ff, scaleX: 2.6, scaleY: 0.6 },
+  railgun: { texture: 'fx-glow', tint: 0xbaf7ff, scaleX: 4.2, scaleY: 0.9 },
   gravity: { texture: 'fx-energy', tint: 0xa67cff, scaleX: 2.2, scaleY: 2.2 },
   nova: { texture: 'fx-energy', tint: 0xff9ee0, scaleX: 2.1, scaleY: 1.05 },
   ionstorm: { texture: 'fx-energy', tint: 0x62d9ff, scaleX: 1.8, scaleY: 1.15 },

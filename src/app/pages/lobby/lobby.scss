@@ -687,6 +687,24 @@ kbd {
   padding: 9px 0;
 }
 
+.topbar-abandon {
+  width: auto;
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 101, 119, 0.34);
+  background: rgba(255, 101, 119, 0.035);
+  color: var(--danger);
+  font-size: 0.6rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.topbar-abandon:hover:not(:disabled),
+.topbar-abandon.armed {
+  border-color: var(--danger);
+  background: rgba(255, 101, 119, 0.12);
+}
+
 .squad-mini article.downed {
   opacity: 0.45;
 }
@@ -1753,6 +1771,46 @@ kbd {
 .shop-item small {
   display: block;
   line-height: 1.35;
+}
+
+@media (min-width: 1001px) {
+  /*
+   * Keep the build actions in view even with four player cards. Only the shop
+   * list scrolls; Ready and the host override stay pinned underneath it.
+   */
+  .side-panel.building {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .side-panel.building .squad-mini.full-squad {
+    padding-block: 12px;
+  }
+
+  .side-panel.building .squad-mini.full-squad header {
+    margin-bottom: 5px;
+  }
+
+  .side-panel.building .squad-mini.full-squad article {
+    padding: 5px 0;
+  }
+
+  .side-panel.building .squad-mini.full-squad .mini-avatar {
+    height: 22px;
+  }
+
+  .side-panel.building .shop-panel {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .side-panel.building .shop-scroll {
+    min-height: 90px;
+    max-height: none;
+    flex: 1;
+  }
 }
 
 @media (max-width: 1000px) {

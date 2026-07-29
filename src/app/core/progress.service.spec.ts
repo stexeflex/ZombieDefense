@@ -32,6 +32,20 @@ describe('ProgressService run rewards', () => {
     expect(progress.gold()).toBe(75);
     expect(progress.isCleared('outpost')).toBe(false);
   });
+
+  it('seals progress, reloads it and rejects a hand-edited payload', () => {
+    const progress = new ProgressService();
+    progress.addRunReward(275, 'sealed-run', 'streets', true);
+
+    const stored = localStorage.getItem('zombie-defense-progress-v1') ?? '';
+    expect(stored.startsWith('ZD2.')).toBe(true);
+    expect(stored).not.toContain('"gold"');
+    expect(new ProgressService().gold()).toBe(275);
+
+    const changed = `${stored.slice(0, -2)}${stored.at(-2) === 'A' ? 'B' : 'A'}${stored.at(-1)}`;
+    localStorage.setItem('zombie-defense-progress-v1', changed);
+    expect(new ProgressService().gold()).toBe(0);
+  });
 });
 
 describe('ProgressService upgrade shop', () => {
@@ -70,6 +84,7 @@ describe('ProgressService upgrade shop', () => {
     const progress = new ProgressService();
     expect(progress.gold()).toBe(178);
     expect(progress.upgrades()).not.toHaveProperty('reviveSpeed');
+    expect(localStorage.getItem('zombie-defense-progress-v1')).toMatch(/^ZD2\./);
 
     const reloaded = new ProgressService();
     expect(reloaded.gold()).toBe(178);

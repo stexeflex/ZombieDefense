@@ -326,6 +326,7 @@ for (const type of [
   'flame',
   'frost',
   'scatter',
+  'mortar',
   'shotgun',
   'acid',
   'tesla',
@@ -333,6 +334,7 @@ for (const type of [
   'triple',
   'laser',
   'drone',
+  'precision_mortar',
   'plasma',
   'ring',
 ]) {
@@ -1768,6 +1770,22 @@ console.log('\n== Freiwilliger Run-Ausstieg ==');
       room.state.players.get('p1') === player &&
       room.state.players.get('p2') === teammate,
   );
+  check(
+    'Nur der Host darf den gemeinsamen Run aufgeben',
+    room.requestAbandon('p2') === false && room.state.phase === 'combat',
+  );
+  let squadReward = null;
+  room.broadcast = (type, payload) => {
+    if (type === 'permanent_reward') squadReward = payload;
+  };
+  check('Der Host kann den Run aufgeben', room.requestAbandon('p1') === true);
+  check(
+    'Aufgeben zahlt den Fortschritt und öffnet die gemeinsame Lobby',
+    squadReward?.gold === campaignRunReward(map, 7, false) &&
+      room.state.phase === 'lobby' &&
+      room.state.runId === '' &&
+      room.state.zombies.size === 0,
+  );
 }
 
 console.log('\n== Kampagnenlohn bei Niederlage ==');
@@ -2103,7 +2121,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
     `(${(ZOMBIES.omega.abilities ?? []).length})`,
   );
   check('Vier Mini-Bosse plus Brutling', MINI_BOSSES.length === 4);
-  check('Vierzehn Türme', TURRET_ORDER.length === 14, `(${TURRET_ORDER.length})`);
+  check('Sechzehn Türme', TURRET_ORDER.length === 16, `(${TURRET_ORDER.length})`);
   check(
     'Signalkern-Mission ist eingeplant',
     MAPS.some((map) => map.mission?.kind === 'holdout'),

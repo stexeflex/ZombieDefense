@@ -60,6 +60,9 @@ export class Lobby implements OnInit, OnDestroy {
   /** Which half of leaving a run is running right now, for the button label. */
   readonly leaveStep = signal<'idle' | 'saving' | 'opening'>('idle');
   readonly changingLobby = computed(() => this.leaveStep() !== 'idle');
+  /** Giving up needs a deliberate second click because it ends the squad's run. */
+  readonly abandonArmed = signal(false);
+  private abandonTimer?: number;
   /** Weapon whose sell button is waiting for the confirming second click. */
   readonly saleArmed = signal<WeaponType | null>(null);
   private saleTimer?: number;
@@ -121,6 +124,7 @@ export class Lobby implements OnInit, OnDestroy {
     document.removeEventListener('fullscreenchange', this.syncFullscreenState);
     window.removeEventListener('beforeunload', this.creditRewardBeforeUnload);
     this.disarmSale();
+    this.disarmAbandon();
     void this.game.disconnect();
   }
 
@@ -383,6 +387,30 @@ export class Lobby implements OnInit, OnDestroy {
     } finally {
       this.leaveStep.set('idle');
     }
+  }
+
+  async abandonRun() {
+    if (!this.game.isHost() || this.leaveStep() !== 'idle') return;
+    if (!this.abandonArmed()) {
+      this.abandonArmed.set(true);
+      this.audio.play('ui');
+      this.abandonTimer = window.setTimeout(() => this.disarmAbandon(), SALE_CONFIRM_MS);
+      return;
+    }
+
+    this.disarmAbandon();
+    this.leaveStep.set('saving');
+    try {
+      await this.game.abandonRun(() => this.leaveStep.set('opening'));
+    } finally {
+      this.leaveStep.set('idle');
+    }
+  }
+
+  private disarmAbandon() {
+    if (this.abandonTimer !== undefined) window.clearTimeout(this.abandonTimer);
+    this.abandonTimer = undefined;
+    this.abandonArmed.set(false);
   }
 
   private readonly syncFullscreenState = () => {

@@ -35,8 +35,8 @@ Aufruf kann das Laden deshalb kurz dauern.
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- neun Barrikaden und vierzehn Türme vom günstigen MG bis zum Donnerkranz,
-  inklusive Drohnenhangar mit drei fliegenden Jagddrohnen
+- neun Barrikaden und sechzehn Türme vom günstigen MG bis zum Donnerkranz,
+  inklusive zwei Mörsern und Drohnenhangar mit drei fliegenden Jagddrohnen
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
   mehrere Spieler; langsamere, deutlich robustere Hüllen machen Insassen
   unverwundbar, dafür geht der Dash verloren
@@ -55,7 +55,7 @@ Aufruf kann das Laden deshalb kurz dauern.
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
 - permanentes Gold, sechsundzwanzig Stufen-Upgrades und zehn besondere Vorteile
-  über `localStorage`
+  in einem verschlüsselten und gegen einfache Änderungen signierten `localStorage`-Save
 
 ### Karten
 
@@ -132,7 +132,7 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 | Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner                    |
 | Säurewerfer          | 2000  | lässt klar türkise, verbündete Säurelachen liegen        |
 | Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                                    |
-| Elefantenbüchse      | 2500  | zwölf Schuss, 720 Schaden pro Treffer                    |
+| Elefantenbüchse      | 2500  | zwölf Schuss, 900 Schaden pro Treffer                    |
 | Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand                  |
 | Kettensäge           | 2800  | schneller Nahkampf gegen drei Ziele zugleich             |
 | Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner         |
@@ -166,6 +166,7 @@ Die drei neuen Premium-Bauten ergänzen die sechs bisherigen Barrikaden:
 | Brandturm           | 1000  | kurze Reichweite, setzt ganze Gruppen in Brand     |
 | Frostturm           | 1200  | friert Reihen ein und bremst sie stark             |
 | Schrottschleuder    | 1350  | breite, günstige Schrottsalve                      |
+| Feldmörser          | 1450  | zügige kleine bis mittlere Flächeneinschläge       |
 | Scharfschützenturm  | 1500  | weite Reichweite, durchschlägt Reihen              |
 | Schrotflinten-Turm  | 1650  | acht schwere Kugeln auf kurze Distanz              |
 | Säureturm           | 1750  | ätzender Flächenschaden über Zeit                  |
@@ -174,6 +175,7 @@ Die drei neuen Premium-Bauten ergänzen die sechs bisherigen Barrikaden:
 | Dreifachschuss-Turm | 2750  | drei gebuffte Läufe bekämpfen verschiedene Ziele   |
 | Laserturm           | 3200  | Endgame: durchschlägt Reihen auf weite Distanz     |
 | Drohnenhangar       | 3600  | drei fliegende Jagddrohnen verfolgen Gegner        |
+| Präzisionsmörser    | 5200  | langsamer Panzertöter mit sehr hohem Einschlag     |
 | Plasma-Bastion      | 6800  | Luxus-Endgame, deutlich stärker als der Laserturm  |
 | Donnerkranz         | 9800  | 24 schwere Geschosse in einer langsamen 360°-Salve |
 
@@ -288,6 +290,10 @@ Nachbarbauten und Hindernissen ein, sodass Wände lückenlos entstehen; rot
 bedeutet, dass dort nicht gebaut werden kann. Mit dem Start der Welle fällt die
 Auswahl weg, die nächste Bauphase beginnt also ohne alte Vorschau.
 
+Der Host kann einen laufenden Run oben über **Run aufgeben** nach einer zweiten
+Bestätigung beenden. Der bis dahin erreichte permanente Lohn wird gesichert und
+der verbundene Trupp kehrt gemeinsam in dieselbe Lobby zurück.
+
 Wer neben einer eigenen oder fremden Verteidigung steht, sieht sie umrandet,
 dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Was in der
 laufenden Bauphase gesetzt wurde, gibt es zum vollen Preis zurück; ab der
@@ -317,8 +323,9 @@ Ausstieg; die Auszahlung wird vor dem Verlassen bestätigt. Kampagnenruns zahlen
 jetzt auf jeder erreichten Tiefe ungefähr doppelt so viel wie zuvor, auch bei
 einer Niederlage. Im Endlosmodus
 steigt der Lohn nach Welle 10 immer stärker, sodass Welle 50 auf der ersten
-Karte 1.415 statt 615 Gold bringt. „Zurück zur Lobby“ öffnet nur für den
-klickenden Spieler eine frische Lobby und zieht keinen Mitspieler mit. Der Shop steht auf der Startseite
+Karte 1.415 statt 615 Gold bringt. „Zurück zur Lobby“ hält den verbundenen Trupp
+nach Run-Ende zusammen; ein freiwilliger Ausstieg zur Startseite lässt die
+Mitspieler dagegen in ihrem laufenden Run. Der Shop steht auf der Startseite
 und in der Lobby offen, solange der Run noch nicht läuft — dort gekaufte
 Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 

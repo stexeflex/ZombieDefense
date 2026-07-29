@@ -14,6 +14,8 @@ export type FxKind =
   | 'deflect'
   | 'death'
   | 'explosion'
+  /** Friendly mortar impact area while its shell is in flight. */
+  | 'warning'
   | 'burn'
   | 'chain'
   | 'muzzle'
@@ -40,6 +42,8 @@ export interface FxEvent {
   r?: number;
   /** angle hint */
   a?: number;
+  /** duration hint in seconds */
+  d?: number;
   /** subtype, e.g. weapon or zombie type */
   s?: string;
 }

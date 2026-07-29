@@ -14,6 +14,11 @@ import {
   type UpgradeKey,
 } from '../../../shared/game-types';
 import { PERK_DEFINITIONS } from './upgrade-catalog';
+import {
+  isSealedProgressStorage,
+  openProgressStorage,
+  sealProgressStorage,
+} from './progress-storage';
 
 export {
   PERK_DEFINITIONS,
@@ -51,6 +56,11 @@ const RETIRED_UPGRADE_REFUNDS: Record<string, (level: number) => number> = {
 @Injectable({ providedIn: 'root' })
 export class ProgressService {
   private readonly storageKey = 'zombie-defense-progress-v1';
+  private loadedRecord: {
+    perks?: Record<string, unknown>;
+    upgrades?: Record<string, unknown>;
+  } = {};
+  private loadedLegacy = false;
   private readonly progress = signal<StoredProgress>(this.load());
 
   readonly gold = computed(() => this.progress().gold);
@@ -60,6 +70,9 @@ export class ProgressService {
 
   constructor() {
     this.refundRetiredProgress();
+    // Existing plain JSON is accepted once and immediately migrated without
+    // taking away any purchases or map unlocks.
+    if (this.loadedLegacy) this.save(this.progress());
   }
 
   maxLevel(key: UpgradeKey) {
@@ -163,19 +176,11 @@ export class ProgressService {
   /** Gold spent on removed perks or upgrades goes back exactly once. */
   private refundRetiredProgress() {
     let refund = 0;
-    try {
-      const stored = JSON.parse(localStorage.getItem(this.storageKey) ?? '{}') as {
-        perks?: Record<string, unknown>;
-        upgrades?: Record<string, unknown>;
-      };
-      for (const [key, cost] of Object.entries(RETIRED_PERKS)) {
-        if (stored.perks?.[key]) refund += cost;
-      }
-      for (const [key, calculate] of Object.entries(RETIRED_UPGRADE_REFUNDS)) {
-        refund += calculate(Number(stored.upgrades?.[key]) || 0);
-      }
-    } catch {
-      return;
+    for (const [key, cost] of Object.entries(RETIRED_PERKS)) {
+      if (this.loadedRecord.perks?.[key]) refund += cost;
+    }
+    for (const [key, calculate] of Object.entries(RETIRED_UPGRADE_REFUNDS)) {
+      refund += calculate(Number(this.loadedRecord.upgrades?.[key]) || 0);
     }
     if (refund === 0) return;
     // Saving drops retired keys as well, so the refund cannot be paid twice.
@@ -185,9 +190,19 @@ export class ProgressService {
 
   private load(): StoredProgress {
     try {
-      const stored = JSON.parse(
-        localStorage.getItem(this.storageKey) ?? '{}',
-      ) as Partial<StoredProgress>;
+      const raw = localStorage.getItem(this.storageKey) ?? '';
+      const decoded = isSealedProgressStorage(raw)
+        ? openProgressStorage(raw)
+        : raw
+          ? JSON.parse(raw)
+          : {};
+      if (!decoded || typeof decoded !== 'object') throw new Error('Invalid progress payload');
+      const stored = decoded as Partial<StoredProgress>;
+      this.loadedRecord = {
+        perks: stored.perks as unknown as Record<string, unknown>,
+        upgrades: stored.upgrades as unknown as Record<string, unknown>,
+      };
+      this.loadedLegacy = Boolean(raw && !isSealedProgressStorage(raw));
       const savedUpgrades = (stored.upgrades ?? {}) as Record<string, unknown>;
       const savedPerks = (stored.perks ?? {}) as Record<string, unknown>;
       const rewardedRuns = Array.isArray(stored.rewardedRuns)
@@ -235,6 +250,6 @@ export class ProgressService {
 
   private save(progress: StoredProgress) {
     this.progress.set(progress);
-    localStorage.setItem(this.storageKey, JSON.stringify(progress));
+    localStorage.setItem(this.storageKey, sealProgressStorage(progress));
   }
 }

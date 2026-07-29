@@ -25,6 +25,32 @@
           <b>Upgrades</b>
         </button>
       }
+      @if (
+        game.isHost() && game.snapshot()?.phase !== 'lobby' && game.snapshot()?.phase !== 'gameover'
+      ) {
+        <button
+          class="topbar-abandon"
+          type="button"
+          [class.armed]="abandonArmed()"
+          [disabled]="changingLobby()"
+          [attr.title]="
+            abandonArmed()
+              ? 'Noch einmal klicken: Der ganze Trupp kehrt zur Lobby zurück'
+              : 'Run aufgeben · bisheriges permanentes Gold bleibt erhalten'
+          "
+          (click)="abandonRun()"
+        >
+          {{
+            leaveStep() === 'saving'
+              ? 'Sichern …'
+              : leaveStep() === 'opening'
+                ? 'Lobby …'
+                : abandonArmed()
+                  ? 'Wirklich?'
+                  : 'Run aufgeben'
+          }}
+        </button>
+      }
 
       <div class="audio-controls">
         <button
@@ -576,8 +602,12 @@
           </button>
         }
 
-        <aside id="mission-side-panel" class="side-panel">
-          <section class="squad-mini">
+        <aside
+          id="mission-side-panel"
+          class="side-panel"
+          [class.building]="snapshot.phase === 'build'"
+        >
+          <section class="squad-mini" [class.full-squad]="players().length === 4">
             <header>
               <span>{{ activeMap().name }}</span>
               <b>{{ players().length }} online</b>

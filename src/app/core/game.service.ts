@@ -248,12 +248,21 @@ export class GameService {
 
   /** Keep the connected squad together and move its finished room back to the lobby. */
   async returnToLobby(onSettled?: () => void) {
+    await this.moveRoomToLobby('return_lobby', onSettled);
+  }
+
+  /** The host concedes the current run and takes the connected squad back. */
+  async abandonRun(onSettled?: () => void) {
+    await this.moveRoomToLobby('abandon_run', onSettled);
+  }
+
+  private async moveRoomToLobby(message: 'return_lobby' | 'abandon_run', onSettled?: () => void) {
     await this.settleRunReward();
     onSettled?.();
     if (!this.room) return;
 
     const lobbySnapshot = this.waitForPhase('lobby', LOBBY_RETURN_TIMEOUT);
-    this.room.send('return_lobby');
+    this.room.send(message);
     const arrived = await lobbySnapshot;
     if (!arrived) {
       this.errorMessage.set('Die gemeinsame Lobby konnte nicht geöffnet werden.');
