@@ -11,13 +11,12 @@ import { createGameTextures } from './textures';
   template: '<div #gameHost class="game-host" aria-label="Spielfeld"></div>',
   styles: `
     :host, .game-host {
-      display: grid;
-      place-items: center;
       width: 100%;
       height: 100%;
       min-height: 0;
     }
-    :host { overflow: hidden; background: #05100c; }
+    :host { display: block; overflow: hidden; background: #05100c; }
+    .game-host { overflow: hidden; }
     :host ::ng-deep canvas { display: block; max-width: 100%; max-height: 100%; }
   `,
 })
@@ -26,6 +25,8 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
   private readonly gameService = inject(GameService);
   private readonly audio = inject(AudioService);
   private game?: Phaser.Game;
+  private resizeObserver?: ResizeObserver;
+  private resizeFrame?: number;
 
   ngAfterViewInit() {
     this.game = new Phaser.Game({
@@ -47,9 +48,23 @@ export class GameCanvas implements AfterViewInit, OnDestroy {
         roundPixels: true,
       },
     });
+
+    // Collapsing the mission panel changes only this container, not the browser
+    // window. Phaser otherwise keeps the old FIT measurement until fullscreen
+    // or a window resize and the arena appears shifted inside the wider stage.
+    this.resizeObserver = new ResizeObserver(() => {
+      if (this.resizeFrame !== undefined) cancelAnimationFrame(this.resizeFrame);
+      this.resizeFrame = requestAnimationFrame(() => {
+        this.resizeFrame = undefined;
+        this.game?.scale.refresh();
+      });
+    });
+    this.resizeObserver.observe(this.gameHost.nativeElement);
   }
 
   ngOnDestroy() {
+    this.resizeObserver?.disconnect();
+    if (this.resizeFrame !== undefined) cancelAnimationFrame(this.resizeFrame);
     this.game?.destroy(true);
   }
 }

@@ -417,7 +417,13 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.abilities.updateBossBar();
     this.state.enemiesRemaining = this.waves.enemiesLeft();
 
-    if (!this.waves.checkDefeat() && this.waves.enemiesLeft() === 0) this.waves.finishWave();
+    if (
+      !this.waves.checkDefeat() &&
+      this.waves.enemiesLeft() === 0 &&
+      !this.playerSystem.hasPendingGrenadeBlasts()
+    ) {
+      this.waves.finishWave();
+    }
   }
 
   // -------------------------------------------------------------- networking

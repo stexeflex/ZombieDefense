@@ -2109,11 +2109,29 @@ console.log('\n== Sonderzombies ==');
   room.systems.world.fxQueue.length = 0;
   player.grenades = 3;
   room.systems.players.throwGrenade('p1', { x: 1500, y: 900 });
-  const minis = room.systems.world.fxQueue.filter(
+  const warnings = room.systems.world.fxQueue.filter(
+    (event) => event.k === 'warning' && event.s === 'grenade-mini',
+  );
+  let minis = room.systems.world.fxQueue.filter(
     (event) => event.k === 'explosion' && event.s === 'grenade-mini',
   );
   check(
-    'Splitter-Upgrade erzeugt eine Mini-Granate pro Stufe',
+    'Splitter-Upgrade kündigt eine Mini-Granate pro Stufe an',
+    warnings.length === 4,
+    `(${warnings.length}/4)`,
+  );
+  check('Mini-Granaten explodieren nicht sofort', minis.length === 0, `(${minis.length})`);
+  room.systems.players.update(0.1);
+  minis = room.systems.world.fxQueue.filter(
+    (event) => event.k === 'explosion' && event.s === 'grenade-mini',
+  );
+  check('Kurzer Splitter-Zünder läuft sichtbar', minis.length === 0, `(${minis.length})`);
+  room.systems.players.update(0.13);
+  minis = room.systems.world.fxQueue.filter(
+    (event) => event.k === 'explosion' && event.s === 'grenade-mini',
+  );
+  check(
+    'Splitter-Upgrade zündet danach eine Mini-Granate pro Stufe',
     minis.length === 4,
     `(${minis.length}/4)`,
   );

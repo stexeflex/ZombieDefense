@@ -235,19 +235,20 @@ export class EffectLayer {
   /** Full blast radius plus a closing ring make the delayed shell readable. */
   private mortarWarning(event: FxEvent) {
     const radius = event.r ?? 110;
+    const grenadeFragment = event.s === 'grenade-mini';
     const precise = event.s === 'precision_mortar';
-    const color = precise ? 0xffd35c : 0xff9d52;
+    const color = grenadeFragment ? 0xffb347 : precise ? 0xffd35c : 0xff9d52;
     const area = this.scene.add
-      .circle(event.x, event.y, radius, color, 0.055)
-      .setStrokeStyle(2, color, 0.58)
+      .circle(event.x, event.y, radius, color, grenadeFragment ? 0.1 : 0.055)
+      .setStrokeStyle(grenadeFragment ? 1 : 2, color, grenadeFragment ? 0.76 : 0.58)
       .setDepth(8);
     const countdown = this.scene.add
       .circle(event.x, event.y, radius, color, 0)
-      .setStrokeStyle(3, color, 0.95)
+      .setStrokeStyle(grenadeFragment ? 2 : 3, color, 0.95)
       .setDepth(9);
     this.scene.tweens.add({
       targets: countdown,
-      scale: 0.08,
+      scale: grenadeFragment ? 0.18 : 0.08,
       alpha: 0.35,
       duration: Math.max(150, (event.d ?? 0.8) * 1000),
       ease: 'Linear',

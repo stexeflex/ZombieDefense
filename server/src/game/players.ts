@@ -55,12 +55,28 @@ const PROJECTILE_RADIUS: Partial<Record<WeaponType, number>> = {
   sun: 12,
 };
 
+/** Just enough time to see where a split fragment landed before it bursts. */
+const GRENADE_FRAGMENT_FUSE = 0.22;
+
+interface PendingGrenadeBlast {
+  x: number;
+  y: number;
+  radius: number;
+  damage: number;
+  ownerId: string;
+  fuse: number;
+}
+
 /** Movement, shooting, reloading, dashing, grenades and picking each other up. */
 export class PlayerSystem {
+  private readonly pendingGrenadeBlasts: PendingGrenadeBlast[] = [];
+
   constructor(private readonly world: GameWorld) {}
 
   update(delta: number) {
     const combat = this.world.state.phase === 'combat';
+    if (combat) this.tickGrenadeFragments(delta);
+    else this.pendingGrenadeBlasts.length = 0;
     this.world.state.players.forEach((player, sessionId) => {
       const runtime = this.world.runtime.get(sessionId);
       if (!runtime) return;
@@ -602,6 +618,10 @@ export class PlayerSystem {
 
   // ---------------------------------------------------------------- grenades
 
+  hasPendingGrenadeBlasts() {
+    return this.pendingGrenadeBlasts.length > 0;
+  }
+
   throwGrenade(sessionId: string, target: { x?: number; y?: number }) {
     const player = this.world.state.players.get(sessionId);
     const runtime = this.world.runtime.get(sessionId);
@@ -632,14 +652,24 @@ export class PlayerSystem {
       for (let fragment = 0; fragment < fragments; fragment += 1) {
         const angle = offset + (fragment * Math.PI * 2) / fragments;
         const distance = fragments === 1 ? spread * 0.45 : spread * (0.55 + (fragment % 2) * 0.35);
-        this.grenadeBlast(
-          this.world.clamp(x + Math.cos(angle) * distance, 0, ARENA.width),
-          this.world.clamp(y + Math.sin(angle) * distance, 0, ARENA.height),
-          miniRadius,
-          damage * 0.24,
-          player.id,
-          'grenade-mini',
-        );
+        const fragmentX = this.world.clamp(x + Math.cos(angle) * distance, 0, ARENA.width);
+        const fragmentY = this.world.clamp(y + Math.sin(angle) * distance, 0, ARENA.height);
+        this.pendingGrenadeBlasts.push({
+          x: fragmentX,
+          y: fragmentY,
+          radius: miniRadius,
+          damage: damage * 0.24,
+          ownerId: player.id,
+          fuse: GRENADE_FRAGMENT_FUSE,
+        });
+        this.world.pushFx({
+          k: 'warning',
+          x: fragmentX,
+          y: fragmentY,
+          r: miniRadius,
+          d: GRENADE_FRAGMENT_FUSE,
+          s: 'grenade-mini',
+        });
       }
     }
 
@@ -651,6 +681,23 @@ export class PlayerSystem {
     runtime.grenadeRecharge.push(rechargeTime);
     runtime.grenadeThrowLock = 0.35;
     player.grenadeCooldown = Math.min(...runtime.grenadeRecharge);
+  }
+
+  private tickGrenadeFragments(delta: number) {
+    for (let index = this.pendingGrenadeBlasts.length - 1; index >= 0; index -= 1) {
+      const fragment = this.pendingGrenadeBlasts[index];
+      fragment.fuse -= delta;
+      if (fragment.fuse > 0) continue;
+      this.pendingGrenadeBlasts.splice(index, 1);
+      this.grenadeBlast(
+        fragment.x,
+        fragment.y,
+        fragment.radius,
+        fragment.damage,
+        fragment.ownerId,
+        'grenade-mini',
+      );
+    }
   }
 
   private grenadeBlast(
