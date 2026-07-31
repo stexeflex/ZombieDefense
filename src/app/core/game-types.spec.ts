@@ -35,6 +35,7 @@ import {
   SHIELD_SHARE,
   START_MONEY,
   START_MONEY_PER_LEVEL,
+  STARTER_BARRICADE_COUNT,
   STARTER_DISCOUNT,
   TURRET_ORDER,
   UPGRADE_MAX_LEVEL,
@@ -1034,7 +1035,8 @@ describe('permanent upgrades', () => {
       expect(PERK_COST[key]).toBeGreaterThan(0);
       expect(EMPTY_PERKS[key]).toBe(false);
     }
-    expect(STARTER_DISCOUNT).toBe(0.3);
+    expect(STARTER_DISCOUNT).toBe(0.2);
+    expect(STARTER_BARRICADE_COUNT).toBe(2);
     expect(discountedCost(1000, 1)).toBe(Math.round(1000 * (1 - STARTER_DISCOUNT)));
     expect(discountedCost(1000, 0)).toBe(1000);
   });

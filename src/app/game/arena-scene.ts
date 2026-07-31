@@ -526,10 +526,6 @@ export class ArenaScene extends Phaser.Scene {
     moving: NonNullable<ReturnType<GameService['relocating']>>,
     pointer: Phaser.Input.Pointer,
   ) {
-    const me = this.players.get(this.gameService.sessionId());
-    const inRange = me
-      ? Math.hypot(me.root.x - pointer.worldX, me.root.y - pointer.worldY) <= PLACE_RANGE
-      : true;
     const rotation = this.gameService.placementRotation();
 
     if (moving.kind === 'defense') {
@@ -555,7 +551,6 @@ export class ArenaScene extends Phaser.Scene {
           distanceToVehicle(spot.x, spot.y, vehicle) >= Math.max(config.width, config.height) / 2,
       );
       const valid =
-        inRange &&
         avoidsVehicles &&
         this.objectiveClear(spot.x, spot.y, Math.max(config.width, config.height) / 2) &&
         canPlaceDefense(spot, others, this.map.obstacles);
@@ -585,6 +580,10 @@ export class ArenaScene extends Phaser.Scene {
       rotation,
     };
     this.placement = undefined;
+    const me = this.players.get(this.gameService.sessionId());
+    const inRange = me
+      ? Math.hypot(me.root.x - pointer.worldX, me.root.y - pointer.worldY) <= PLACE_RANGE
+      : true;
     const valid =
       inRange &&
       this.objectiveClear(spot.x, spot.y, Math.max(config.width, config.height) / 2) &&

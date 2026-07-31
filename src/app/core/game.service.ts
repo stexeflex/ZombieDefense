@@ -546,6 +546,7 @@ export class GameService {
     this.selectedVehicle.set(null);
     this.placementRotation.set((defense ?? vehicle)!.rotation);
     this.relocatingId.set(target.id);
+    this.room?.send('begin_move', { id: target.id });
     this.audio.play('ui');
   }
 
@@ -564,6 +565,7 @@ export class GameService {
   }
 
   cancelMove() {
+    if (this.relocatingId()) this.room?.send('cancel_move');
     this.relocatingId.set('');
   }
 

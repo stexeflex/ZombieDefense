@@ -165,7 +165,10 @@ describe('GameService', () => {
     expect(service.relocatingId()).toBe('foreign');
     service.moveFocused(240, 260);
 
-    expect(sent).toEqual([['move_placed', { id: 'foreign', x: 240, y: 260, rotation: 0 }]]);
+    expect(sent).toEqual([
+      ['begin_move', { id: 'foreign' }],
+      ['move_placed', { id: 'foreign', x: 240, y: 260, rotation: 0 }],
+    ]);
   });
 
   it('settles the run before leaving without changing the shared room phase', async () => {

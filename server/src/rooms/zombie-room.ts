@@ -221,6 +221,10 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.onMessage('repair', (client, payload?: { id?: string }) =>
       this.build.repairDefense(client.sessionId, payload?.id),
     );
+    this.onMessage('begin_move', (client, payload?: { id?: string }) =>
+      this.build.beginMove(client.sessionId, payload?.id),
+    );
+    this.onMessage('cancel_move', (client) => this.build.cancelMove(client.sessionId));
     this.onMessage(
       'move_placed',
       (client, payload?: { id?: string; x?: number; y?: number; rotation?: number }) =>
@@ -277,6 +281,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       barricadeDiscounts: 0,
       turretDiscounts: 0,
       vehicleDiscounts: 0,
+      relocatingDefenseId: '',
       lastStandReady: true,
       pushX: 0,
       pushY: 0,

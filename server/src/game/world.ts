@@ -65,6 +65,8 @@ export interface RuntimePlayer {
   barricadeDiscounts: number;
   turretDiscounts: number;
   vehicleDiscounts: number;
+  /** Defense selected nearby and allowed to follow the player across the build map. */
+  relocatingDefenseId: string;
   lastStandReady: boolean;
   /** Knock-back or pull a boss applied, decays on its own. */
   pushX: number;

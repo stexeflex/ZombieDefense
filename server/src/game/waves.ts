@@ -176,6 +176,7 @@ export class WaveSystem {
         runtime.dashHits.clear();
         runtime.stowed.clear();
         runtime.wasFiring = false;
+        runtime.relocatingDefenseId = '';
         runtime.pushX = 0;
         runtime.pushY = 0;
         runtime.lastStandReady = true;
@@ -379,7 +380,10 @@ export class WaveSystem {
     state.players.forEach((player) => {
       player.ready = false;
       const runtime = this.world.runtime.get(player.id);
-      if (runtime) runtime.lastStandReady = true;
+      if (runtime) {
+        runtime.lastStandReady = true;
+        runtime.relocatingDefenseId = '';
+      }
     });
   }
 

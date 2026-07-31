@@ -397,30 +397,45 @@ export class BuildSystem {
   }
 
   /**
+   * Remember that the player selected this defense while standing beside it.
+   * The authorization then stays valid while they walk to any free destination.
+   */
+  beginMove(sessionId: string, id?: string) {
+    const runtime = this.world.runtime.get(sessionId);
+    if (!runtime) return;
+    runtime.relocatingDefenseId = '';
+    const defense = this.focusedDefense(sessionId, id);
+    if (defense) runtime.relocatingDefenseId = defense.id;
+  }
+
+  cancelMove(sessionId: string) {
+    const runtime = this.world.runtime.get(sessionId);
+    if (runtime) runtime.relocatingDefenseId = '';
+  }
+
+  /**
    * Repositioning is cooperative: unlike selling it never transfers money or
-   * ownership, so any nearby team mate may tidy the shared defense line.
+   * ownership. A defense must be selected nearby, but can then be carried to
+   * any valid position on the map.
    */
   movePlaced(
     sessionId: string,
     payload?: { id?: string; x?: number; y?: number; rotation?: number },
   ) {
     const player = this.world.state.players.get(sessionId);
+    const runtime = this.world.runtime.get(sessionId);
     if (!player || !payload?.id || this.world.state.phase !== 'build' || player.vehicleId) return;
     const defense = this.world.state.defenses.get(payload.id);
     const vehicle = this.world.state.vehicles.get(payload.id);
     if (!defense && !vehicle) return;
 
-    const sourceDistance = defense
-      ? distanceToDefense(player.x, player.y, defense)
-      : distanceToVehicle(player.x, player.y, vehicle!);
-    const sourceReach = defense ? DEFENSE_REACH + 40 : VEHICLE_REACH + 40;
-    if (sourceDistance > sourceReach || (vehicle && vehicle.crew.length > 0)) return;
-
     const x = this.world.clamp(Number(payload.x) || player.x, 70, ARENA.width - 70);
     const y = this.world.clamp(Number(payload.y) || player.y, 70, ARENA.height - 70);
-    if (Math.hypot(player.x - x, player.y - y) > PLACE_RANGE) return;
 
     if (defense) {
+      const authorized = runtime?.relocatingDefenseId === defense.id;
+      if (runtime) runtime.relocatingDefenseId = '';
+      if (!authorized) return;
       const config = DEFENSES[defense.type];
       const rotation =
         config.kind === 'barricade'
@@ -446,6 +461,14 @@ export class BuildSystem {
     }
 
     if (!vehicle) return;
+    if (runtime) runtime.relocatingDefenseId = '';
+    if (
+      vehicle.crew.length > 0 ||
+      distanceToVehicle(player.x, player.y, vehicle) > VEHICLE_REACH + 40 ||
+      Math.hypot(player.x - x, player.y - y) > PLACE_RANGE
+    ) {
+      return;
+    }
     const config = VEHICLES[vehicle.type];
     const rotation =
       (Math.round((Number(payload.rotation) || 0) / (Math.PI / 2)) * (Math.PI / 2)) % Math.PI;

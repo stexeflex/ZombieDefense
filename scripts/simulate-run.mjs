@@ -22,7 +22,10 @@ const {
   DEFENSES,
   MAPS,
   MINI_BOSSES,
+  PLACE_RANGE,
   REPAIR_COST_PER_HP,
+  STARTER_BARRICADE_COUNT,
+  STARTER_DISCOUNT,
   TURRET_ORDER,
   VEHICLES,
   VEHICLE_ORDER,
@@ -31,6 +34,7 @@ const {
   ZOMBIES,
   ammoRefillCost,
   campaignRunReward,
+  canPlaceDefense,
   dashReduction,
   endlessDamageScale,
   endlessHealthScale,
@@ -975,6 +979,32 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
   });
   check('Barrikaden stehen lückenlos nebeneinander', room.state.defenses.size === 2);
 
+  const [movable] = [...room.state.defenses.values()];
+  const others = [...room.state.defenses.values()].filter((entry) => entry.id !== movable.id);
+  let farSpot;
+  for (let y = 100; y < ARENA.height - 100 && !farSpot; y += 100) {
+    for (let x = 100; x < ARENA.width - 100; x += 100) {
+      const candidate = { type: movable.type, x, y, rotation: 0 };
+      if (
+        Math.hypot(x - movable.x, y - movable.y) > PLACE_RANGE * 2 &&
+        canPlaceDefense(candidate, others, room.systems.world.map.obstacles)
+      ) {
+        farSpot = candidate;
+        break;
+      }
+    }
+  }
+  room.systems.build.beginMove('p1', movable.id);
+  player.x = 200;
+  player.y = 200;
+  room.systems.build.movePlaced('p1', { id: movable.id, ...farSpot });
+  check(
+    'Ausgewählte Türme und Barrikaden lassen sich über die ganze Karte verschieben',
+    Boolean(farSpot) && movable.x === farSpot.x && movable.y === farSpot.y,
+  );
+
+  player.x = 1200;
+  player.y = 1150;
   room.systems.build.placeDefense('p1', {
     type: 'wood',
     x: 1200 + wood.width - 8,
@@ -986,6 +1016,8 @@ console.log('\n== Bauen, Reparieren, Verkaufen ==');
   const [first] = [...room.state.defenses.values()];
   first.health = first.maxHealth - 200;
   player.money = 500;
+  player.x = first.x;
+  player.y = first.y + 30;
   room.systems.build.repairDefense('p1', first.id);
   check(
     'Reparieren füllt auf und kostet den angezeigten Preis',
@@ -1195,8 +1227,8 @@ console.log('\n== Besondere Vorteile ==');
   room.systems.build.buyWeapon('p1', 'smg');
   const paid = beforeWeapon - player.money;
   check(
-    'Erste Waffe ist günstiger',
-    paid < WEAPONS.smg.cost && paid > 0,
+    'Erste Waffe ist genau 20 % günstiger',
+    paid === Math.round(WEAPONS.smg.cost * (1 - STARTER_DISCOUNT)),
     `(${paid} statt ${WEAPONS.smg.cost})`,
   );
   const beforeSecond = player.money;
@@ -1214,19 +1246,31 @@ console.log('\n== Besondere Vorteile ==');
     `(+${player.money - beforeDiscountSale} statt +${WEAPONS.smg.cost})`,
   );
 
-  const beforeWall = player.money;
-  room.systems.build.placeDefense('p1', { type: 'wood', x: 1200, y: 1050, rotation: 0 });
+  const wallCosts = [];
+  for (let index = 0; index < STARTER_BARRICADE_COUNT + 1; index += 1) {
+    const beforeWall = player.money;
+    room.systems.build.placeDefense('p1', {
+      type: 'wood',
+      x: 1200 + DEFENSES.wood.width * index,
+      y: 1050,
+      rotation: 0,
+    });
+    wallCosts.push(beforeWall - player.money);
+  }
   check(
-    'Erste Barrikade ist günstiger',
-    beforeWall - player.money < DEFENSES.wood.cost,
-    `(${beforeWall - player.money})`,
+    'Nur die ersten zwei Barrikaden sind genau 20 % günstiger',
+    wallCosts
+      .slice(0, STARTER_BARRICADE_COUNT)
+      .every((cost) => cost === Math.round(DEFENSES.wood.cost * (1 - STARTER_DISCOUNT))) &&
+      wallCosts[STARTER_BARRICADE_COUNT] === DEFENSES.wood.cost,
+    `(${wallCosts.join(', ')})`,
   );
 
   const beforeTurret = player.money;
   room.systems.build.placeDefense('p1', { type: 'mg', x: 1330, y: 1150, rotation: 0 });
   check(
-    'Erster Turm ist günstiger',
-    beforeTurret - player.money < DEFENSES.mg.cost,
+    'Erster Turm ist genau 20 % günstiger',
+    beforeTurret - player.money === Math.round(DEFENSES.mg.cost * (1 - STARTER_DISCOUNT)),
     `(${beforeTurret - player.money})`,
   );
 

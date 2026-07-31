@@ -224,9 +224,9 @@ export function upgradeUnlocked(key: UpgradeKey, perks: PermanentPerks) {
 }
 
 /** Discount the starter perks give on the first purchase of their category. */
-export const STARTER_DISCOUNT = 0.3;
+export const STARTER_DISCOUNT = 0.2;
 /** How many barricades the starter perk covers. */
-export const STARTER_BARRICADE_COUNT = 4;
+export const STARTER_BARRICADE_COUNT = 2;
 /** How much cheaper repairs get with the engineer perk. */
 export const ENGINEER_DISCOUNT = 0.4;
 
