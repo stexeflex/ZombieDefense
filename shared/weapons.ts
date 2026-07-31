@@ -632,13 +632,12 @@ export function ammoRefillCost(
 }
 
 /**
- * A sold weapon pays back what this player actually spent, minus the value of
- * every missing round in magazine and reserve. Buying it again can therefore
- * never be a cheaper ammunition refill, even after a starter discount.
+ * A sold weapon pays back its original list price, minus the value of every
+ * missing round in magazine and reserve. Starter discounts therefore remain a
+ * real one-time bonus instead of lowering the weapon's later sale value.
  */
 export function weaponSellValue(
   weapon: WeaponType,
-  purchasePrice: number,
   currentAmmo: number,
   currentReserve: number,
   magazineLevel = 0,
@@ -646,14 +645,15 @@ export function weaponSellValue(
   moneyScale = 1,
 ) {
   if (weapon === 'pistol') return 0;
-  if (isMeleeWeapon(weapon)) return Math.max(0, Math.floor(purchasePrice));
+  const originalPrice = WEAPONS[weapon].cost;
+  if (isMeleeWeapon(weapon)) return Math.max(0, Math.floor(originalPrice));
   const fullLoad = magazineCapacity(weapon, magazineLevel) + reserveCapacity(weapon, reserveLevel);
   const rounds = Math.max(0, currentAmmo) + Math.max(0, currentReserve);
   const missing = Math.max(0, fullLoad - rounds);
   const ammoValue = Math.ceil(
     (missing * WEAPONS[weapon].ammoCost * moneyScale) / WEAPONS[weapon].reserve,
   );
-  return Math.max(0, Math.floor(purchasePrice) - ammoValue);
+  return Math.max(0, Math.floor(originalPrice) - ammoValue);
 }
 
 export function weaponLife(weapon: WeaponConfig) {

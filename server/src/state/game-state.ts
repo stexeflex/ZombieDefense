@@ -86,6 +86,8 @@ export class ZombieState extends Schema {
   bestDistance = Infinity;
   /** Stable side used while steering around an obstacle, avoids left/right jitter. */
   avoidSide = 1;
+  /** Individual offset for enemies that weave across their route. */
+  dodgePhase = 0;
   /** Temporary grid route around map geometry; authoritative but not networked. */
   path: Array<{ x: number; y: number }> = [];
   pathTargetX = 0;
@@ -145,6 +147,8 @@ export class DefenseState extends Schema {
   @type('number') health = 100;
   @type('number') maxHealth = 100;
   @type('number') rotation = 0;
+  /** Effective turret range, including the owner's permanent upgrades. */
+  @type('number') range = 0;
   /** What selling pays right now, based on original price and current health. */
   @type('number') refund = 0;
   cooldown = 0;

@@ -144,10 +144,22 @@ function rarePhaseguard(wave: number, finalWave: number) {
   return wave >= 6 && wave < finalWave && (wave === 6 || (wave - 6) % 6 === 0);
 }
 
-function withRareShields(zombies: ZombieType[], wave: number, finalWave: number) {
+/** The zig-zag runner appears early, but only as a single disruption. */
+function rareEvasive(wave: number, finalWave: number) {
+  return wave >= 3 && wave < finalWave && (wave === 3 || (wave - 3) % 4 === 0);
+}
+
+/** Phantoms remain scarce because every one bypasses automated target acquisition. */
+function rarePhantom(wave: number, finalWave: number) {
+  return wave >= 5 && wave < finalWave && (wave === 5 || (wave - 5) % 5 === 0);
+}
+
+function withRareThreats(zombies: ZombieType[], wave: number, finalWave: number) {
   const extra: ZombieType[] = [];
   if (rareShield(wave, finalWave)) extra.push('shieldbearer');
   if (rarePhaseguard(wave, finalWave)) extra.push('phaseguard');
+  if (rareEvasive(wave, finalWave)) extra.push('evasive');
+  if (rarePhantom(wave, finalWave)) extra.push('phantom');
   return extra.length > 0 ? [...zombies, ...extra] : zombies;
 }
 
@@ -211,7 +223,7 @@ export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
     return {
       kind: 'swarm',
       label: 'SCHWARM',
-      zombies: withRareShields(
+      zombies: withRareThreats(
         shuffled(pack(swarm(size, ENDLESS_ROSTER, wave)), seed),
         wave,
         Number.POSITIVE_INFINITY,
@@ -232,7 +244,7 @@ export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
   return {
     kind: 'normal',
     label: 'Welle',
-    zombies: withRareShields(
+    zombies: withRareThreats(
       shuffled(pack(horde(size, ENDLESS_ROSTER, wave)), seed),
       wave,
       Number.POSITIVE_INFINITY,
@@ -270,7 +282,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
       waves.push({
         kind: 'mini',
         label: plan.labels?.[wave] ?? 'Mini-Boss',
-        zombies: withRareShields(
+        zombies: withRareThreats(
           [...leaders, ...shuffled(pack(horde(size * 0.65, plan.roster, wave)), seed)],
           wave,
           plan.waves,
@@ -283,7 +295,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
       waves.push({
         kind: 'swarm',
         label: plan.labels?.[wave] ?? 'SCHWARM',
-        zombies: withRareShields(
+        zombies: withRareThreats(
           shuffled(pack(swarm(size, plan.roster, wave)), seed),
           wave,
           plan.waves,
@@ -295,7 +307,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
     waves.push({
       kind: 'normal',
       label: plan.labels?.[wave] ?? 'Welle',
-      zombies: withRareShields(
+      zombies: withRareThreats(
         shuffled(pack(horde(size, plan.roster, wave)), seed),
         wave,
         plan.waves,

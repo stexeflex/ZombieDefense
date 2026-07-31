@@ -31,7 +31,8 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Kopfgeld wird **gleichmäßig geteilt**: jeder im Trupp bekommt denselben
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
-- fünfzehn Zombiearten plus fünfzehn Bosse
+- siebzehn Zombiearten plus fünfzehn Bosse; seltene Hakenläufer weichen im
+  Zickzack aus, Phantome werden von automatischen Türmen nicht erfasst
 - sechsundzwanzig Waffen von der Pistole bis zum Sonnenwerfer, darunter fünf
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
@@ -45,7 +46,7 @@ Aufruf kann das Laden deshalb kurz dauern.
   Stacheldraht ist eine durchquerbare Bodenfalle, die bremst, Schaden macht und
   unter einer dichten Horde schnell zertrampelt wird
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
-  Verkaufspreis
+  Verkaufspreis; bei ausgewählten Türmen wird zusätzlich der Angriffsradius eingeblendet
 - Munition, Reparieren und Verkauf der eigenen Objekte im Bau-Shop
 - vor Welle 1 und zwischen allen späteren Wellen gibt es eine Bauphase ohne Uhr:
   alle können sich bereit melden, der Host kann die Welle trotzdem sofort starten
@@ -293,6 +294,8 @@ steht, auch über den Köpfen der Mitspieler.
 Jeder Run beginnt mit einer Bauphase vor Welle 1. Im Seitenmenü wird zwischen
 Waffen, Barrikaden, Türmen und Fahrzeugen gewechselt, ein Bauteil ausgewählt und
 danach auf dem Spielfeld platziert.
+Basiswerte bleiben standardmäßig ausgeblendet und lassen sich über die kleine
+Checkbox **Basic Stats anzeigen** für alle Shop-Einträge zugleich einblenden.
 Spieler können sich dabei weiterhin bewegen. Die Vorschau rastet an
 Nachbarbauten und Hindernissen ein, sodass Wände lückenlos entstehen; rot
 bedeutet, dass dort nicht gebaut werden kann. Mit dem Start der Welle fällt die
@@ -307,6 +310,10 @@ dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Nur der
 Besitzer darf verkaufen; verschieben und reparieren bleiben bewusst kooperativ.
 Was in der laufenden Bauphase gesetzt wurde, gibt es zum vollen Preis zurück;
 ab der nächsten Welle nur noch anteilig.
+
+Gekaufte Waffen werden vom ursprünglichen Listenpreis aus verkauft, auch wenn
+der erste Kauf durch einen Vorteil günstiger war. Fehlende Munition wird wie
+bisher vom Verkaufserlös abgezogen.
 
 Die Bauphase läuft ohne Uhr: Sobald alle auf „Bereit“ gedrückt haben, startet
 die nächste Welle automatisch. Der Host kann fehlende Stimmen mit

@@ -81,7 +81,6 @@ export class BuildSystem {
     if (runtime.weaponDiscounts > 0) runtime.weaponDiscounts -= 1;
     this.syncDiscounts(player, runtime);
     player.owned.push(weapon);
-    runtime.weaponPurchasePrices.set(weapon, price);
     runtime.stowed.set(weapon, {
       ammo: this.players.magazineSize(weapon, runtime.upgrades),
       reserveAmmo: reserveCapacity(weapon, runtime.upgrades.reserveAmmo),
@@ -113,12 +112,10 @@ export class BuildSystem {
           ? { ammo: player.ammo, reserveAmmo: player.reserveAmmo }
           : runtime.stowed.get(weapon);
       if (!stored) continue;
-      const purchasePrice = runtime.weaponPurchasePrices.get(weapon) ?? WEAPONS[weapon].cost;
       player.weaponRefunds.set(
         weapon,
         weaponSellValue(
           weapon,
-          purchasePrice,
           stored.ammo,
           stored.reserveAmmo,
           runtime.upgrades.magazineSize,
@@ -148,7 +145,6 @@ export class BuildSystem {
     const index = player.owned.indexOf(weapon);
     if (index >= 0) player.owned.splice(index, 1);
     runtime.stowed.delete(weapon);
-    runtime.weaponPurchasePrices.delete(weapon);
     player.weaponRefunds.delete(weapon);
     player.money += refund;
   }
@@ -218,6 +214,7 @@ export class BuildSystem {
     defense.x = x;
     defense.y = y;
     defense.rotation = rotation;
+    defense.range = barricade ? 0 : (config.range ?? 0) * (1 + runtime.upgrades.turretRange * 0.01);
     const bonus = barricade ? 1 + runtime.upgrades.barricadeHealth * 0.02 : 1;
     defense.maxHealth = Math.round(config.health * bonus);
     defense.health = defense.maxHealth;

@@ -1,11 +1,22 @@
 <main class="mission-shell">
   <header class="mission-topbar">
     <div class="topbar-left">
-      <button class="back-button" type="button" (click)="leave()">
+      <button
+        class="back-button"
+        type="button"
+        [disabled]="changingLobby()"
+        (click)="confirmLeave()"
+      >
         <span aria-hidden="true">←</span>
         <b>Hauptmenü</b>
       </button>
-      <button class="brand-button" type="button" (click)="leave()" aria-label="Zur Startseite">
+      <button
+        class="brand-button"
+        type="button"
+        [disabled]="changingLobby()"
+        (click)="confirmLeave()"
+        aria-label="Zur Startseite"
+      >
         <span>ZD</span>
         <b>ZOMBIE DEFENSE</b>
       </button>
@@ -311,38 +322,48 @@
 
           <div
             class="wave-banner"
-            [class.boss]="snapshot.waveKind === 'boss'"
-            [class.mini]="snapshot.waveKind === 'mini' || snapshot.waveKind === 'swarm'"
+            [class.next-wave]="snapshot.phase === 'build'"
+            [class.boss]="
+              snapshot.phase === 'build'
+                ? nextWavePreview()?.kind === 'boss'
+                : snapshot.waveKind === 'boss'
+            "
+            [class.mini]="
+              snapshot.phase === 'build'
+                ? nextWavePreview()?.kind === 'mini' || nextWavePreview()?.kind === 'swarm'
+                : snapshot.waveKind === 'mini' || snapshot.waveKind === 'swarm'
+            "
           >
-            <span>
-              {{
-                snapshot.phase === 'build'
-                  ? 'Bauphase'
-                  : snapshot.phase === 'gameover'
+            @if (snapshot.phase === 'build' && nextWavePreview(); as next) {
+              <span>Nächste Welle</span>
+              <strong
+                >{{ next.number }}<em>/{{ totalLabel() }}</em></strong
+              >
+              <small>{{ next.label }} · {{ next.enemies }} Gegner</small>
+            } @else {
+              <span>
+                {{
+                  snapshot.phase === 'gameover'
                     ? 'Run beendet'
                     : snapshot.objectiveKind === 'timed'
                       ? 'Überleben'
                       : snapshot.waveLabel
-              }}
-            </span>
-            @if (snapshot.objectiveKind === 'timed' && snapshot.phase !== 'gameover') {
+                }}
+              </span>
+            }
+            @if (
+              snapshot.phase !== 'build' &&
+              snapshot.objectiveKind === 'timed' &&
+              snapshot.phase !== 'gameover'
+            ) {
               <strong class="clock-value">{{ missionClock() }}</strong>
-            } @else {
+            } @else if (snapshot.phase !== 'build') {
               <strong
-                >{{ snapshot.phase === 'build' && snapshot.wave === 0 ? 1 : snapshot.wave
-                }}<em>/{{ totalLabel() }}</em></strong
+                >{{ snapshot.wave }}<em>/{{ totalLabel() }}</em></strong
               >
             }
             @if (snapshot.phase === 'combat') {
               <small>{{ snapshot.enemiesRemaining }} Gegner</small>
-            } @else if (snapshot.phase === 'build') {
-              <small>{{
-                snapshot.wave === 0 && timedCampaign()
-                  ? 'Für acht Minuten vorbereiten'
-                  : snapshot.wave === 0
-                    ? 'Erste Verteidigung aufbauen'
-                    : 'Baut in Ruhe auf'
-              }}</small>
             }
           </div>
 
@@ -667,6 +688,15 @@
                 <strong>$ {{ game.player()?.money }}</strong>
               </header>
 
+              <label class="basic-stats-toggle">
+                <input
+                  type="checkbox"
+                  [checked]="showBasicStats()"
+                  (change)="setBasicStats($event)"
+                />
+                <span>Basic Stats anzeigen</span>
+              </label>
+
               <div class="shop-tabs">
                 <button
                   type="button"
@@ -764,7 +794,9 @@
                             </span>
                           </span>
                           <small>{{ weapon.description }}</small>
-                          <small class="item-base">{{ weaponBaseDamage(weapon.type) }}</small>
+                          @if (showBasicStats()) {
+                            <small class="item-base">{{ weaponBaseDamage(weapon.type) }}</small>
+                          }
                         </span>
                         <strong>
                           {{
@@ -838,7 +870,9 @@
                             </span>
                           </span>
                           <small>{{ weapon.description }}</small>
-                          <small class="item-base">{{ weaponBaseDamage(weapon.type) }}</small>
+                          @if (showBasicStats()) {
+                            <small class="item-base">{{ weaponBaseDamage(weapon.type) }}</small>
+                          }
                         </span>
                         <strong>
                           {{
@@ -897,7 +931,9 @@
                           </span>
                         </span>
                         <small>{{ defense.description }}</small>
-                        <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
+                        @if (showBasicStats()) {
+                          <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
+                        }
                       </span>
                       <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
@@ -930,7 +966,9 @@
                           </span>
                         </span>
                         <small>{{ defense.description }}</small>
-                        <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
+                        @if (showBasicStats()) {
+                          <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
+                        }
                       </span>
                       <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
@@ -971,7 +1009,9 @@
                         }
                         <small>{{ vehicle.description }}</small>
                         <small class="vehicle-perk">★ {{ vehicle.perk }}</small>
-                        <small class="item-base">{{ vehicleBaseDamage(vehicle.type) }}</small>
+                        @if (showBasicStats()) {
+                          <small class="item-base">{{ vehicleBaseDamage(vehicle.type) }}</small>
+                        }
                       </span>
                       <strong>$ {{ vehiclePrice(vehicle.type) }}</strong>
                     </button>

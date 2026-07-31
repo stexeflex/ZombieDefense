@@ -15,6 +15,7 @@ import {
   ammoRefillCost,
   campaignRunReward,
   dashReduction,
+  endlessWave,
   findMap,
   isMeleeWeapon,
   magazineCapacity,
@@ -59,6 +60,7 @@ export class Lobby implements OnInit, OnDestroy {
   readonly copied = signal(false);
   readonly lobbyCode = signal('');
   readonly shopTab = signal<ShopTab>('weapons');
+  readonly showBasicStats = signal(false);
   readonly upgradesOpen = signal(false);
   readonly combatPanelCollapsed = signal(false);
   /** Which half of leaving a run is running right now, for the button label. */
@@ -97,6 +99,18 @@ export class Lobby implements OnInit, OnDestroy {
     findMap(this.game.snapshot()?.mapId ?? this.game.preferredMap()),
   );
   readonly endless = computed(() => this.game.snapshot()?.endless ?? this.game.preferredEndless());
+  readonly nextWavePreview = computed(() => {
+    const snapshot = this.game.snapshot();
+    if (!snapshot || snapshot.phase !== 'build') return null;
+    const number = snapshot.wave + 1;
+    const map = this.activeMap();
+    const wave =
+      snapshot.endless && number > map.waves.length
+        ? endlessWave(map.boss, number)
+        : map.waves[number - 1];
+    if (!wave) return null;
+    return { number, label: wave.label, kind: wave.kind, enemies: wave.zombies.length };
+  });
   readonly boss = computed(() => {
     const snapshot = this.game.snapshot();
     if (!snapshot || snapshot.bossMaxHealth <= 0) return null;
@@ -143,6 +157,10 @@ export class Lobby implements OnInit, OnDestroy {
   setUiScale(event: Event) {
     const input = event.target as HTMLInputElement;
     this.display.setUiScale(Number(input.value));
+  }
+
+  setBasicStats(event: Event) {
+    this.showBasicStats.set((event.target as HTMLInputElement).checked);
   }
 
   toggleCombatPanel() {
@@ -555,6 +573,13 @@ export class Lobby implements OnInit, OnDestroy {
     } finally {
       this.leaveStep.set('idle');
     }
+  }
+
+  confirmLeave() {
+    if (!window.confirm('Zum Hauptmenü zurückkehren? Dein aktueller Fortschritt wird gesichert.')) {
+      return;
+    }
+    void this.leave();
   }
 
   /**

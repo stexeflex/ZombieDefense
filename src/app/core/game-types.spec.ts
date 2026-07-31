@@ -57,6 +57,7 @@ import {
   campaignRunReward,
   canPlaceDefense,
   canPlaceVehicle,
+  canTurretTarget,
   circleOverlapsVehicle,
   dashReduction,
   defenseFootprint,
@@ -313,6 +314,22 @@ describe('enemy roster', () => {
     expect(shield).toBeDefined();
     expect(shield!.duration).toBeLessThan(2);
     expect(shield!.every).toBeGreaterThan(shield!.duration * 4);
+  });
+
+  it('sprinkles rare zig-zag runners and turret-invisible phantoms across the campaign', () => {
+    for (const map of MAPS) {
+      const roster = map.waves.flatMap((wave) => wave.zombies);
+      const evasive = roster.filter((type) => type === 'evasive');
+      const phantoms = roster.filter((type) => type === 'phantom');
+      expect(evasive.length).toBeGreaterThan(0);
+      expect(phantoms.length).toBeGreaterThan(0);
+      expect(evasive.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 3));
+      expect(phantoms.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 4));
+    }
+    expect(ZOMBIES.evasive.zigzag?.angle).toBeGreaterThan(0.5);
+    expect(ZOMBIES.evasive.speed).toBeGreaterThan(ZOMBIES.normal.speed);
+    expect(canTurretTarget('phantom')).toBe(false);
+    expect(canTurretTarget('normal')).toBe(true);
   });
 
   it('pays more money for tougher enemies', () => {
@@ -868,20 +885,14 @@ describe('arsenal and ammunition', () => {
 
   it('deducts missing ammunition from a weapon sale', () => {
     const price = WEAPONS.rifle.cost;
-    const full = weaponSellValue(
-      'rifle',
-      price,
-      magazineCapacity('rifle'),
-      reserveCapacity('rifle'),
-    );
-    const empty = weaponSellValue('rifle', price, 0, 0);
-    const discounted = weaponSellValue('rifle', Math.round(price * 0.6), 0, 0);
+    const full = weaponSellValue('rifle', magazineCapacity('rifle'), reserveCapacity('rifle'));
+    const empty = weaponSellValue('rifle', 0, 0);
 
     expect(full).toBe(price);
     expect(empty).toBeLessThan(full);
     expect(price - empty).toBeGreaterThan(WEAPONS.rifle.ammoCost);
-    expect(discounted).toBeLessThanOrEqual(Math.round(price * 0.6));
-    expect(weaponSellValue('pistol', 0, 0, 0)).toBe(0);
+    expect(weaponSellValue('chainsaw', 0, 0)).toBe(WEAPONS.chainsaw.cost);
+    expect(weaponSellValue('pistol', 0, 0)).toBe(0);
   });
 });
 

@@ -175,7 +175,6 @@ export class WaveSystem {
         runtime.wasDashing = false;
         runtime.dashHits.clear();
         runtime.stowed.clear();
-        runtime.weaponPurchasePrices.clear();
         runtime.wasFiring = false;
         runtime.pushX = 0;
         runtime.pushY = 0;

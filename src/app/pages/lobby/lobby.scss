@@ -84,6 +84,12 @@
   letter-spacing: 0.08em;
 }
 
+.back-button:disabled,
+.brand-button:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
 .lobby-code {
   border: 0;
   background: transparent;
@@ -515,6 +521,22 @@
   font-size: 1.1rem;
 }
 
+.wave-banner.next-wave {
+  padding: 10px 16px;
+  border-color: rgba(105, 240, 174, 0.58);
+  background: rgba(8, 24, 18, 0.92);
+  box-shadow: 0 0 22px rgba(105, 240, 174, 0.12);
+}
+
+.wave-banner.next-wave > span {
+  color: var(--acid);
+}
+
+.wave-banner.next-wave > small {
+  color: var(--text);
+  white-space: nowrap;
+}
+
 .player-hud {
   position: absolute;
   left: 18px;
@@ -745,6 +767,30 @@ kbd {
   color: var(--gold);
   font-family: var(--mono);
   font-size: 0.9rem;
+}
+
+.basic-stats-toggle {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 0.56rem;
+  font-weight: 750;
+  cursor: pointer;
+  user-select: none;
+}
+
+.basic-stats-toggle input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--acid);
+}
+
+.basic-stats-toggle:has(input:checked) {
+  color: var(--acid);
 }
 
 .shop-panel > h3 {

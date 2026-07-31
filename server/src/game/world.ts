@@ -10,6 +10,7 @@ import {
   VEHICLE_WRECK_DAMAGE,
   ZOMBIES,
   armorReduction,
+  canTurretTarget,
   circleOverlapsVehicle,
   dashReduction,
   endlessDamageScale,
@@ -58,8 +59,6 @@ export interface RuntimePlayer {
   dashHits: Set<string>;
   /** Magazine and spare rounds of every weapon that is not in hand. */
   stowed: Map<WeaponType, AmmoStore>;
-  /** Actual shop price paid for each weapon, including a starter discount. */
-  weaponPurchasePrices: Map<WeaponType, number>;
   wasFiring: boolean;
   /** Discounted purchases the starter perks still have left this run. */
   weaponDiscounts: number;
@@ -182,6 +181,7 @@ export class GameWorld {
     zombie.radius = config.radius;
     zombie.reward = config.reward;
     zombie.armor = config.armor ?? 0;
+    zombie.dodgePhase = Math.random() * Math.PI * 2;
     // Abilities start part way through their cycle so a fresh boss does not
     // dump everything the second it appears.
     const abilities = timedAbilities(type);
@@ -654,10 +654,25 @@ export class GameWorld {
     return this.nearestZombies(x, y, range, 1, requireSight)[0];
   }
 
+  /** Automated structures cannot acquire cloaked enemies, although their shots may still hit. */
+  nearestTurretTargets(x: number, y: number, range: number, limit: number, requireSight = false) {
+    return this.nearestZombies(x, y, range, limit, requireSight, (zombie) =>
+      canTurretTarget(zombie.type),
+    );
+  }
+
   /** Closest visible targets, used by turrets that can engage several enemies. */
-  nearestZombies(x: number, y: number, range: number, limit: number, requireSight = false) {
+  nearestZombies(
+    x: number,
+    y: number,
+    range: number,
+    limit: number,
+    requireSight = false,
+    eligible: (zombie: ZombieState) => boolean = () => true,
+  ) {
     const candidates: Array<{ zombie: ZombieState; distance: number }> = [];
     this.state.zombies.forEach((zombie) => {
+      if (!eligible(zombie)) return;
       const distance = Math.hypot(zombie.x - x, zombie.y - y);
       if (distance > range) return;
       if (requireSight && !this.hasLineOfSight(x, y, zombie.x, zombie.y)) return;

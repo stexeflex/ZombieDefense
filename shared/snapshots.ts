@@ -66,7 +66,7 @@ export interface PlayerSnapshot {
   weapon: WeaponType;
   /** Every weapon the player bought, in purchase order, pistol first. */
   owned: WeaponType[];
-  /** Sale value after the paid purchase price and missing ammunition are counted. */
+  /** Sale value from the original list price after missing ammunition is counted. */
   weaponRefunds: Partial<Record<WeaponType, number>>;
   ammo: number;
   reserveAmmo: number;
@@ -134,6 +134,8 @@ export interface DefenseSnapshot {
   health: number;
   maxHealth: number;
   rotation: number;
+  /** Effective turret range, including the owner's permanent upgrades. */
+  range?: number;
   /** What selling pays right now, based on original price and current health. */
   refund: number;
 }

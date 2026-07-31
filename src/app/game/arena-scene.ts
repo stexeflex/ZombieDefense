@@ -677,9 +677,16 @@ export class ArenaScene extends Phaser.Scene {
     const width = size.w + 14;
     const height = size.h + 14;
     const alpha = 0.55 + Math.sin(this.focusPulse * 5) * 0.2;
+    this.focusOutline.setVisible(true).clear();
+    if (target && DEFENSES[target.type].kind === 'turret') {
+      const range = target.range || DEFENSES[target.type].range || 0;
+      this.focusOutline
+        .fillStyle(0x69f0ae, 0.025)
+        .fillCircle(target.x, target.y, range)
+        .lineStyle(1, 0x69f0ae, 0.18)
+        .strokeCircle(target.x, target.y, range);
+    }
     this.focusOutline
-      .setVisible(true)
-      .clear()
       .lineStyle(2, 0x69f0ae, alpha)
       .strokeRect(spot.x - width / 2, spot.y - height / 2, width, height);
 
@@ -1101,7 +1108,8 @@ export class ArenaScene extends Phaser.Scene {
 
     const root = this.add
       .container(zombie.x, zombie.y, children)
-      .setDepth(config.rank === 'boss' ? 16 : config.rank === 'mini' ? 15 : 12);
+      .setDepth(config.rank === 'boss' ? 16 : config.rank === 'mini' ? 15 : 12)
+      .setAlpha(zombie.type === 'phantom' ? 0.3 : 1);
 
     return {
       root,
@@ -1129,6 +1137,11 @@ export class ArenaScene extends Phaser.Scene {
     view.healthBar.setDisplaySize(view.radius * 2.2 * ratio, 5);
     const damaged = zombie.health < view.lastHealth;
     view.lastHealth = zombie.health;
+
+    if (zombie.type === 'phantom') {
+      const shimmer = 0.26 + (Math.sin(this.time.now * 0.006 + zombie.x * 0.01) + 1) * 0.05;
+      view.root.setAlpha(damaged ? 0.62 : shimmer);
+    }
 
     if (view.phaseShield) {
       const protectedNow = zombie.shielding > 0;
@@ -1175,7 +1188,12 @@ export class ArenaScene extends Phaser.Scene {
       view.root.x = Phaser.Math.Linear(view.root.x, view.targetX, smoothing);
       view.root.y = Phaser.Math.Linear(view.root.y, view.targetY, smoothing);
 
-      const rate = view.type === 'fast' || view.type === 'crawler' ? 15 : view.radius > 50 ? 5 : 9;
+      const rate =
+        view.type === 'fast' || view.type === 'crawler' || view.type === 'evasive'
+          ? 15
+          : view.radius > 50
+            ? 5
+            : 9;
       view.walk += delta * (moving ? rate : 2.5);
       const swing = Math.sin(view.walk);
       if (view.type === 'exploder' && view.aura) {

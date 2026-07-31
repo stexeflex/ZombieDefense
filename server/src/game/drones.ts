@@ -1,9 +1,4 @@
-import {
-  ARENA,
-  DEFENSES,
-  EMPTY_UPGRADES,
-  type DefenseType,
-} from '../../../shared/game-types.js';
+import { ARENA, DEFENSES, EMPTY_UPGRADES, type DefenseType } from '../../../shared/game-types.js';
 import { DroneState } from '../state/game-state.js';
 import type { GameWorld } from './world.js';
 
@@ -33,7 +28,8 @@ export class DroneSystem {
       const count = config.drones ?? 1;
       const speed = config.droneSpeed ?? 220;
       const shootRange = config.droneRange ?? 280;
-      const leash = (config.range ?? 600) + LEASH_SLACK;
+      const acquisitionRange = hangar.range || config.range || 600;
+      const leash = acquisitionRange + LEASH_SLACK;
 
       drone.cooldown = Math.max(0, drone.cooldown - delta);
       drone.phase += delta * 1.5;
@@ -42,7 +38,7 @@ export class DroneSystem {
       // Each drone takes its own enemy where it can, so three of them never
       // pile onto the same zombie while the rest of the horde walks past.
       const targets = combat
-        ? this.world.nearestZombies(hangar.x, hangar.y, config.range ?? 600, count, false)
+        ? this.world.nearestTurretTargets(hangar.x, hangar.y, acquisitionRange, count, false)
         : [];
       const target = targets.length > 0 ? targets[drone.slot % targets.length] : undefined;
       const goalX = (target?.x ?? hangar.x) + Math.cos(angle) * (target ? STANDOFF : IDLE_ORBIT);

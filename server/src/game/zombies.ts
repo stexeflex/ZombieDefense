@@ -68,15 +68,21 @@ export class ZombieSystem {
       const navigation = this.navigationTarget(zombie, targetX, targetY);
       const angle = Math.atan2(navigation.y - zombie.y, navigation.x - zombie.x);
       const navigationDistance = Math.hypot(navigation.x - zombie.x, navigation.y - zombie.y);
-      zombie.rotation = config.frontShield
-        ? this.turnTowards(zombie.rotation, angle, config.frontShield.turnSpeed * delta)
-        : angle;
       const contact =
         zombie.radius +
         (attacksObjective ? Math.max(34, state.objectiveRadius * 0.72) : PLAYER_RADIUS);
       const distance = Math.hypot(targetX - zombie.x, targetY - zombie.y);
-      const stepX = Math.cos(angle) * zombie.speed * delta;
-      const stepY = Math.sin(angle) * zombie.speed * delta;
+      let movementAngle = angle;
+      if (config.zigzag) {
+        zombie.dodgePhase += delta * config.zigzag.frequency;
+        const roomToHook = Math.min(1, Math.max(0, (distance - contact) / 130));
+        movementAngle += Math.sin(zombie.dodgePhase) * config.zigzag.angle * roomToHook;
+      }
+      zombie.rotation = config.frontShield
+        ? this.turnTowards(zombie.rotation, angle, config.frontShield.turnSpeed * delta)
+        : movementAngle;
+      const stepX = Math.cos(movementAngle) * zombie.speed * delta;
+      const stepY = Math.sin(movementAngle) * zombie.speed * delta;
       const blocking = this.world.blockingDefense(zombie, stepX, stepY);
       const hull = blocking
         ? undefined

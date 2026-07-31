@@ -542,6 +542,8 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   armored: { skin: '#7a8390', cloth: '#2f353d', accent: '#aab6c2', eye: '#7fd8ff' },
   shieldbearer: { skin: '#6f8060', cloth: '#303a42', accent: '#ffd166', eye: '#fff0a8' },
   phaseguard: { skin: '#608f91', cloth: '#243d42', accent: '#73f7e5', eye: '#d8fffb' },
+  evasive: { skin: '#a7bb56', cloth: '#26372a', accent: '#d7ff63', eye: '#f5ffb8' },
+  phantom: { skin: '#4b8f86', cloth: '#172f31', accent: '#70f5df', eye: '#d6fffa' },
   spitter: { skin: '#6fae7a', cloth: '#2c4433', accent: '#9dff8a', eye: '#c6ff5a' },
   screamer: { skin: '#b98fa8', cloth: '#4a2e3f', accent: '#ff9ed8', eye: '#ffe08a' },
   brute: { skin: '#8a5f7a', cloth: '#3a2635', accent: '#c05f8f', eye: '#ff5f9e' },

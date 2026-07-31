@@ -1,4 +1,9 @@
-import { DEFENSES, EMPTY_UPGRADES, type DefenseType } from '../../../shared/game-types.js';
+import {
+  DEFENSES,
+  EMPTY_UPGRADES,
+  canTurretTarget,
+  type DefenseType,
+} from '../../../shared/game-types.js';
 import type { ZombieState } from '../state/game-state.js';
 import type { GameWorld } from './world.js';
 
@@ -33,11 +38,11 @@ export class TurretSystem {
       defense.cooldown = Math.max(0, defense.cooldown - delta);
 
       const upgrades = this.world.runtime.get(defense.ownerId)?.upgrades ?? EMPTY_UPGRADES;
-      const range = (config.range ?? 380) * (1 + upgrades.turretRange * 0.01);
+      const range = defense.range || (config.range ?? 380) * (1 + upgrades.turretRange * 0.01);
       const tank = config.targetTanky ? this.tankyTarget(defense.x, defense.y, range) : undefined;
       const targets = tank
         ? [tank]
-        : this.world.nearestZombies(
+        : this.world.nearestTurretTargets(
             defense.x,
             defense.y,
             range,
@@ -145,6 +150,7 @@ export class TurretSystem {
     let best: ZombieState | undefined;
     let bestScore = -Infinity;
     this.world.state.zombies.forEach((zombie) => {
+      if (!canTurretTarget(zombie.type)) return;
       const distance = Math.hypot(zombie.x - x, zombie.y - y);
       if (distance > range) return;
       const score = zombie.maxHealth / Math.max(35, zombie.baseSpeed) - distance * 0.015;

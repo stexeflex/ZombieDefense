@@ -520,8 +520,8 @@ console.log('\n== Säure, Feuer und Magnum ==');
     `(${Math.round(elephant.back)})`,
   );
   check(
-    'Elefantenbüchse hat nur zwölf Schuss',
-    WEAPONS.elephant.magazine + WEAPONS.elephant.reserve === 12,
+    'Elefantenbüchse hat nur zehn Schuss',
+    WEAPONS.elephant.magazine + WEAPONS.elephant.reserve === 10,
   );
   const nailgun = line('nailgun');
   check(
@@ -1209,9 +1209,9 @@ console.log('\n== Besondere Vorteile ==');
   const beforeDiscountSale = player.money;
   room.systems.build.sellWeapon('p1', 'smg');
   check(
-    'Rabattwaffe zahlt beim Verkauf nur den echten Kaufpreis zurück',
-    player.money === beforeDiscountSale + paid,
-    `(+${player.money - beforeDiscountSale} statt +${paid})`,
+    'Rabattwaffe zahlt beim Verkauf den ursprünglichen Listenpreis zurück',
+    player.money === beforeDiscountSale + WEAPONS.smg.cost,
+    `(+${player.money - beforeDiscountSale} statt +${WEAPONS.smg.cost})`,
   );
 
   const beforeWall = player.money;
@@ -1948,7 +1948,6 @@ console.log('\n== Arsenal ==');
   const beforeWeaponSale = player.money;
   const expectedWeaponRefund = weaponSellValue(
     'rifle',
-    WEAPONS.rifle.cost,
     0,
     0,
     0,
@@ -2274,14 +2273,15 @@ console.log('\n== Boss-Fähigkeiten ==');
 
 console.log('\n== Jede Karte hat ihren eigenen Boss ==');
 {
-  const bosses = MAPS.map((map) => map.boss);
-  check('Fünfzehn Karten', MAPS.length === 15, `(${MAPS.length})`);
+  const dedicatedMaps = MAPS.filter((map) => map.mission?.kind !== 'timed');
+  const bosses = dedicatedMaps.map((map) => map.boss);
+  check('Sechzehn Karten', MAPS.length === 16, `(${MAPS.length})`);
   check('Kein Boss doppelt', new Set(bosses).size === bosses.length);
   check(
     'Jeder Boss ist als Boss eingestuft',
     bosses.every((boss) => ZOMBIES[boss].rank === 'boss'),
   );
-  check('Alle Bosse sind vergeben', BOSSES.length === MAPS.length);
+  check('Alle Bosse sind vergeben', BOSSES.length === dedicatedMaps.length);
   check(
     'OMEGA heilt sich nicht',
     !(ZOMBIES.omega.abilities ?? []).some((ability) => ability.kind === 'heal'),

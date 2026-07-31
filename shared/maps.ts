@@ -1228,7 +1228,7 @@ export const MAPS: GameMap[] = [
       {
         kind: 'normal',
         label: 'PANZERKEIL',
-        zombies: pack({ big: 5, armored: 8, shieldbearer: 1, spitter: 2 }),
+        zombies: pack({ big: 5, armored: 8, shieldbearer: 1, spitter: 2, evasive: 1 }),
         spawnPattern: 'north-south',
         spawnDelayScale: 1.2,
       },
@@ -1242,7 +1242,7 @@ export const MAPS: GameMap[] = [
       {
         kind: 'normal',
         label: 'GIFTFRONT',
-        zombies: pack({ spitter: 7, screamer: 3, armored: 2, big: 4 }),
+        zombies: pack({ spitter: 7, screamer: 3, armored: 2, big: 4, phantom: 1 }),
         spawnPattern: 'south',
         spawnDelayScale: 1.2,
       },

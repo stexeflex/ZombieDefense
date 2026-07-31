@@ -9,6 +9,8 @@ export type ZombieType =
   | 'armored'
   | 'shieldbearer'
   | 'phaseguard'
+  | 'evasive'
+  | 'phantom'
   | 'spitter'
   | 'screamer'
   // mini bosses
@@ -125,6 +127,10 @@ export interface ZombieConfig {
    * the protected side readable and leaves a real flanking window.
    */
   frontShield?: { arc: number; turnSpeed: number };
+  /** Sways across its route so slow projectiles have to predict the next hook. */
+  zigzag?: { angle: number; frequency: number };
+  /** Automated defenses cannot acquire this target; direct and area damage still work. */
+  hiddenFromTurrets?: boolean;
   explode?: { radius: number; damage: number };
   abilities?: ZombieAbility[];
   /** Short line shown on the map card and the boss bar. */
@@ -210,6 +216,26 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
     reward: 68,
     rank: 'elite',
     abilities: [{ kind: 'phaseShield', every: 7.2, duration: 1.35 }],
+  },
+  evasive: {
+    label: 'Hakenläufer',
+    health: 125,
+    speed: 124,
+    damage: 13,
+    radius: 16,
+    reward: 38,
+    rank: 'elite',
+    zigzag: { angle: 0.72, frequency: 5.4 },
+  },
+  phantom: {
+    label: 'Phantom',
+    health: 145,
+    speed: 82,
+    damage: 17,
+    radius: 18,
+    reward: 46,
+    rank: 'elite',
+    hiddenFromTurrets: true,
   },
   spitter: {
     label: 'Speier',
@@ -705,4 +731,9 @@ export function hasteAura(type: ZombieType) {
   return zombieAbilities(type).find(
     (ability): ability is AbilityOf<'haste'> => ability.kind === 'haste',
   );
+}
+
+/** Whether a turret, mortar or hangar drone may deliberately acquire this enemy. */
+export function canTurretTarget(type: ZombieType) {
+  return !ZOMBIES[type].hiddenFromTurrets;
 }

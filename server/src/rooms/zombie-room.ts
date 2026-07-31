@@ -272,7 +272,6 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       wasDashing: false,
       dashHits: new Set(),
       stowed: new Map(),
-      weaponPurchasePrices: new Map(),
       wasFiring: false,
       weaponDiscounts: 0,
       barricadeDiscounts: 0,
