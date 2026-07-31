@@ -1595,7 +1595,11 @@ console.log('\n== Upgrades aus der Lobby ==');
     player.maxHealth === 120 && player.health === 120 && player.dashMax === 4,
     `(${player.maxHealth} HP, ${player.dashMax} Dashes)`,
   );
-  check('Der Vorteil kommt mit', player.grenades === 4, `(${player.grenades})`);
+  check(
+    'Der Granatenvorteil kommt mit',
+    player.abilityMax === 4 && player.abilityCharges === 4,
+    `(${player.abilityCharges}/${player.abilityMax})`,
+  );
   check('Startkapital steigt pro Stufe', player.money === startingMoney(3), `($ ${player.money})`);
 
   startCombat(room);
@@ -2055,9 +2059,9 @@ console.log('\n== Sonderzombies ==');
   const distantTarget = { x: 2200, y: 1400 };
   const distantZombie = room.systems.world.spawnZombie('normal', distantTarget);
   const distantHealth = distantZombie.health;
-  player.grenades = 3;
-  room.systems.players.throwGrenade('p1', distantTarget);
-  check('Granate verbraucht', player.grenades === 2);
+  player.abilityCharges = 3;
+  room.systems.players.useAbility('p1', distantTarget);
+  check('Granate verbraucht', player.abilityCharges === 2);
   check(
     'Granate explodiert auch am anderen Ende der Karte',
     distantZombie.health < distantHealth,
@@ -2107,8 +2111,8 @@ console.log('\n== Sonderzombies ==');
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   room.systems.world.fxQueue.length = 0;
-  player.grenades = 3;
-  room.systems.players.throwGrenade('p1', { x: 1500, y: 900 });
+  player.abilityCharges = 3;
+  room.systems.players.useAbility('p1', { x: 1500, y: 900 });
   const warnings = room.systems.world.fxQueue.filter(
     (event) => event.k === 'warning' && event.s === 'grenade-mini',
   );
@@ -2134,6 +2138,43 @@ console.log('\n== Sonderzombies ==');
     'Splitter-Upgrade zündet danach eine Mini-Granate pro Stufe',
     minis.length === 4,
     `(${minis.length}/4)`,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1', {
+    ability: 'mortarStrike',
+    perks: { mortarNapalm: true },
+  });
+  startCombat(room);
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  room.systems.players.useAbility('p1', { x: player.x + 180, y: player.y });
+  room.systems.players.update(1.5);
+  const napalm = [...room.state.hazards.values()].find((hazard) => hazard.kind === 'napalm');
+  check(
+    'Phosphorkern hinterlässt ein sichtbares brennendes Feld',
+    Boolean(napalm && napalm.life === 6 && napalm.damage === 90),
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1', {
+    ability: 'precisionShot',
+    perks: { precisionReload: true },
+  });
+  startCombat(room);
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  const victim = room.systems.world.spawnZombie('normal', { x: player.x + 120, y: player.y });
+  room.systems.players.useAbility('p1', { x: victim.x, y: victim.y });
+  check('Vernichtungsschuss verbraucht zunächst seine Ladung', player.abilityCharges === 0);
+  room.systems.projectiles.update(0.1);
+  check(
+    'Todesurteil lädt nach einem tödlichen Treffer sofort vollständig nach',
+    !room.state.zombies.has(victim.id) &&
+      player.abilityCharges === 1 &&
+      player.abilityCooldown === 0,
   );
 }
 

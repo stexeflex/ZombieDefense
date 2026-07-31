@@ -891,6 +891,10 @@ describe('permanent upgrades', () => {
     expect(PLAYER_ABILITIES.precisionShot.description).toContain('ohne Durchschlag');
     expect(abilityMaxCharges('grenade', { ...EMPTY_PERKS, extraGrenade: true })).toBe(4);
     expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraGrenade: true })).toBe(1);
+    expect(EMPTY_PERKS.mortarNapalm).toBe(false);
+    expect(EMPTY_PERKS.precisionReload).toBe(false);
+    expect(PERK_COST.mortarNapalm).toBeGreaterThan(PERK_COST.extraGrenade);
+    expect(PERK_COST.precisionReload).toBeGreaterThan(PERK_COST.mortarNapalm);
     expect(
       abilityRechargeTime('precisionShot', { ...EMPTY_UPGRADES, precisionCooldown: 40 }),
     ).toBeGreaterThanOrEqual(PLAYER_ABILITIES.precisionShot.minCooldown);

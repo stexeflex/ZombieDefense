@@ -130,7 +130,7 @@
       </section>
 
       <div class="upgrade-groups ability-upgrades">
-        @for (group of abilityGroups; track group.key) {
+        @if (selectedAbilityGroup(); as group) {
           <section class="upgrade-group" [attr.aria-labelledby]="'ability-group-' + group.key">
             <div class="group-heading">
               <span>{{ group.icon }}</span>
@@ -194,12 +194,12 @@
           <div class="group-heading">
             <span>★</span>
             <div>
-              <h3>Granaten-Vorteil</h3>
-              <p>Der bisherige Granatenvorteil gehört jetzt ebenfalls zu den Fähigkeiten.</p>
+              <h3>{{ selectedAbilityGroup().label }} · Besonderer Vorteil</h3>
+              <p>Ein einmaliger Vorteil, der nur diese aktive Fähigkeit verändert.</p>
             </div>
           </div>
           <div class="upgrade-grid">
-            @for (perk of abilityPerks; track perk.key) {
+            @for (perk of selectedAbilityPerks(); track perk.key) {
               <article class="upgrade-item" [class.owned]="progress.ownsPerk(perk.key)">
                 <span class="upgrade-icon">{{ perk.icon }}</span>
                 <div class="upgrade-copy">

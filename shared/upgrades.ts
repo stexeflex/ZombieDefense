@@ -167,6 +167,10 @@ export interface PermanentPerks {
   engineer: boolean;
   /** One more grenade in the belt. */
   extraGrenade: boolean;
+  /** A mortar impact leaves a burning field behind. */
+  mortarNapalm: boolean;
+  /** A lethal precision shot immediately restores its charge. */
+  precisionReload: boolean;
   /** Once per wave a lethal hit leaves one hit point instead. */
   lastStand: boolean;
 }
@@ -183,6 +187,8 @@ export const EMPTY_PERKS: PermanentPerks = {
   fieldMedic: false,
   engineer: false,
   extraGrenade: false,
+  mortarNapalm: false,
+  precisionReload: false,
   lastStand: false,
 };
 
@@ -196,6 +202,8 @@ export const PERK_COST: Record<PerkKey, number> = {
   fieldMedic: 800,
   engineer: 700,
   extraGrenade: 1000,
+  mortarNapalm: 1800,
+  precisionReload: 2200,
   lastStand: 2200,
 };
 

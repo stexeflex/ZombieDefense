@@ -25,6 +25,10 @@ export const MORTAR_MIN_COOLDOWN = 12;
 export const MORTAR_FUSE = 1.45;
 export const MORTAR_SLOW = 0.45;
 export const MORTAR_BASE_SLOW_SECONDS = 0.5;
+/** The one-time Phosphorkern perk turns the impact area into burning ground. */
+export const MORTAR_NAPALM_DPS = 90;
+export const MORTAR_NAPALM_SECONDS = 6;
+export const MORTAR_NAPALM_RADIUS_SHARE = 0.72;
 
 /** Visible, non-piercing single-target shot with a very long reload. */
 export const PRECISION_BASE_DAMAGE = 1850;

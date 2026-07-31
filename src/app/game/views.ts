@@ -179,4 +179,5 @@ export const HAZARD_STYLE: Record<HazardKind, { tint: number; alpha: number }> =
   pull: { tint: 0x4ce0d5, alpha: 0.22 },
   // Friendly acid is cyan; enemy poison stays green.
   acid: { tint: 0x2eeaff, alpha: 0.58 },
+  napalm: { tint: 0xff6b28, alpha: 0.62 },
 };

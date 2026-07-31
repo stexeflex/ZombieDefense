@@ -335,6 +335,20 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     icon: '●',
   },
   {
+    key: 'mortarNapalm',
+    label: 'Phosphorkern',
+    description:
+      'Der Mörserschlag hinterlässt 6 Sekunden lang ein brennendes Feld, das Gegnern fortlaufend Schaden zufügt.',
+    icon: '♨',
+  },
+  {
+    key: 'precisionReload',
+    label: 'Todesurteil',
+    description:
+      'Tötet der Vernichtungsschuss sein Ziel, wird seine Ladung sofort vollständig wiederhergestellt.',
+    icon: '‡',
+  },
+  {
     key: 'lastStand',
     label: 'Letztes Aufbäumen',
     description: 'Einmal pro Welle überlebst du einen tödlichen Treffer mit 1 Leben.',

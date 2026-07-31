@@ -1,4 +1,4 @@
-import { Component, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, output, signal } from '@angular/core';
 import {
   PLAYER_ABILITIES,
   PLAYER_ABILITY_ORDER,
@@ -35,9 +35,31 @@ export class UpgradeShop {
   readonly abilityGroups = this.allGroups.filter((group) =>
     ['grenades', 'mortar', 'precision'].includes(group.key),
   );
-  readonly perkDefinitions = PERK_DEFINITIONS.filter((perk) => perk.key !== 'extraGrenade');
-  readonly abilityPerks = PERK_DEFINITIONS.filter((perk) => perk.key === 'extraGrenade');
+  private readonly abilityPerkKeys = new Set<PerkKey>([
+    'extraGrenade',
+    'mortarNapalm',
+    'precisionReload',
+  ]);
+  readonly perkDefinitions = PERK_DEFINITIONS.filter((perk) => !this.abilityPerkKeys.has(perk.key));
   readonly abilities = PLAYER_ABILITY_ORDER.map((type) => ({ type, ...PLAYER_ABILITIES[type] }));
+  readonly selectedAbilityGroup = computed(() => {
+    const groupKey =
+      this.progress.ability() === 'grenade'
+        ? 'grenades'
+        : this.progress.ability() === 'mortarStrike'
+          ? 'mortar'
+          : 'precision';
+    return this.abilityGroups.find((group) => group.key === groupKey)!;
+  });
+  readonly selectedAbilityPerks = computed(() => {
+    const perkKey: PerkKey =
+      this.progress.ability() === 'grenade'
+        ? 'extraGrenade'
+        : this.progress.ability() === 'mortarStrike'
+          ? 'mortarNapalm'
+          : 'precisionReload';
+    return PERK_DEFINITIONS.filter((perk) => perk.key === perkKey);
+  });
   /**
    * A short ladder gets one pip per level, so a pip always means a level. Long
    * ladders would need forty of them, there a filled bar is far easier to read.

@@ -17,6 +17,9 @@ import {
   MORTAR_BASE_RADIUS,
   MORTAR_BASE_SLOW_SECONDS,
   MORTAR_FUSE,
+  MORTAR_NAPALM_DPS,
+  MORTAR_NAPALM_RADIUS_SHARE,
+  MORTAR_NAPALM_SECONDS,
   MORTAR_SLOW,
   PRECISION_BASE_DAMAGE,
   PRECISION_PROJECTILE_LIFE,
@@ -83,6 +86,7 @@ interface PendingAbilityBlast {
   source: 'grenade-mini' | 'ability_mortar';
   slow: number;
   slowSeconds: number;
+  napalm: boolean;
 }
 
 /** Movement, shooting, reloading, dashing, active abilities and reviving. */
@@ -698,6 +702,7 @@ export class PlayerSystem {
           source: 'grenade-mini',
           slow: 0,
           slowSeconds: 0,
+          napalm: false,
         });
         this.world.pushFx({
           k: 'warning',
@@ -725,6 +730,7 @@ export class PlayerSystem {
       source: 'ability_mortar',
       slow: MORTAR_SLOW,
       slowSeconds: MORTAR_BASE_SLOW_SECONDS + upgrades.mortarSlow * 0.25,
+      napalm: runtime.perks.mortarNapalm,
     });
     this.world.pushFx({
       k: 'warning',
@@ -756,6 +762,7 @@ export class PlayerSystem {
     projectile.life = PRECISION_PROJECTILE_LIFE;
     projectile.pierce = 0;
     projectile.execute = runtime.upgrades.precisionExecute * 0.03;
+    projectile.restoreAbilityOnKill = runtime.perks.precisionReload;
     this.world.state.projectiles.set(projectile.id, projectile);
     this.world.pushFx({
       k: 'muzzle',
@@ -782,6 +789,17 @@ export class PlayerSystem {
         blast.slow,
         blast.slowSeconds,
       );
+      if (blast.napalm) {
+        this.world.spawnHazard({
+          kind: 'napalm',
+          x: blast.x,
+          y: blast.y,
+          r: blast.radius * MORTAR_NAPALM_RADIUS_SHARE,
+          life: MORTAR_NAPALM_SECONDS,
+          damage: MORTAR_NAPALM_DPS,
+          ownerId: blast.ownerId,
+        });
+      }
     }
   }
 

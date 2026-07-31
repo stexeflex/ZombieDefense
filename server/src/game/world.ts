@@ -208,7 +208,9 @@ export class GameWorld {
     ownerId?: string;
   }) {
     if (this.state.hazards.size >= MAX_HAZARDS) {
-      const spare = [...this.state.hazards.values()].find((entry) => entry.kind === 'acid');
+      const spare = [...this.state.hazards.values()].find(
+        (entry) => entry.kind === 'acid' || entry.kind === 'napalm',
+      );
       if (!spare) return undefined;
       this.state.hazards.delete(spare.id);
     }

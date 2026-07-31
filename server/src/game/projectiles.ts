@@ -75,6 +75,9 @@ export class ProjectileSystem {
         const missingHealth = zombie.maxHealth > 0 ? 1 - zombie.health / zombie.maxHealth : 0;
         const damage = projectile.damage * (1 + projectile.execute * Math.max(0, missingHealth));
         this.world.damageZombie(zombieId, zombie, damage, projectile.ownerId);
+        if (projectile.restoreAbilityOnKill && !this.world.state.zombies.has(zombieId)) {
+          this.restorePrecisionCharge(projectile.ownerId);
+        }
 
         if (projectile.chain > 0) {
           this.chainLightning(projectile, zombie, zombieId);
@@ -110,6 +113,21 @@ export class ProjectileSystem {
       }
     });
     expired.forEach((id) => this.world.state.projectiles.delete(id));
+  }
+
+  /** Todesurteil rewards a clean kill without changing the shot's one-target rule. */
+  private restorePrecisionCharge(ownerId: string) {
+    const player = this.world.state.players.get(ownerId);
+    const runtime = this.world.runtime.get(ownerId);
+    if (!player || !runtime || runtime.ability !== 'precisionShot') return;
+    if (player.abilityCharges >= player.abilityMax || runtime.abilityRecharge.length === 0) return;
+    runtime.abilityRecharge.sort((a, b) => a - b).shift();
+    player.abilityCharges += 1;
+    player.abilityCooldown =
+      player.abilityCharges >= player.abilityMax || runtime.abilityRecharge.length === 0
+        ? 0
+        : Math.max(0, runtime.abilityRecharge[0]);
+    this.world.pushFx({ k: 'heal', x: player.x, y: player.y, s: 'precision-reload' });
   }
 
   /** The shield eats the complete shot before splash, chain or pierce can trigger. */

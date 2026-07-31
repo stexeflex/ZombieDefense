@@ -237,8 +237,8 @@ export class AbilitySystem {
     const finished: string[] = [];
     this.world.state.hazards.forEach((hazard, id) => {
       hazard.life -= delta;
-      // Acid belongs to the squad: it eats zombies and leaves everyone else be.
-      if (hazard.kind === 'acid') {
+      // Acid and napalm belong to the squad: they eat zombies and leave everyone else be.
+      if (hazard.kind === 'acid' || hazard.kind === 'napalm') {
         hazard.tick -= delta;
         if (hazard.tick <= 0) {
           hazard.tick = POOL_TICK;
