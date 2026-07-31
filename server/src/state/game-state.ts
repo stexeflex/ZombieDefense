@@ -130,8 +130,8 @@ export class ProjectileState extends Schema {
   slowSeconds = 0;
   /** Missing-health multiplier used only by the one-target ability shot. */
   execute = 0;
-  /** The Todesurteil perk refunds this ability shot when it lands a killing blow. */
-  restoreAbilityOnKill = false;
+  /** The Todesurteil perk reduces this ability's cooldown after a killing blow. */
+  reduceAbilityCooldownOnKill = false;
   pull = 0;
   hitIds = new Set<string>();
 }

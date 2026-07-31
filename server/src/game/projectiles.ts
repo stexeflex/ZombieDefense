@@ -1,4 +1,4 @@
-import { ARENA, ZOMBIES } from '../../../shared/game-types.js';
+import { ARENA, PRECISION_KILL_COOLDOWN_REDUCTION, ZOMBIES } from '../../../shared/game-types.js';
 import type { ProjectileState, ZombieState } from '../state/game-state.js';
 import type { GameWorld } from './world.js';
 
@@ -75,8 +75,8 @@ export class ProjectileSystem {
         const missingHealth = zombie.maxHealth > 0 ? 1 - zombie.health / zombie.maxHealth : 0;
         const damage = projectile.damage * (1 + projectile.execute * Math.max(0, missingHealth));
         this.world.damageZombie(zombieId, zombie, damage, projectile.ownerId);
-        if (projectile.restoreAbilityOnKill && !this.world.state.zombies.has(zombieId)) {
-          this.restorePrecisionCharge(projectile.ownerId);
+        if (projectile.reduceAbilityCooldownOnKill && !this.world.state.zombies.has(zombieId)) {
+          this.reducePrecisionCooldown(projectile.ownerId);
         }
 
         if (projectile.chain > 0) {
@@ -115,18 +115,15 @@ export class ProjectileSystem {
     expired.forEach((id) => this.world.state.projectiles.delete(id));
   }
 
-  /** Todesurteil rewards a clean kill without changing the shot's one-target rule. */
-  private restorePrecisionCharge(ownerId: string) {
+  /** Todesurteil rewards a clean kill without granting another shot immediately. */
+  private reducePrecisionCooldown(ownerId: string) {
     const player = this.world.state.players.get(ownerId);
     const runtime = this.world.runtime.get(ownerId);
     if (!player || !runtime || runtime.ability !== 'precisionShot') return;
     if (player.abilityCharges >= player.abilityMax || runtime.abilityRecharge.length === 0) return;
-    runtime.abilityRecharge.sort((a, b) => a - b).shift();
-    player.abilityCharges += 1;
-    player.abilityCooldown =
-      player.abilityCharges >= player.abilityMax || runtime.abilityRecharge.length === 0
-        ? 0
-        : Math.max(0, runtime.abilityRecharge[0]);
+    runtime.abilityRecharge.sort((a, b) => a - b);
+    runtime.abilityRecharge[0] *= 1 - PRECISION_KILL_COOLDOWN_REDUCTION;
+    player.abilityCooldown = Math.max(0, runtime.abilityRecharge[0]);
     this.world.pushFx({ k: 'heal', x: player.x, y: player.y, s: 'precision-reload' });
   }
 

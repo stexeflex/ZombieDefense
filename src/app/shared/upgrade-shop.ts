@@ -81,8 +81,11 @@ export class UpgradeShop {
     if (this.progress.buyPerk(key)) this.bought.emit();
   }
 
-  selectAbility(ability: PlayerAbilityType) {
-    if (this.progress.selectAbility(ability)) this.bought.emit();
+  chooseAbility(ability: PlayerAbilityType) {
+    const changed = this.progress.abilityUnlocked(ability)
+      ? this.progress.selectAbility(ability)
+      : this.progress.buyAbility(ability);
+    if (changed) this.bought.emit();
   }
 
   level(key: UpgradeKey) {

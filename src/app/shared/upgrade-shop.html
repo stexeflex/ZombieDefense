@@ -118,12 +118,25 @@
               class="ability-card"
               type="button"
               [class.selected]="progress.ability() === ability.type"
-              (click)="selectAbility(ability.type)"
+              [class.locked]="!progress.abilityUnlocked(ability.type)"
+              [disabled]="
+                !progress.abilityUnlocked(ability.type) &&
+                progress.gold() < progress.abilityCost(ability.type)
+              "
+              (click)="chooseAbility(ability.type)"
             >
               <span>{{ ability.short }}</span>
               <strong>{{ ability.label }}</strong>
               <small>{{ ability.description }}</small>
-              <b>{{ progress.ability() === ability.type ? 'Ausgewählt ✓' : 'Auswählen' }}</b>
+              <b>
+                @if (progress.ability() === ability.type) {
+                  Ausgewählt ✓
+                } @else if (progress.abilityUnlocked(ability.type)) {
+                  Auswählen
+                } @else {
+                  🔒 ◆ {{ progress.abilityCost(ability.type) }} freischalten
+                }
+              </b>
             </button>
           }
         </div>

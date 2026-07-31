@@ -2171,10 +2171,11 @@ console.log('\n== Sonderzombies ==');
   check('Vernichtungsschuss verbraucht zunächst seine Ladung', player.abilityCharges === 0);
   room.systems.projectiles.update(0.1);
   check(
-    'Todesurteil lädt nach einem tödlichen Treffer sofort vollständig nach',
+    'Todesurteil reduziert nach einem tödlichen Treffer den Cooldown stark, aber nicht auf null',
     !room.state.zombies.has(victim.id) &&
-      player.abilityCharges === 1 &&
-      player.abilityCooldown === 0,
+      player.abilityCharges === 0 &&
+      player.abilityCooldown > 0 &&
+      player.abilityCooldown < 11,
   );
 }
 

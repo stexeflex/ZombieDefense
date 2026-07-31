@@ -5,6 +5,7 @@ import {
   MAPS,
   isPlayerAbility,
   PERK_COST,
+  PLAYER_ABILITY_COST,
   UPGRADE_REQUIRES,
   upgradeLevelCost,
   upgradeMaxLevel,
@@ -35,6 +36,7 @@ interface StoredProgress {
   upgrades: PermanentUpgrades;
   perks: PermanentPerks;
   ability: PlayerAbilityType;
+  unlockedAbilities: PlayerAbilityType[];
   rewardedRuns: string[];
   /** Highest payout already credited for each recent run, so a later result can pay the delta. */
   rewardedRunPayouts: Record<string, number>;
@@ -70,6 +72,7 @@ export class ProgressService {
   readonly upgrades = computed(() => this.progress().upgrades);
   readonly perks = computed(() => this.progress().perks);
   readonly ability = computed(() => this.progress().ability);
+  readonly unlockedAbilities = computed(() => this.progress().unlockedAbilities);
   readonly clearedMaps = computed(() => this.progress().clearedMaps);
 
   constructor() {
@@ -132,10 +135,44 @@ export class ProgressService {
     return true;
   }
 
-  /** Exactly one G ability is equipped; changing it is free and lobby-safe. */
+  abilityCost(ability: PlayerAbilityType) {
+    return PLAYER_ABILITY_COST[ability];
+  }
+
+  abilityUnlocked(ability: PlayerAbilityType) {
+    return this.progress().unlockedAbilities.includes(ability);
+  }
+
+  /** Buying an ability equips it immediately, so its upgrades become visible. */
+  buyAbility(ability: PlayerAbilityType) {
+    const current = this.progress();
+    const cost = PLAYER_ABILITY_COST[ability];
+    if (
+      !isPlayerAbility(ability) ||
+      current.unlockedAbilities.includes(ability) ||
+      current.gold < cost
+    ) {
+      return false;
+    }
+    this.save({
+      ...current,
+      gold: current.gold - cost,
+      ability,
+      unlockedAbilities: [...current.unlockedAbilities, ability],
+    });
+    return true;
+  }
+
+  /** Exactly one unlocked G ability is equipped; changing it is free and lobby-safe. */
   selectAbility(ability: PlayerAbilityType) {
     const current = this.progress();
-    if (!isPlayerAbility(ability) || current.ability === ability) return false;
+    if (
+      !isPlayerAbility(ability) ||
+      !current.unlockedAbilities.includes(ability) ||
+      current.ability === ability
+    ) {
+      return false;
+    }
     this.save({ ...current, ability });
     return true;
   }
@@ -224,9 +261,22 @@ export class ProgressService {
         stored.rewardedRunPayouts && typeof stored.rewardedRunPayouts === 'object'
           ? stored.rewardedRunPayouts
           : {};
+      const unlockedAbilities = Array.from(
+        new Set<PlayerAbilityType>([
+          'grenade',
+          ...(Array.isArray(stored.unlockedAbilities)
+            ? stored.unlockedAbilities.filter(isPlayerAbility)
+            : []),
+        ]),
+      );
+      const ability =
+        isPlayerAbility(stored.ability) && unlockedAbilities.includes(stored.ability)
+          ? stored.ability
+          : 'grenade';
       return {
         gold: Math.max(0, Number(stored.gold) || 0),
-        ability: isPlayerAbility(stored.ability) ? stored.ability : 'grenade',
+        ability,
+        unlockedAbilities,
         // Only known entries survive, so a removed one leaves no leftovers.
         upgrades: Object.fromEntries(
           Object.keys(EMPTY_UPGRADES).map((key) => [
@@ -253,6 +303,7 @@ export class ProgressService {
       return {
         gold: 0,
         ability: 'grenade',
+        unlockedAbilities: ['grenade'],
         upgrades: { ...EMPTY_UPGRADES },
         perks: { ...EMPTY_PERKS },
         rewardedRuns: [],

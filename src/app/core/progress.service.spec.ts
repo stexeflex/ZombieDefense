@@ -4,6 +4,7 @@ import {
   UPGRADE_GROUPS,
   upgradeCurrentValue,
 } from './progress.service';
+import { PLAYER_ABILITY_COST } from '../../../shared/game-types';
 
 describe('ProgressService run rewards', () => {
   beforeEach(() => localStorage.clear());
@@ -82,12 +83,32 @@ describe('ProgressService upgrade shop', () => {
     expect(upgradeCurrentValue('vehicleArmor', 10)).toContain('10 % weniger Schaden');
   });
 
-  it('starts with grenades and persists exactly one selected ability', () => {
+  it('starts with grenades and charges the same price for either unlockable ability', () => {
     const progress = new ProgressService();
     expect(progress.ability()).toBe('grenade');
-    expect(progress.selectAbility('mortarStrike')).toBe(true);
+    expect(progress.abilityUnlocked('grenade')).toBe(true);
+    expect(progress.abilityUnlocked('mortarStrike')).toBe(false);
+    expect(progress.selectAbility('mortarStrike')).toBe(false);
+    expect(PLAYER_ABILITY_COST.mortarStrike).toBe(PLAYER_ABILITY_COST.precisionShot);
+
+    progress.addRunReward(PLAYER_ABILITY_COST.mortarStrike, 'ability-unlock');
+    expect(progress.buyAbility('mortarStrike')).toBe(true);
     expect(progress.ability()).toBe('mortarStrike');
+    expect(progress.gold()).toBe(0);
+    expect(progress.abilityUnlocked('mortarStrike')).toBe(true);
     expect(new ProgressService().ability()).toBe('mortarStrike');
+    expect(new ProgressService().abilityUnlocked('mortarStrike')).toBe(true);
+  });
+
+  it('falls back to grenades when an old save selected a now-locked ability', () => {
+    localStorage.setItem(
+      'zombie-defense-progress-v1',
+      JSON.stringify({ gold: 50, ability: 'precisionShot' }),
+    );
+
+    const progress = new ProgressService();
+    expect(progress.ability()).toBe('grenade');
+    expect(progress.abilityUnlocked('precisionShot')).toBe(false);
   });
 
   it('refunds old Wiederbelebung levels once and removes them from the save', () => {

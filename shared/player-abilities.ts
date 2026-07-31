@@ -37,6 +37,8 @@ export const PRECISION_MIN_COOLDOWN = 14;
 export const PRECISION_PROJECTILE_SPEED = 2100;
 export const PRECISION_PROJECTILE_RADIUS = 9;
 export const PRECISION_PROJECTILE_LIFE = 1.35;
+/** Todesurteil removes most of a running reload, but never grants a free shot. */
+export const PRECISION_KILL_COOLDOWN_REDUCTION = 0.7;
 
 export const PLAYER_ABILITIES: Record<PlayerAbilityType, PlayerAbilityConfig> = {
   grenade: {
@@ -70,6 +72,13 @@ export const PLAYER_ABILITY_ORDER: PlayerAbilityType[] = [
   'mortarStrike',
   'precisionShot',
 ];
+
+/** Grenades are the starter ability; both alternatives deliberately cost the same. */
+export const PLAYER_ABILITY_COST: Record<PlayerAbilityType, number> = {
+  grenade: 0,
+  mortarStrike: 1800,
+  precisionShot: 1800,
+};
 
 export function isPlayerAbility(value: unknown): value is PlayerAbilityType {
   return typeof value === 'string' && value in PLAYER_ABILITIES;

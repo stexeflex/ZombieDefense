@@ -345,7 +345,7 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     key: 'precisionReload',
     label: 'Todesurteil',
     description:
-      'Tötet der Vernichtungsschuss sein Ziel, wird seine Ladung sofort vollständig wiederhergestellt.',
+      'Tötet der Vernichtungsschuss sein Ziel, verkürzt sich seine verbleibende Abklingzeit um 70 %.',
     icon: '‡',
   },
   {

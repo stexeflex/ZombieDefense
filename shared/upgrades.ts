@@ -169,7 +169,7 @@ export interface PermanentPerks {
   extraGrenade: boolean;
   /** A mortar impact leaves a burning field behind. */
   mortarNapalm: boolean;
-  /** A lethal precision shot immediately restores its charge. */
+  /** A lethal precision shot greatly reduces its running cooldown. */
   precisionReload: boolean;
   /** Once per wave a lethal hit leaves one hit point instead. */
   lastStand: boolean;

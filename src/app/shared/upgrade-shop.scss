@@ -154,6 +154,19 @@
   color: var(--acid);
 }
 
+.ability-card.locked:not(:disabled) {
+  background: rgba(255, 190, 75, 0.035);
+}
+
+.ability-card.locked b {
+  color: var(--gold);
+}
+
+.ability-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .upgrade-group {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.012);

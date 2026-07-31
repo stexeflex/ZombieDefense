@@ -24,7 +24,9 @@ import {
   MINI_BOSSES,
   PERK_COST,
   PLAYER_ABILITIES,
+  PLAYER_ABILITY_COST,
   PLAYER_ABILITY_ORDER,
+  PRECISION_KILL_COOLDOWN_REDUCTION,
   PLAYER_BASE_SPEED,
   REPAIR_COST_PER_HP,
   REVIVE_RADIUS,
@@ -889,6 +891,10 @@ describe('permanent upgrades', () => {
     expect(PLAYER_ABILITIES.mortarStrike.charges).toBe(1);
     expect(PLAYER_ABILITIES.precisionShot.charges).toBe(1);
     expect(PLAYER_ABILITIES.precisionShot.description).toContain('ohne Durchschlag');
+    expect(PLAYER_ABILITY_COST.grenade).toBe(0);
+    expect(PLAYER_ABILITY_COST.mortarStrike).toBe(PLAYER_ABILITY_COST.precisionShot);
+    expect(PLAYER_ABILITY_COST.mortarStrike).toBeGreaterThan(0);
+    expect(PRECISION_KILL_COOLDOWN_REDUCTION).toBe(0.7);
     expect(abilityMaxCharges('grenade', { ...EMPTY_PERKS, extraGrenade: true })).toBe(4);
     expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraGrenade: true })).toBe(1);
     expect(EMPTY_PERKS.mortarNapalm).toBe(false);
