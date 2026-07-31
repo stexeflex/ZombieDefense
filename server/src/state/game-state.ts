@@ -154,6 +154,9 @@ export class DefenseState extends Schema {
   /** What selling pays right now, based on original price and current health. */
   @type('number') refund = 0;
   cooldown = 0;
+  /** Server-only lock used by the Omega-Fokus damage ramp. */
+  focusTargetId = '';
+  focusHits = 0;
 }
 
 /** A hull the squad can get into: it drives, rams and soaks damage for its crew. */

@@ -37,7 +37,7 @@ Aufruf kann das Laden deshalb kurz dauern.
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- neun Barrikaden und sechzehn Türme vom günstigen MG bis zum Donnerkranz,
+- zwölf Barrikaden und zwanzig Türme vom günstigen MG bis zum Omega-Fokus,
   inklusive zwei Mörsern und Drohnenhangar mit drei fliegenden Jagddrohnen
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
   mehrere Spieler; langsamere, deutlich robustere Hüllen machen Insassen
@@ -184,6 +184,10 @@ Mauer zu benötigen. Die Kontaktmine ist eine günstige Einmal-Falle:
 | Präzisionsmörser    | 5200  | langsamer Panzertöter mit sehr hohem Einschlag     |
 | Plasma-Bastion      | 6800  | starkes Plasma gegen ganze Reihen                  |
 | Donnerkranz         | 9800  | 24 schwere Geschosse in einer langsamen 360°-Salve |
+| Gravitationskanone  | 12800 | zieht und verlangsamt große Gruppen                |
+| Chronosphäre        | 16800 | Zeitimpuls gegen alle Gegner im Umkreis            |
+| Hinrichter          | 23000 | jagt Verwundete und verstärkt Hinrichtungsschaden  |
+| Omega-Fokus         | 32000 | wird mit jedem Treffer auf dasselbe Ziel stärker   |
 
 ### Fahrzeuge
 

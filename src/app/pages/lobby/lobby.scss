@@ -986,16 +986,16 @@ kbd {
 
 .weapon-shop-entry > .shop-item > strong,
 .build-shop-entry > .shop-item > strong {
-  margin-right: 18px;
+  margin-right: 22px;
 }
 
 .favorite-star {
   position: absolute;
   z-index: 5;
-  top: 7px;
-  right: 7px;
-  width: 22px;
-  height: 22px;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -1003,7 +1003,7 @@ kbd {
   border-radius: 50%;
   background: #0b1511;
   color: rgba(255, 204, 102, 0.55);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   line-height: 1;
 }
 
@@ -1064,12 +1064,19 @@ kbd {
 .item-copy {
   position: static;
   min-width: 0;
+  padding-right: 5px;
 }
 
 .item-heading {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+}
+
+.item-heading b {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .item-info {
@@ -1078,6 +1085,7 @@ kbd {
   height: 16px;
   display: inline-grid;
   flex: 0 0 auto;
+  margin-right: 3px;
   place-items: center;
   border: 1px solid rgba(105, 240, 174, 0.42);
   border-radius: 50%;

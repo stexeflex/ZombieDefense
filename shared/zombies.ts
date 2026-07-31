@@ -344,7 +344,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   // ------------------------------------------------------------------ bosses
   butcher: {
     label: 'Fleischkönig',
-    health: 7200,
+    health: 7560,
     speed: 46,
     damage: 68,
     radius: 58,
@@ -359,7 +359,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   brood: {
     label: 'Brutmutter',
-    health: 7400,
+    health: 7770,
     speed: 50,
     damage: 60,
     radius: 56,
@@ -374,7 +374,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   warlord: {
     label: 'Feldmarschall',
-    health: 7600,
+    health: 7980,
     speed: 44,
     damage: 66,
     radius: 58,
@@ -390,7 +390,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   artillery: {
     label: 'Artillerist',
-    health: 7800,
+    health: 8190,
     speed: 40,
     damage: 58,
     radius: 56,
@@ -413,7 +413,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   vortex: {
     label: 'Sogfürst',
-    health: 8000,
+    health: 8400,
     speed: 46,
     damage: 62,
     radius: 58,
@@ -429,7 +429,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   slag: {
     label: 'Schlackenherr',
-    health: 8200,
+    health: 8610,
     speed: 48,
     damage: 70,
     radius: 60,
@@ -453,7 +453,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   render: {
     label: 'Zerreißer',
-    health: 8600,
+    health: 9030,
     speed: 50,
     damage: 74,
     radius: 62,
@@ -469,7 +469,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   swarmqueen: {
     label: 'Schwarmkönigin',
-    health: 9000,
+    health: 9450,
     speed: 44,
     damage: 70,
     radius: 62,
@@ -485,7 +485,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   plague: {
     label: 'Seuchenfürst',
-    health: 9600,
+    health: 10080,
     speed: 46,
     damage: 72,
     radius: 62,
@@ -511,7 +511,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   omega: {
     label: 'OMEGA',
-    health: 10500,
+    health: 11025,
     speed: 50,
     damage: 84,
     radius: 76,
@@ -548,7 +548,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   bastion: {
     label: 'Bastionsbrecher',
-    health: 11400,
+    health: 11970,
     speed: 38,
     damage: 92,
     radius: 72,
@@ -572,7 +572,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   siren: {
     label: 'Sirene Null',
-    health: 12100,
+    health: 12705,
     speed: 62,
     damage: 78,
     radius: 60,
@@ -588,7 +588,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   tunneler: {
     label: 'Tiefenwurm',
-    health: 12900,
+    health: 13545,
     speed: 76,
     damage: 88,
     radius: 68,
@@ -613,7 +613,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   roadking: {
     label: 'Straßenkönig',
-    health: 14100,
+    health: 14805,
     speed: 58,
     damage: 98,
     radius: 74,
@@ -638,7 +638,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   eclipse: {
     label: 'EKLIPSE',
-    health: 15800,
+    health: 16590,
     speed: 58,
     damage: 108,
     radius: 82,

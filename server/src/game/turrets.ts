@@ -39,20 +39,43 @@ export class TurretSystem {
 
       const upgrades = this.world.runtime.get(defense.ownerId)?.upgrades ?? EMPTY_UPGRADES;
       const range = defense.range || (config.range ?? 380) * (1 + upgrades.turretRange * 0.01);
-      const tank = config.targetTanky ? this.tankyTarget(defense.x, defense.y, range) : undefined;
-      const targets = tank
-        ? [tank]
-        : this.world.nearestTurretTargets(
-            defense.x,
-            defense.y,
-            range,
-            config.targets ?? 1,
-            !config.mortarImpactSeconds,
-          );
-      if (targets.length === 0) return;
+      const tank = config.targetTanky
+        ? this.tankyTarget(defense.x, defense.y, range, !config.mortarImpactSeconds)
+        : undefined;
+      const wounded = config.targetWounded
+        ? this.woundedTarget(defense.x, defense.y, range)
+        : undefined;
+      const targets = config.areaPulse
+        ? this.world.nearestTurretTargets(defense.x, defense.y, range, Number.MAX_SAFE_INTEGER)
+        : wounded
+          ? [wounded]
+          : tank
+            ? [tank]
+            : this.world.nearestTurretTargets(
+                defense.x,
+                defense.y,
+                range,
+                config.targets ?? 1,
+                !config.mortarImpactSeconds,
+              );
+      if (targets.length === 0) {
+        defense.focusTargetId = '';
+        defense.focusHits = 0;
+        return;
+      }
       if (defense.cooldown > 0) return;
 
       const bonus = 1 + upgrades.turretDamage * 0.02;
+      let focusMultiplier = 1;
+      if (config.focusRamp) {
+        const targetId = targets[0].id;
+        if (defense.focusTargetId !== targetId) {
+          defense.focusTargetId = targetId;
+          defense.focusHits = 0;
+        }
+        focusMultiplier += config.focusRamp * defense.focusHits;
+        defense.focusHits = Math.min(config.focusRampMax ?? 1, defense.focusHits + 1);
+      }
       const speed = config.speed ?? 800;
       const pellets = config.pellets ?? 1;
       const fireProjectile = (aim: number) => {
@@ -61,7 +84,7 @@ export class TurretSystem {
           defense.x + Math.cos(aim) * 26,
           defense.y + Math.sin(aim) * 26,
           aim,
-          (config.damage ?? 10) * bonus,
+          (config.damage ?? 10) * bonus * focusMultiplier,
           speed,
           `turret_${defense.type}`,
         );
@@ -76,6 +99,8 @@ export class TurretSystem {
         projectile.acidRadius = config.acidRadius ?? 0;
         projectile.acidDps = (config.acidDps ?? 0) * bonus;
         projectile.acidSeconds = config.acidSeconds ?? 0;
+        projectile.pull = config.pull ?? 0;
+        projectile.execute = config.execute ?? 0;
         if (config.burn || config.slow) projectile.radius = 10;
         if (config.splashRadius) {
           projectile.splashRadius = config.splashRadius;
@@ -91,6 +116,27 @@ export class TurretSystem {
           a: aim,
           s: defense.type,
         });
+
+      if (config.areaPulse) {
+        this.world.pushFx({
+          k: 'explosion',
+          x: defense.x,
+          y: defense.y,
+          r: range,
+          s: `turret_${defense.type}`,
+        });
+        for (const target of targets) {
+          this.world.chillZombie(target, config.slow ?? 0, config.slowSeconds ?? 0);
+          this.world.damageZombie(
+            target.id,
+            target,
+            (config.damage ?? 10) * bonus,
+            defense.ownerId,
+          );
+        }
+        defense.cooldown = config.fireDelay ?? 0.25;
+        return;
+      }
 
       if (config.mortarImpactSeconds && config.splashRadius) {
         const target = targets[0];
@@ -146,17 +192,34 @@ export class TurretSystem {
   }
 
   /** Slow high-health enemies win; distance only breaks otherwise close ties. */
-  private tankyTarget(x: number, y: number, range: number) {
+  private tankyTarget(x: number, y: number, range: number, requireSight: boolean) {
     let best: ZombieState | undefined;
     let bestScore = -Infinity;
     this.world.state.zombies.forEach((zombie) => {
       if (!canTurretTarget(zombie.type)) return;
       const distance = Math.hypot(zombie.x - x, zombie.y - y);
       if (distance > range) return;
+      if (requireSight && !this.world.hasLineOfSight(x, y, zombie.x, zombie.y)) return;
       const score = zombie.maxHealth / Math.max(35, zombie.baseSpeed) - distance * 0.015;
       if (score <= bestScore) return;
       best = zombie;
       bestScore = score;
+    });
+    return best;
+  }
+
+  /** The Hinrichter finishes the enemy closest to death anywhere within its range. */
+  private woundedTarget(x: number, y: number, range: number) {
+    let best: ZombieState | undefined;
+    let bestShare = Infinity;
+    this.world.state.zombies.forEach((zombie) => {
+      if (!canTurretTarget(zombie.type)) return;
+      if (Math.hypot(zombie.x - x, zombie.y - y) > range) return;
+      if (!this.world.hasLineOfSight(x, y, zombie.x, zombie.y)) return;
+      const share = zombie.maxHealth > 0 ? zombie.health / zombie.maxHealth : 1;
+      if (share >= bestShare) return;
+      best = zombie;
+      bestShare = share;
     });
     return best;
   }

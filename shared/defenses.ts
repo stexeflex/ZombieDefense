@@ -29,7 +29,11 @@ export type DefenseType =
   | 'drone'
   | 'precision_mortar'
   | 'plasma'
-  | 'ring';
+  | 'ring'
+  | 'gravity_well'
+  | 'chrono'
+  | 'executioner'
+  | 'focus';
 
 export interface DefenseConfig {
   label: string;
@@ -82,6 +86,17 @@ export interface DefenseConfig {
   armorPierce?: number;
   /** Equally spaced shots fired around the complete circle in one volley. */
   radialShots?: number;
+  /** Pulls every victim of a splash impact towards its centre. */
+  pull?: number;
+  /** Hits and slows every target in range at once without firing projectiles. */
+  areaPulse?: boolean;
+  /** Prefer the enemy with the lowest remaining-health share. */
+  targetWounded?: boolean;
+  /** Extra damage as the target loses health; 1 means up to +100 %. */
+  execute?: number;
+  /** Damage gained for every uninterrupted hit on the same target. */
+  focusRamp?: number;
+  focusRampMax?: number;
   /** Flying drones this building keeps in the air; it has no gun of its own. */
   drones?: number;
   /** How fast a drone flies and how far it shoots from where it hovers. */
@@ -501,6 +516,74 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     radialShots: 24,
     description: 'Sehr langsam: feuert 24 schwere Geschosse im kompletten Kreis',
   },
+  gravity_well: {
+    label: 'Gravitationskanone',
+    short: 'GR',
+    kind: 'turret',
+    cost: 12800,
+    health: 980,
+    width: 64,
+    height: 64,
+    damage: 460,
+    fireDelay: 3.4,
+    range: 930,
+    speed: 560,
+    splashRadius: 250,
+    splashDamage: 460,
+    pull: 175,
+    slow: 0.48,
+    slowSeconds: 2.6,
+    description: 'Verdichtet ganze Gruppen in einer verlangsamenden Gravitationssenke',
+  },
+  chrono: {
+    label: 'Chronosphäre',
+    short: 'CH',
+    kind: 'turret',
+    cost: 16800,
+    health: 1100,
+    width: 66,
+    height: 66,
+    damage: 280,
+    fireDelay: 4.6,
+    range: 610,
+    areaPulse: true,
+    slow: 0.78,
+    slowSeconds: 3.6,
+    description: 'Trifft alle Gegner im Umkreis und friert ihre Zeit fast vollständig ein',
+  },
+  executioner: {
+    label: 'Hinrichter',
+    short: 'HX',
+    kind: 'turret',
+    cost: 23000,
+    health: 1050,
+    width: 68,
+    height: 68,
+    damage: 1550,
+    fireDelay: 3.2,
+    range: 1480,
+    speed: 4300,
+    targetWounded: true,
+    execute: 2.2,
+    description: 'Jagt das verwundetste Ziel und wird umso tödlicher, je weniger Leben es hat',
+  },
+  focus: {
+    label: 'Omega-Fokus',
+    short: 'ΩF',
+    kind: 'turret',
+    cost: 32000,
+    health: 1350,
+    width: 72,
+    height: 72,
+    damage: 250,
+    fireDelay: 0.38,
+    range: 1250,
+    speed: 3800,
+    targetTanky: true,
+    focusRamp: 0.35,
+    focusRampMax: 7,
+    description: 'Fixiert einen Tank: jeder Folgetreffer auf dasselbe Ziel wird deutlich stärker',
+  },
 };
 
 export const BARRICADE_ORDER: DefenseType[] = [
@@ -534,6 +617,10 @@ export const TURRET_ORDER: DefenseType[] = [
   'precision_mortar',
   'plasma',
   'ring',
+  'gravity_well',
+  'chrono',
+  'executioner',
+  'focus',
 ];
 
 /** How far from the player a new structure may be placed. */

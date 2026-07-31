@@ -1113,6 +1113,53 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     fillRounded(ctx, 32, 9, 23, 8, 3, '#8b6634', '#2a1a0b', 1.5);
     circle(ctx, 54, 13, 4, '#ffd35c', '#fff1a3', 1.5);
   },
+  gravity_well: (ctx) => {
+    circle(ctx, 18, 13, 11, '#211733', '#a67cff', 2.5);
+    circle(ctx, 18, 13, 5, '#08050d', '#d7c2ff', 1.5);
+    ctx.strokeStyle = '#8f68e8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(18, 13, 18, 7, -0.35, 0, Math.PI * 2);
+    ctx.stroke();
+    fillRounded(ctx, 31, 9, 24, 8, 3, '#4d3a6b', '#160f21', 1.5);
+  },
+  chrono: (ctx) => {
+    circle(ctx, 18, 13, 12, '#183844', '#6cecff', 2.5);
+    circle(ctx, 18, 13, 8, '#102329', '#d9fbff', 1.5);
+    ctx.strokeStyle = '#b9f7ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(18, 13);
+    ctx.lineTo(18, 6);
+    ctx.moveTo(18, 13);
+    ctx.lineTo(24, 16);
+    ctx.stroke();
+    for (let index = 0; index < 6; index += 1) {
+      const angle = (index * Math.PI) / 3;
+      circle(ctx, 18 + Math.cos(angle) * 17, 13 + Math.sin(angle) * 10, 2.4, '#6cecff');
+    }
+  },
+  executioner: (ctx) => {
+    fillRounded(ctx, 0, 4, 25, 19, 6, '#411b25', '#16080c', 2.5);
+    fillRounded(ctx, 22, 10, 33, 7, 2, '#8d4050', '#210b11', 2);
+    circle(ctx, 52, 13.5, 5, '#ff526e', '#ffd0d8', 1.5);
+    ctx.strokeStyle = '#ff8ba0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(8, 3);
+    ctx.lineTo(18, 13);
+    ctx.lineTo(8, 23);
+    ctx.stroke();
+  },
+  focus: (ctx) => {
+    fillRounded(ctx, 0, 5, 25, 17, 6, '#153c36', '#061411', 2.5);
+    fillRounded(ctx, 22, 9, 34, 9, 3, '#3f756c', '#09201c', 2);
+    circle(ctx, 53, 13.5, 5.5, '#9fffea', '#effffc', 1.8);
+    circle(ctx, 10, 13.5, 6, '#0b211d', '#62e8d0', 2);
+    ctx.strokeStyle = '#9fffea';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(5, 8, 10, 11);
+  },
 };
 
 // ------------------------------------------------------------------- drones
@@ -1662,6 +1709,10 @@ export function createGameTextures(scene: Phaser.Scene) {
     laser: '#ff8fd8',
     plasma: '#7eeaff',
     ring: '#ffd35c',
+    gravity_well: '#a67cff',
+    chrono: '#6cecff',
+    executioner: '#ff526e',
+    focus: '#9fffea',
   };
   for (const [type, painter] of Object.entries(TURRET_GUN_PAINTERS)) {
     const config = DEFENSES[type as DefenseType];

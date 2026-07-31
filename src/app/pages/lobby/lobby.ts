@@ -417,6 +417,14 @@ export class Lobby implements OnInit, OnDestroy {
     if (defense.splashDamage) {
       effects.push(`${this.stat(defense.splashDamage * damageBonus)} Explosionsschaden`);
     }
+    if (defense.pull) effects.push(`${this.stat(defense.pull)} Sogstärke`);
+    if (defense.areaPulse) effects.push('trifft alle Ziele im Umkreis');
+    if (defense.execute) effects.push(`bis +${this.stat(defense.execute * 100)} % Hinrichtung`);
+    if (defense.focusRamp) {
+      effects.push(
+        `+${this.stat(defense.focusRamp * 100)} % je Fokustreffer · max. ${defense.focusRampMax ?? 1}`,
+      );
+    }
     return effects.join(' · ');
   }
 
@@ -449,6 +457,14 @@ export class Lobby implements OnInit, OnDestroy {
     ];
     if (defense.splashDamage) {
       effects.push(`${this.stat(defense.splashDamage)} Explosionsschaden`);
+    }
+    if (defense.pull) effects.push(`${this.stat(defense.pull)} Sogstärke`);
+    if (defense.areaPulse) effects.push('trifft alle Ziele im Umkreis');
+    if (defense.execute) effects.push(`bis +${this.stat(defense.execute * 100)} % Hinrichtung`);
+    if (defense.focusRamp) {
+      effects.push(
+        `+${this.stat(defense.focusRamp * 100)} % je Fokustreffer · max. ${defense.focusRampMax ?? 1}`,
+      );
     }
     return effects.join(' · ');
   }

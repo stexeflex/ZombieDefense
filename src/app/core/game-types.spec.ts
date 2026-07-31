@@ -386,6 +386,31 @@ describe('enemy roster', () => {
     ).toBe(2);
   });
 
+  it('gives every campaign boss exactly five percent more base health', () => {
+    const formerHealth = {
+      butcher: 7200,
+      brood: 7400,
+      warlord: 7600,
+      artillery: 7800,
+      vortex: 8000,
+      slag: 8200,
+      render: 8600,
+      swarmqueen: 9000,
+      plague: 9600,
+      omega: 10500,
+      bastion: 11400,
+      siren: 12100,
+      tunneler: 12900,
+      roadking: 14100,
+      eclipse: 15800,
+    } as const;
+    for (const boss of BOSSES) {
+      expect(ZOMBIES[boss].health).toBe(
+        Math.round(formerHealth[boss as keyof typeof formerHealth] * 1.05),
+      );
+    }
+  });
+
   it('lets the final boss borrow from everyone but never heal itself', () => {
     const omega = timedAbilities('omega');
     expect(omega.some((ability) => ability.kind === 'heal')).toBe(false);
@@ -516,9 +541,9 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers twelve barricades and sixteen turrets', () => {
+  it('offers twelve barricades and twenty turrets', () => {
     expect(BARRICADE_ORDER).toHaveLength(12);
-    expect(TURRET_ORDER).toHaveLength(16);
+    expect(TURRET_ORDER).toHaveLength(20);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
   });
@@ -592,6 +617,14 @@ describe('defenses', () => {
     expect(DEFENSES.ring.radialShots).toBe(24);
     expect(DEFENSES.ring.fireDelay!).toBeGreaterThan(DEFENSES.launcher.fireDelay!);
     expect(DEFENSES.ring.damage!).toBeGreaterThan(DEFENSES.plasma.damage!);
+    expect(DEFENSES.gravity_well.pull).toBeGreaterThan(100);
+    expect(DEFENSES.gravity_well.splashRadius).toBeGreaterThan(200);
+    expect(DEFENSES.chrono.areaPulse).toBe(true);
+    expect(DEFENSES.chrono.slow).toBeGreaterThan(0.7);
+    expect(DEFENSES.executioner.targetWounded).toBe(true);
+    expect(DEFENSES.executioner.execute).toBeGreaterThan(2);
+    expect(DEFENSES.focus.focusRamp).toBeGreaterThan(0.3);
+    expect(DEFENSES.focus.focusRampMax).toBeGreaterThan(5);
   });
 
   it('keeps the three barrels on the tower and the drones in the hangar', () => {

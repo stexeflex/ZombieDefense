@@ -124,6 +124,22 @@ function startCombat(room) {
   room.systems.waves.startNextWave();
 }
 
+function roomWithTurret(type) {
+  const room = makeRoom('crater');
+  const player = join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeDefense('p1', { type, x: 1200, y: 900, rotation: 0 });
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  makeInvincible(player);
+  return { room, player };
+}
+
 console.log('\n== Echtzeit-Spielschritt ==');
 {
   const room = new ZombieRoom();
@@ -341,6 +357,10 @@ for (const type of [
   'precision_mortar',
   'plasma',
   'ring',
+  'gravity_well',
+  'chrono',
+  'executioner',
+  'focus',
 ]) {
   const room = makeRoom('crater');
   const player = join(room, 'p1');
@@ -377,6 +397,79 @@ for (const type of [
     `${DEFENSES[type].label} bekämpft Gegner (${Math.round(before - after)} Schaden)`,
     after < before,
     `(${after}/${before})`,
+  );
+}
+
+console.log('\n== Endgame-Türme haben eigene Mechaniken ==');
+{
+  const { room } = roomWithTurret('gravity_well');
+  const anchor = room.systems.world.spawnZombie('normal', { x: 1200, y: 1050 });
+  const dragged = room.systems.world.spawnZombie('normal', { x: 1390, y: 1050 });
+  for (const zombie of [anchor, dragged]) {
+    zombie.health = 100000;
+    zombie.maxHealth = 100000;
+    zombie.speed = 0;
+    zombie.baseSpeed = 0;
+  }
+  const beforeX = dragged.x;
+  room.systems.turrets.update(0.05);
+  room.systems.projectiles.update(0.35);
+  check('Gravitationskanone zieht Nachbarn zum Einschlag', dragged.x < beforeX, `(${dragged.x})`);
+  check('Gravitationskanone verlangsamt den Einschlag', dragged.chilled > 0);
+}
+{
+  const { room } = roomWithTurret('chrono');
+  const targets = [
+    room.systems.world.spawnZombie('normal', { x: 1120, y: 1070 }),
+    room.systems.world.spawnZombie('normal', { x: 1320, y: 980 }),
+  ];
+  for (const zombie of targets) {
+    zombie.health = 10000;
+    zombie.maxHealth = 10000;
+  }
+  room.systems.turrets.update(0.05);
+  check(
+    'Chronosphäre trifft alle Ziele gleichzeitig',
+    targets.every((zombie) => zombie.health < 10000),
+  );
+  check(
+    'Chronosphäre friert alle getroffenen Ziele ein',
+    targets.every((zombie) => zombie.chilled > 3),
+  );
+}
+{
+  const { room } = roomWithTurret('executioner');
+  const healthy = room.systems.world.spawnZombie('normal', { x: 1200, y: 1100 });
+  const wounded = room.systems.world.spawnZombie('normal', { x: 1450, y: 900 });
+  healthy.health = healthy.maxHealth = 50000;
+  wounded.maxHealth = 50000;
+  wounded.health = 10000;
+  room.systems.turrets.update(0.05);
+  room.systems.projectiles.update(0.1);
+  check(
+    'Hinrichter wählt das verwundetste Ziel',
+    wounded.health < 10000 && healthy.health === 50000,
+  );
+  check(
+    'Hinrichter verstärkt Schaden bei fehlendem Leben',
+    10000 - wounded.health > DEFENSES.executioner.damage,
+  );
+}
+{
+  const { room } = roomWithTurret('focus');
+  const target = room.systems.world.spawnZombie('normal', { x: 1450, y: 900 });
+  target.health = target.maxHealth = 100000;
+  room.systems.turrets.update(0.05);
+  room.systems.projectiles.update(0.1);
+  const firstHit = 100000 - target.health;
+  const afterFirst = target.health;
+  room.systems.turrets.update(1);
+  room.systems.projectiles.update(0.1);
+  const secondHit = afterFirst - target.health;
+  check(
+    'Omega-Fokus steigert Folgetreffer auf dasselbe Ziel',
+    secondHit > firstHit * 1.3,
+    `(${firstHit}/${secondHit})`,
   );
 }
 
@@ -2368,7 +2461,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
     `(${(ZOMBIES.omega.abilities ?? []).length})`,
   );
   check('Vier Mini-Bosse plus Brutling', MINI_BOSSES.length === 4);
-  check('Sechzehn Türme', TURRET_ORDER.length === 16, `(${TURRET_ORDER.length})`);
+  check('Zwanzig Türme', TURRET_ORDER.length === 20, `(${TURRET_ORDER.length})`);
   check(
     'Signalkern-Mission ist eingeplant',
     MAPS.some((map) => map.mission?.kind === 'holdout'),

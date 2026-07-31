@@ -139,7 +139,9 @@ export class EffectLayer {
         // Acid does not burn, it splatters — so it gets the cold particles and
         // no smoke, and nobody mistakes it for a fire blast any more.
         const acidBurst = event.s === 'acid' || event.s === 'turret_acid';
-        const energyBlast = event.s === 'gravity' || event.s === 'nova' || acidBurst;
+        const gravityBurst = event.s === 'gravity' || event.s === 'turret_gravity_well';
+        const chronoBurst = event.s === 'turret_chrono';
+        const energyBlast = gravityBurst || chronoBurst || event.s === 'nova' || acidBurst;
         this.burst(
           energyBlast ? 'energy' : 'flame',
           Math.min(26, 10 + radius / 8),
@@ -150,13 +152,15 @@ export class EffectLayer {
         this.burst('shard', acidBurst ? 4 : 10, event.x, event.y);
         const color = acidBurst
           ? 0x2eeaff
-          : event.s === 'gravity'
+          : gravityBurst
             ? 0xa67cff
-            : event.s === 'nova'
-              ? 0xff9ee0
-              : event.s === 'mortar' || event.s === 'ability_mortar'
-                ? 0xff4f6b
-                : 0xffb347;
+            : chronoBurst
+              ? 0x6cecff
+              : event.s === 'nova'
+                ? 0xff9ee0
+                : event.s === 'mortar' || event.s === 'ability_mortar'
+                  ? 0xff4f6b
+                  : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
         this.audio.play(
           acidBurst ? 'shot-flame' : 'explosion',
