@@ -455,10 +455,10 @@
               </div>
             }
             <div class="grenade-block">
-              <small>Granate [G]</small>
-              <strong>● × {{ game.player()?.grenades }}</strong>
-              @if (game.player()?.grenadeCooldown) {
-                <span>{{ game.player()!.grenadeCooldown | number: '1.0-0' }} s</span>
+              <small>{{ game.ability().label }} [G]</small>
+              <strong>{{ game.ability().short }} × {{ game.ability().charges }}</strong>
+              @if (game.ability().cooldown) {
+                <span>{{ game.ability().cooldown | number: '1.0-0' }} s</span>
               }
             </div>
             <div class="dash-block" [class.active]="game.dash().active">
@@ -522,7 +522,7 @@
               @if (!meleeEquipped()) {
                 <span><kbd>R</kbd> Nachladen</span>
               }
-              <span><kbd>G</kbd> Granate</span>
+              <span><kbd>G</kbd> Fähigkeit</span>
             }
             @if (game.arsenal().length > 1) {
               <span><kbd>1–9</kbd> / <kbd>Mausrad</kbd> Waffe wechseln</span>
@@ -755,7 +755,10 @@
                         <span class="item-copy">
                           <span class="item-heading">
                             <b>{{ weapon.label }}</b>
-                            <span class="item-info" [attr.title]="weaponStats(weapon.type)">
+                            <span
+                              class="item-info"
+                              [attr.aria-label]="'Aktuelle Werte: ' + weaponStats(weapon.type)"
+                            >
                               i
                               <span class="item-tooltip">{{ weaponStats(weapon.type) }}</span>
                             </span>
@@ -824,7 +827,9 @@
                             <b>{{ weapon.label }}</b>
                             <span
                               class="item-info"
-                              [attr.title]="weaponStats(weapon.type) + ' · keine Munition'"
+                              [attr.aria-label]="
+                                'Aktuelle Werte: ' + weaponStats(weapon.type) + ' · keine Munition'
+                              "
                             >
                               i
                               <span class="item-tooltip"
@@ -883,7 +888,10 @@
                       <span class="item-copy">
                         <span class="item-heading">
                           <b>{{ defense.label }}</b>
-                          <span class="item-info" [attr.title]="defenseStats(defense.type)">
+                          <span
+                            class="item-info"
+                            [attr.aria-label]="'Aktuelle Werte: ' + defenseStats(defense.type)"
+                          >
                             i
                             <span class="item-tooltip">{{ defenseStats(defense.type) }}</span>
                           </span>
@@ -913,7 +921,10 @@
                       <span class="item-copy">
                         <span class="item-heading">
                           <b>{{ defense.label }}</b>
-                          <span class="item-info" [attr.title]="defenseStats(defense.type)">
+                          <span
+                            class="item-info"
+                            [attr.aria-label]="'Aktuelle Werte: ' + defenseStats(defense.type)"
+                          >
                             i
                             <span class="item-tooltip">{{ defenseStats(defense.type) }}</span>
                           </span>
@@ -943,7 +954,10 @@
                       <span class="item-copy">
                         <span class="item-heading">
                           <b>{{ vehicle.label }}</b>
-                          <span class="item-info" [attr.title]="vehicleStats(vehicle.type)">
+                          <span
+                            class="item-info"
+                            [attr.aria-label]="'Aktuelle Werte: ' + vehicleStats(vehicle.type)"
+                          >
                             i
                             <span class="item-tooltip">{{ vehicleStats(vehicle.type) }}</span>
                           </span>
@@ -965,7 +979,7 @@
                 </div>
               }
 
-              @if (game.selectedBuild() || game.selectedVehicle()) {
+              @if (game.selectedBuild() || game.selectedVehicle() || game.relocating()) {
                 <div class="placement-help">
                   <span><kbd>R</kbd> Drehen</span>
                   <span><kbd>Rechtsklick</kbd> Abbrechen</span>
@@ -1003,12 +1017,21 @@
                       >
                       <b>{{ focus.owned ? '+$ ' + focus.sellRefund : 'Nur Besitzer' }}</b>
                     </button>
+                    <button
+                      type="button"
+                      [disabled]="!focus.movable"
+                      (click)="game.beginMoveFocused()"
+                    >
+                      <span><kbd>X</kbd> Verschieben</span>
+                      <b>{{ focus.movable ? 'Für alle' : 'Erst aussteigen' }}</b>
+                    </button>
                   </div>
                 </div>
               } @else {
                 <p class="focus-hint">
                   Stell dich neben eine Barrikade, einen Turm oder ein Fahrzeug, um es zu
-                  reparieren, eigene Objekte zu verkaufen oder mit <kbd>E</kbd> einzusteigen.
+                  reparieren, gemeinsam zu verschieben, eigene Objekte zu verkaufen oder mit
+                  <kbd>E</kbd> einzusteigen.
                 </p>
               }
 

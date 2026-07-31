@@ -51,6 +51,8 @@ export interface ZombieView extends BaseView {
   aura?: Phaser.GameObjects.Arc;
   /** Solid plate attached to the actor, so its protected direction rotates with it. */
   frontShield?: Phaser.GameObjects.Rectangle;
+  /** Cyan dome shown only during the Phasenwächter's short invulnerability. */
+  phaseShield?: Phaser.GameObjects.Arc;
   walk: number;
   type: ZombieType;
   radius: number;
@@ -136,6 +138,7 @@ export const PROJECTILE_STYLE: Record<
   nailgun: { texture: 'fx-shard', tint: 0xd8dfdb, scaleX: 1.7, scaleY: 0.48 },
   magnum: { texture: 'fx-spark', tint: 0xffd08a, scaleX: 2.2, scaleY: 0.6 },
   sniper: { texture: 'fx-spark', tint: 0xd8fbff, scaleX: 3.4, scaleY: 0.42 },
+  ability_precision: { texture: 'fx-glow', tint: 0xfff2a6, scaleX: 5.8, scaleY: 1.25 },
   acid: { texture: 'fx-energy', tint: 0x42e9ff, scaleX: 1.15, scaleY: 1 },
   lmg: { texture: 'fx-spark', tint: 0xfff0b8, scaleX: 2.1, scaleY: 0.45 },
   flamer: { texture: 'fx-flame', tint: 0xffa04a, scaleX: 1.5, scaleY: 1.5 },

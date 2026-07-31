@@ -8,6 +8,7 @@ export type ZombieType =
   | 'exploder'
   | 'armored'
   | 'shieldbearer'
+  | 'phaseguard'
   | 'spitter'
   | 'screamer'
   // mini bosses
@@ -106,7 +107,9 @@ export type ZombieAbility =
       spread: number;
     }
   /** Passive aura that speeds up nearby zombies. */
-  | { kind: 'haste'; radius: number; factor: number };
+  | { kind: 'haste'; radius: number; factor: number }
+  /** Briefly blocks projectiles from every direction. */
+  | { kind: 'phaseShield'; every: number; duration: number };
 
 export interface ZombieConfig {
   label: string;
@@ -198,6 +201,16 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
     reward: 72,
     rank: 'elite',
     frontShield: { arc: Math.PI * 0.82, turnSpeed: 0.72 },
+  },
+  phaseguard: {
+    label: 'Phasenwächter',
+    health: 330,
+    speed: 64,
+    damage: 21,
+    radius: 24,
+    reward: 68,
+    rank: 'elite',
+    abilities: [{ kind: 'phaseShield', every: 7.2, duration: 1.35 }],
   },
   spitter: {
     label: 'Speier',

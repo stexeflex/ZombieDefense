@@ -1,5 +1,10 @@
 import { Component, inject, output, signal } from '@angular/core';
 import {
+  PLAYER_ABILITIES,
+  PLAYER_ABILITY_ORDER,
+  type PlayerAbilityType,
+} from '../../../shared/game-types';
+import {
   PERK_DEFINITIONS,
   UPGRADE_DEFINITIONS,
   UPGRADE_GROUPS,
@@ -18,13 +23,21 @@ export class UpgradeShop {
   /** A purchase in the lobby has to reach the server, so it is announced. */
   readonly bought = output<void>();
   readonly closed = output<void>();
-  readonly shopTab = signal<'levels' | 'perks'>('levels');
+  readonly shopTab = signal<'levels' | 'perks' | 'abilities'>('levels');
   readonly definitions = UPGRADE_DEFINITIONS;
-  readonly groups = UPGRADE_GROUPS.map((group) => ({
+  private readonly allGroups = UPGRADE_GROUPS.map((group) => ({
     ...group,
     upgrades: UPGRADE_DEFINITIONS.filter((upgrade) => upgrade.category === group.key),
   }));
-  readonly perkDefinitions = PERK_DEFINITIONS;
+  readonly groups = this.allGroups.filter(
+    (group) => !['grenades', 'mortar', 'precision'].includes(group.key),
+  );
+  readonly abilityGroups = this.allGroups.filter((group) =>
+    ['grenades', 'mortar', 'precision'].includes(group.key),
+  );
+  readonly perkDefinitions = PERK_DEFINITIONS.filter((perk) => perk.key !== 'extraGrenade');
+  readonly abilityPerks = PERK_DEFINITIONS.filter((perk) => perk.key === 'extraGrenade');
+  readonly abilities = PLAYER_ABILITY_ORDER.map((type) => ({ type, ...PLAYER_ABILITIES[type] }));
   /**
    * A short ladder gets one pip per level, so a pip always means a level. Long
    * ladders would need forty of them, there a filled bar is far easier to read.
@@ -44,6 +57,10 @@ export class UpgradeShop {
 
   buyPerk(key: PerkKey) {
     if (this.progress.buyPerk(key)) this.bought.emit();
+  }
+
+  selectAbility(ability: PlayerAbilityType) {
+    if (this.progress.selectAbility(ability)) this.bought.emit();
   }
 
   level(key: UpgradeKey) {

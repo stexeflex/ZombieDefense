@@ -541,6 +541,7 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   exploder: { skin: '#c64b32', cloth: '#242426', accent: '#ffd23f', eye: '#fff1a8' },
   armored: { skin: '#7a8390', cloth: '#2f353d', accent: '#aab6c2', eye: '#7fd8ff' },
   shieldbearer: { skin: '#6f8060', cloth: '#303a42', accent: '#ffd166', eye: '#fff0a8' },
+  phaseguard: { skin: '#608f91', cloth: '#243d42', accent: '#73f7e5', eye: '#d8fffb' },
   spitter: { skin: '#6fae7a', cloth: '#2c4433', accent: '#9dff8a', eye: '#c6ff5a' },
   screamer: { skin: '#b98fa8', cloth: '#4a2e3f', accent: '#ff9ed8', eye: '#ffe08a' },
   brute: { skin: '#8a5f7a', cloth: '#3a2635', accent: '#c05f8f', eye: '#ff5f9e' },
@@ -569,7 +570,11 @@ function paintZombieBody(type: ZombieType, radius: number): Painter {
   const skin = ZOMBIE_SKINS[type];
   const rank = ZOMBIES[type].rank;
   const plated =
-    rank === 'mini' || rank === 'boss' || type === 'armored' || type === 'shieldbearer';
+    rank === 'mini' ||
+    rank === 'boss' ||
+    type === 'armored' ||
+    type === 'shieldbearer' ||
+    type === 'phaseguard';
   const crowned = rank === 'boss';
   const explosive = type === 'exploder';
   const glowing = type === 'spitter';

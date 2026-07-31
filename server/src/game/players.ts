@@ -11,10 +11,17 @@ import {
   DASH_SHOCK_RADIUS,
   DASH_SPEED,
   DEFENSES,
-  GRENADE_BASE_COOLDOWN,
   GRENADE_BASE_DAMAGE,
   GRENADE_BASE_RADIUS,
-  GRENADE_MIN_COOLDOWN,
+  MORTAR_BASE_DAMAGE,
+  MORTAR_BASE_RADIUS,
+  MORTAR_BASE_SLOW_SECONDS,
+  MORTAR_FUSE,
+  MORTAR_SLOW,
+  PRECISION_BASE_DAMAGE,
+  PRECISION_PROJECTILE_LIFE,
+  PRECISION_PROJECTILE_RADIUS,
+  PRECISION_PROJECTILE_SPEED,
   PLAYER_BASE_SPEED,
   PLAYER_RADIUS,
   REVIVE_RADIUS,
@@ -31,11 +38,19 @@ import {
   pushOutOfVehicle,
   reserveCapacity,
   weaponLife,
+  abilityMaxCharges,
+  abilityRechargeTime,
   type PermanentPerks,
   type PermanentUpgrades,
+  type PlayerAbilityType,
   type WeaponType,
 } from '../../../shared/game-types.js';
-import type { DefenseState, PlayerState, ZombieState } from '../state/game-state.js';
+import {
+  ProjectileState,
+  type DefenseState,
+  type PlayerState,
+  type ZombieState,
+} from '../state/game-state.js';
 import type { GameWorld, RuntimePlayer } from './world.js';
 
 /**
@@ -58,25 +73,28 @@ const PROJECTILE_RADIUS: Partial<Record<WeaponType, number>> = {
 /** Just enough time to see where a split fragment landed before it bursts. */
 const GRENADE_FRAGMENT_FUSE = 0.22;
 
-interface PendingGrenadeBlast {
+interface PendingAbilityBlast {
   x: number;
   y: number;
   radius: number;
   damage: number;
   ownerId: string;
   fuse: number;
+  source: 'grenade-mini' | 'ability_mortar';
+  slow: number;
+  slowSeconds: number;
 }
 
-/** Movement, shooting, reloading, dashing, grenades and picking each other up. */
+/** Movement, shooting, reloading, dashing, active abilities and reviving. */
 export class PlayerSystem {
-  private readonly pendingGrenadeBlasts: PendingGrenadeBlast[] = [];
+  private readonly pendingAbilityBlasts: PendingAbilityBlast[] = [];
 
   constructor(private readonly world: GameWorld) {}
 
   update(delta: number) {
     const combat = this.world.state.phase === 'combat';
-    if (combat) this.tickGrenadeFragments(delta);
-    else this.pendingGrenadeBlasts.length = 0;
+    if (combat) this.tickAbilityBlasts(delta);
+    else this.pendingAbilityBlasts.length = 0;
     this.world.state.players.forEach((player, sessionId) => {
       const runtime = this.world.runtime.get(sessionId);
       if (!runtime) return;
@@ -120,23 +138,26 @@ export class PlayerSystem {
     player.shieldMax = this.shieldCap(player);
     player.shield = Math.max(0, Math.min(player.shieldMax, player.shield - SHIELD_DECAY * delta));
 
-    runtime.grenadeThrowLock = Math.max(0, runtime.grenadeThrowLock - delta);
-    runtime.grenadeRecharge = runtime.grenadeRecharge
+    runtime.abilityUseLock = Math.max(0, runtime.abilityUseLock - delta);
+    runtime.abilityRecharge = runtime.abilityRecharge
       .map((timer) => timer - delta)
       .sort((a, b) => a - b);
-    const maxGrenades = this.maxGrenades(runtime.perks);
+    player.ability = runtime.ability;
+    const maxCharges = this.maxAbilityCharges(runtime.ability, runtime.perks);
+    player.abilityMax = maxCharges;
     while (
-      runtime.grenadeRecharge.length > 0 &&
-      runtime.grenadeRecharge[0] <= 0 &&
-      player.grenades < maxGrenades
+      runtime.abilityRecharge.length > 0 &&
+      runtime.abilityRecharge[0] <= 0 &&
+      player.abilityCharges < maxCharges
     ) {
-      runtime.grenadeRecharge.shift();
-      player.grenades += 1;
+      runtime.abilityRecharge.shift();
+      player.abilityCharges += 1;
     }
-    player.grenadeCooldown =
-      player.grenades >= maxGrenades || runtime.grenadeRecharge.length === 0
+    player.abilityCharges = Math.min(player.abilityCharges, maxCharges);
+    player.abilityCooldown =
+      player.abilityCharges >= maxCharges || runtime.abilityRecharge.length === 0
         ? 0
-        : Math.max(0, runtime.grenadeRecharge[0]);
+        : Math.max(0, runtime.abilityRecharge[0]);
 
     this.tickDash(player, runtime, delta);
 
@@ -612,17 +633,17 @@ export class PlayerSystem {
     return magazineCapacity(weapon, upgrades.magazineSize);
   }
 
-  maxGrenades(perks: PermanentPerks) {
-    return perks.extraGrenade ? 4 : 3;
+  maxAbilityCharges(ability: PlayerAbilityType, perks: PermanentPerks) {
+    return abilityMaxCharges(ability, perks);
   }
 
-  // ---------------------------------------------------------------- grenades
+  // --------------------------------------------------------- active abilities
 
-  hasPendingGrenadeBlasts() {
-    return this.pendingGrenadeBlasts.length > 0;
+  hasPendingAbilityBlasts() {
+    return this.pendingAbilityBlasts.length > 0;
   }
 
-  throwGrenade(sessionId: string, target: { x?: number; y?: number }) {
+  useAbility(sessionId: string, target: { x?: number; y?: number }) {
     const player = this.world.state.players.get(sessionId);
     const runtime = this.world.runtime.get(sessionId);
     if (
@@ -630,20 +651,33 @@ export class PlayerSystem {
       !runtime ||
       !player.alive ||
       this.world.state.phase !== 'combat' ||
-      player.grenades <= 0 ||
-      runtime.grenadeThrowLock > 0
+      player.abilityCharges <= 0 ||
+      runtime.abilityUseLock > 0
     ) {
       return;
     }
-    const upgrades = runtime.upgrades;
     const targetX = Number(target.x);
     const targetY = Number(target.y);
     const x = Number.isFinite(targetX) ? this.world.clamp(targetX, 0, ARENA.width) : player.x;
     const y = Number.isFinite(targetY) ? this.world.clamp(targetY, 0, ARENA.height) : player.y;
+
+    if (runtime.ability === 'grenade') this.throwGrenade(player, runtime, x, y);
+    else if (runtime.ability === 'mortarStrike') this.callMortar(player, runtime, x, y);
+    else this.firePrecisionShot(player, runtime, x, y);
+
+    player.abilityCharges -= 1;
+    const rechargeTime = abilityRechargeTime(runtime.ability, runtime.upgrades);
+    runtime.abilityRecharge.push(rechargeTime);
+    runtime.abilityUseLock = 0.35;
+    player.abilityCooldown = Math.min(...runtime.abilityRecharge);
+  }
+
+  private throwGrenade(player: PlayerState, runtime: RuntimePlayer, x: number, y: number) {
+    const upgrades = runtime.upgrades;
     const radius = GRENADE_BASE_RADIUS * (1 + upgrades.grenadeRadius * 0.02);
     const damage = GRENADE_BASE_DAMAGE * (1 + upgrades.grenadeDamage * 0.02);
 
-    this.grenadeBlast(x, y, radius, damage, player.id, 'grenade');
+    this.abilityBlast(x, y, radius, damage, player.id, 'grenade', 0, 0);
     const fragments = Math.min(10, Math.max(0, Math.floor(upgrades.grenadeSplit)));
     if (fragments > 0) {
       const miniRadius = 48 * (1 + upgrades.grenadeRadius * 0.01);
@@ -654,13 +688,16 @@ export class PlayerSystem {
         const distance = fragments === 1 ? spread * 0.45 : spread * (0.55 + (fragment % 2) * 0.35);
         const fragmentX = this.world.clamp(x + Math.cos(angle) * distance, 0, ARENA.width);
         const fragmentY = this.world.clamp(y + Math.sin(angle) * distance, 0, ARENA.height);
-        this.pendingGrenadeBlasts.push({
+        this.pendingAbilityBlasts.push({
           x: fragmentX,
           y: fragmentY,
           radius: miniRadius,
           damage: damage * 0.24,
           ownerId: player.id,
           fuse: GRENADE_FRAGMENT_FUSE,
+          source: 'grenade-mini',
+          slow: 0,
+          slowSeconds: 0,
         });
         this.world.pushFx({
           k: 'warning',
@@ -672,41 +709,91 @@ export class PlayerSystem {
         });
       }
     }
-
-    player.grenades -= 1;
-    const rechargeTime = Math.max(
-      GRENADE_MIN_COOLDOWN,
-      GRENADE_BASE_COOLDOWN / (1 + upgrades.grenadeCooldown * 0.02),
-    );
-    runtime.grenadeRecharge.push(rechargeTime);
-    runtime.grenadeThrowLock = 0.35;
-    player.grenadeCooldown = Math.min(...runtime.grenadeRecharge);
   }
 
-  private tickGrenadeFragments(delta: number) {
-    for (let index = this.pendingGrenadeBlasts.length - 1; index >= 0; index -= 1) {
-      const fragment = this.pendingGrenadeBlasts[index];
-      fragment.fuse -= delta;
-      if (fragment.fuse > 0) continue;
-      this.pendingGrenadeBlasts.splice(index, 1);
-      this.grenadeBlast(
-        fragment.x,
-        fragment.y,
-        fragment.radius,
-        fragment.damage,
-        fragment.ownerId,
-        'grenade-mini',
+  private callMortar(player: PlayerState, runtime: RuntimePlayer, x: number, y: number) {
+    const upgrades = runtime.upgrades;
+    const radius = MORTAR_BASE_RADIUS * (1 + upgrades.mortarRadius * 0.015);
+    const damage = MORTAR_BASE_DAMAGE * (1 + upgrades.mortarDamage * 0.03);
+    this.pendingAbilityBlasts.push({
+      x,
+      y,
+      radius,
+      damage,
+      ownerId: player.id,
+      fuse: MORTAR_FUSE,
+      source: 'ability_mortar',
+      slow: MORTAR_SLOW,
+      slowSeconds: MORTAR_BASE_SLOW_SECONDS + upgrades.mortarSlow * 0.25,
+    });
+    this.world.pushFx({
+      k: 'warning',
+      x,
+      y,
+      r: radius,
+      d: MORTAR_FUSE,
+      s: 'ability_mortar',
+    });
+  }
+
+  private firePrecisionShot(
+    player: PlayerState,
+    runtime: RuntimePlayer,
+    targetX: number,
+    targetY: number,
+  ) {
+    const angle = Math.atan2(targetY - player.y, targetX - player.x);
+    const projectile = new ProjectileState();
+    projectile.id = this.world.nextId('ability');
+    projectile.ownerId = player.id;
+    projectile.kind = 'ability_precision';
+    projectile.x = player.x + Math.cos(angle) * (PLAYER_RADIUS + 12);
+    projectile.y = player.y + Math.sin(angle) * (PLAYER_RADIUS + 12);
+    projectile.vx = Math.cos(angle) * PRECISION_PROJECTILE_SPEED;
+    projectile.vy = Math.sin(angle) * PRECISION_PROJECTILE_SPEED;
+    projectile.damage = PRECISION_BASE_DAMAGE * (1 + runtime.upgrades.precisionDamage * 0.03);
+    projectile.radius = PRECISION_PROJECTILE_RADIUS + runtime.upgrades.precisionWidth;
+    projectile.life = PRECISION_PROJECTILE_LIFE;
+    projectile.pierce = 0;
+    projectile.execute = runtime.upgrades.precisionExecute * 0.03;
+    this.world.state.projectiles.set(projectile.id, projectile);
+    this.world.pushFx({
+      k: 'muzzle',
+      x: projectile.x,
+      y: projectile.y,
+      a: angle,
+      s: 'ability_precision',
+    });
+  }
+
+  private tickAbilityBlasts(delta: number) {
+    for (let index = this.pendingAbilityBlasts.length - 1; index >= 0; index -= 1) {
+      const blast = this.pendingAbilityBlasts[index];
+      blast.fuse -= delta;
+      if (blast.fuse > 0) continue;
+      this.pendingAbilityBlasts.splice(index, 1);
+      this.abilityBlast(
+        blast.x,
+        blast.y,
+        blast.radius,
+        blast.damage,
+        blast.ownerId,
+        blast.source,
+        blast.slow,
+        blast.slowSeconds,
       );
     }
   }
 
-  private grenadeBlast(
+  private abilityBlast(
     x: number,
     y: number,
     radius: number,
     damage: number,
     ownerId: string,
-    source: 'grenade' | 'grenade-mini',
+    source: 'grenade' | 'grenade-mini' | 'ability_mortar',
+    slow: number,
+    slowSeconds: number,
   ) {
     const victims: Array<[string, ZombieState]> = [];
     this.world.state.zombies.forEach((zombie, id) => {
@@ -714,7 +801,10 @@ export class PlayerSystem {
         victims.push([id, zombie]);
       }
     });
-    for (const [id, zombie] of victims) this.world.damageZombie(id, zombie, damage, ownerId);
+    for (const [id, zombie] of victims) {
+      if (slow > 0) this.world.chillZombie(zombie, slow, slowSeconds);
+      this.world.damageZombie(id, zombie, damage, ownerId);
+    }
     this.world.pushFx({ k: 'explosion', x, y, r: radius, s: source });
   }
 

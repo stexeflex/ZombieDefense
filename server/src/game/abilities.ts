@@ -25,6 +25,7 @@ export class AbilitySystem {
   /** Runs the ability timers of one zombie; called from the zombie loop. */
   tick(zombie: ZombieState, delta: number) {
     zombie.casting = Math.max(0, zombie.casting - delta);
+    zombie.shielding = Math.max(0, zombie.shielding - delta);
     const abilities = timedAbilities(zombie.type);
     if (abilities.length === 0) return;
     for (let index = 0; index < abilities.length; index += 1) {
@@ -55,6 +56,8 @@ export class AbilitySystem {
         return this.vortex(zombie, ability);
       case 'puddle':
         return this.puddle(zombie, ability);
+      case 'phaseShield':
+        return this.phaseShield(zombie, ability);
     }
   }
 
@@ -187,6 +190,11 @@ export class AbilitySystem {
         damage: dps,
       });
     }
+  }
+
+  private phaseShield(zombie: ZombieState, ability: AbilityOf<'phaseShield'>) {
+    zombie.shielding = ability.duration;
+    this.world.pushFx({ k: 'shield', x: zombie.x, y: zombie.y, r: zombie.radius + 12, s: 'phase' });
   }
 
   // ------------------------------------------------------------------- death

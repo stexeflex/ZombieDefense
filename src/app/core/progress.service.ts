@@ -3,6 +3,7 @@ import {
   EMPTY_PERKS,
   EMPTY_UPGRADES,
   MAPS,
+  isPlayerAbility,
   PERK_COST,
   UPGRADE_REQUIRES,
   upgradeLevelCost,
@@ -11,6 +12,7 @@ import {
   type PermanentPerks,
   type PermanentUpgrades,
   type PerkKey,
+  type PlayerAbilityType,
   type UpgradeKey,
 } from '../../../shared/game-types';
 import { PERK_DEFINITIONS } from './upgrade-catalog';
@@ -32,6 +34,7 @@ interface StoredProgress {
   gold: number;
   upgrades: PermanentUpgrades;
   perks: PermanentPerks;
+  ability: PlayerAbilityType;
   rewardedRuns: string[];
   /** Highest payout already credited for each recent run, so a later result can pay the delta. */
   rewardedRunPayouts: Record<string, number>;
@@ -66,6 +69,7 @@ export class ProgressService {
   readonly gold = computed(() => this.progress().gold);
   readonly upgrades = computed(() => this.progress().upgrades);
   readonly perks = computed(() => this.progress().perks);
+  readonly ability = computed(() => this.progress().ability);
   readonly clearedMaps = computed(() => this.progress().clearedMaps);
 
   constructor() {
@@ -125,6 +129,14 @@ export class ProgressService {
       gold: current.gold - PERK_COST[key],
       perks: { ...current.perks, [key]: true },
     });
+    return true;
+  }
+
+  /** Exactly one G ability is equipped; changing it is free and lobby-safe. */
+  selectAbility(ability: PlayerAbilityType) {
+    const current = this.progress();
+    if (!isPlayerAbility(ability) || current.ability === ability) return false;
+    this.save({ ...current, ability });
     return true;
   }
 
@@ -214,6 +226,7 @@ export class ProgressService {
           : {};
       return {
         gold: Math.max(0, Number(stored.gold) || 0),
+        ability: isPlayerAbility(stored.ability) ? stored.ability : 'grenade',
         // Only known entries survive, so a removed one leaves no leftovers.
         upgrades: Object.fromEntries(
           Object.keys(EMPTY_UPGRADES).map((key) => [
@@ -239,6 +252,7 @@ export class ProgressService {
     } catch {
       return {
         gold: 0,
+        ability: 'grenade',
         upgrades: { ...EMPTY_UPGRADES },
         perks: { ...EMPTY_PERKS },
         rewardedRuns: [],

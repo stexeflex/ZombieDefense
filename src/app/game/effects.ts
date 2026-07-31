@@ -154,7 +154,7 @@ export class EffectLayer {
             ? 0xa67cff
             : event.s === 'nova'
               ? 0xff9ee0
-              : event.s === 'mortar'
+              : event.s === 'mortar' || event.s === 'ability_mortar'
                 ? 0xff4f6b
                 : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
@@ -236,7 +236,7 @@ export class EffectLayer {
   private mortarWarning(event: FxEvent) {
     const radius = event.r ?? 110;
     const grenadeFragment = event.s === 'grenade-mini';
-    const precise = event.s === 'precision_mortar';
+    const precise = event.s === 'precision_mortar' || event.s === 'ability_mortar';
     const color = grenadeFragment ? 0xffb347 : precise ? 0xffd35c : 0xff9d52;
     const area = this.scene.add
       .circle(event.x, event.y, radius, color, grenadeFragment ? 0.1 : 0.055)

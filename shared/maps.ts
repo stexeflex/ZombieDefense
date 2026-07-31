@@ -1235,7 +1235,7 @@ export const MAPS: GameMap[] = [
       {
         kind: 'mini',
         label: 'BELAGERUNGSTRUPP',
-        zombies: pack({ mortar: 3, warden: 2, armored: 5, exploder: 3 }),
+        zombies: pack({ mortar: 3, warden: 2, armored: 5, exploder: 3, phaseguard: 1 }),
         spawnPattern: 'clockwise',
         spawnDelayScale: 1.35,
       },
@@ -1270,7 +1270,14 @@ export const MAPS: GameMap[] = [
       {
         kind: 'mini',
         label: 'EVAKUIERUNG GEFÄHRDET',
-        zombies: pack({ stalker: 4, warden: 3, mortar: 3, armored: 6, shieldbearer: 1 }),
+        zombies: pack({
+          stalker: 4,
+          warden: 3,
+          mortar: 3,
+          armored: 6,
+          shieldbearer: 1,
+          phaseguard: 1,
+        }),
         spawnPattern: 'west',
         spawnDelayScale: 0.9,
       },

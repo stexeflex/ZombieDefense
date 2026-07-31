@@ -244,12 +244,17 @@ export class Lobby implements OnInit, OnDestroy {
     return `${damageLabel} · ${this.stat(1000 / weapon.fireDelay)} Schuss/s · Magazin ${magazine} + ${reserve} · ${this.stat(reload)} s Nachladen`;
   }
 
-  /** The unmodified hit value stays visible without opening the detail hint. */
+  /** Same amount of information as the detail hint, but with no upgrades applied. */
   weaponBaseDamage(type: WeaponType) {
     const weapon = WEAPONS[type];
-    return (weapon.pellets ?? 1) > 1
-      ? `Basis: ${this.stat(weapon.damage)} × ${weapon.pellets} Schaden`
-      : `Basis: ${this.stat(weapon.damage)} Schaden`;
+    const damage =
+      (weapon.pellets ?? 1) > 1
+        ? `${this.stat(weapon.damage)} × ${weapon.pellets} Schaden`
+        : `${this.stat(weapon.damage)} Schaden`;
+    if (isMeleeWeapon(type)) {
+      return `Basis: ${damage} · ${this.stat(1000 / weapon.fireDelay)} Angriffe/s · ${this.stat(weapon.range)} Reichweite`;
+    }
+    return `Basis: ${damage} · ${this.stat(1000 / weapon.fireDelay)} Schuss/s · Magazin ${weapon.magazine} + ${weapon.reserve} · ${this.stat(weapon.reload / 1000)} s Nachladen`;
   }
 
   /** Barricade and turret values after all relevant permanent upgrades. */
@@ -285,19 +290,37 @@ export class Lobby implements OnInit, OnDestroy {
     return effects.join(' · ');
   }
 
-  /** Primary unupgraded damage of a structure, including passive traps. */
+  /** Complete unupgraded structure values, parallel to the upgraded detail hint. */
   defenseBaseDamage(type: DefenseType) {
     const defense = DEFENSES[type];
-    if (defense.damage) {
-      const shots = defense.radialShots ?? defense.pellets ?? defense.targets ?? 1;
-      return shots > 1
-        ? `Basis: ${this.stat(defense.damage)} × ${shots} Schaden`
-        : `Basis: ${this.stat(defense.damage)} Schaden`;
+    if (defense.kind === 'barricade') {
+      const effects = [
+        `Basis: ${defense.health} Leben`,
+        `${defense.width} × ${defense.height} Fläche`,
+      ];
+      if (defense.blastDamage) effects.push(`${this.stat(defense.blastDamage)} Explosionsschaden`);
+      if (defense.contactDamage) {
+        effects.push(`${this.stat(defense.contactDamage)} Kontaktschaden/s`);
+      }
+      if (defense.thorns) effects.push(`${this.stat(defense.thorns)} Rückschaden`);
+      return effects.join(' · ');
     }
-    if (defense.blastDamage) return `Basis: ${this.stat(defense.blastDamage)} Explosionsschaden`;
-    if (defense.contactDamage) return `Basis: ${this.stat(defense.contactDamage)} Kontaktschaden/s`;
-    if (defense.thorns) return `Basis: ${this.stat(defense.thorns)} Rückschaden`;
-    return 'Basis: kein Schaden';
+
+    const shots = defense.radialShots ?? defense.pellets ?? defense.targets ?? 1;
+    const damage =
+      shots > 1
+        ? `${this.stat(defense.damage ?? 0)} × ${shots} Schaden`
+        : `${this.stat(defense.damage ?? 0)} Schaden`;
+    const effects = [
+      `Basis: ${defense.health} Leben`,
+      damage,
+      `${this.stat(1 / (defense.fireDelay ?? 1))} Salven/s`,
+      `${this.stat(defense.range ?? 0)} Reichweite`,
+    ];
+    if (defense.splashDamage) {
+      effects.push(`${this.stat(defense.splashDamage)} Explosionsschaden`);
+    }
+    return effects.join(' · ');
   }
 
   /** Upgraded hull values, including the slow turning that defines heavy machines. */
@@ -318,11 +341,17 @@ export class Lobby implements OnInit, OnDestroy {
     return effects.join(' · ');
   }
 
-  /** Vehicles always expose ram damage; an installed gun is shown beside it. */
+  /** Complete unupgraded hull values, parallel to the upgraded detail hint. */
   vehicleBaseDamage(type: VehicleType) {
     const vehicle = VEHICLES[type];
-    const gun = vehicle.gun ? ` · ${this.stat(vehicle.gun.damage)} Bordwaffe` : '';
-    return `Basis: ${this.stat(vehicle.ram)} Rammschaden${gun}`;
+    const effects = [
+      `Basis: ${vehicle.health} Leben`,
+      `${this.stat(vehicle.speed)} Tempo`,
+      `${this.stat(vehicle.ram)} Rammschaden`,
+      `${this.stat(vehicle.turn)} Drehtempo`,
+    ];
+    if (vehicle.gun) effects.push(`${this.stat(vehicle.gun.damage)} Bordwaffenschaden`);
+    return effects.join(' · ');
   }
 
   private stat(value: number) {

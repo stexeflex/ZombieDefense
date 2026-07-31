@@ -31,7 +31,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Kopfgeld wird **gleichmäßig geteilt**: jeder im Trupp bekommt denselben
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
-- dreizehn Zombiearten plus fünfzehn Bosse
+- fünfzehn Zombiearten plus fünfzehn Bosse
 - sechsundzwanzig Waffen von der Pistole bis zum Sonnenwerfer, darunter fünf
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
@@ -55,7 +55,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, sechsundzwanzig Stufen-Upgrades und zehn besondere Vorteile
+- permanentes Gold, getrennte Stufen-Upgrades, zehn besondere Vorteile und drei aktive Fähigkeiten
   in einem verschlüsselten und gegen einfache Änderungen signierten `localStorage`-Save
 
 ### Karten
@@ -133,7 +133,7 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 | Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner                    |
 | Säurewerfer          | 2000  | lässt klar türkise, verbündete Säurelachen liegen        |
 | Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                                    |
-| Elefantenbüchse      | 2500  | zwölf Schuss, 900 Schaden pro Treffer                    |
+| Elefantenbüchse      | 2500  | zehn Schuss, 850 Schaden pro Treffer                     |
 | Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand                  |
 | Kettensäge           | 2800  | schneller Nahkampf gegen drei Ziele zugleich             |
 | Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner         |
@@ -263,10 +263,11 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 | Linke Maustaste          | Schießen                                       |
 | `R`                      | Nachladen; beim Platzieren Barrikade drehen    |
 | `1`–`9` oder Mausrad     | Waffe aus dem Arsenal wählen                   |
-| `G`                      | Granate zum Mauszeiger werfen                  |
+| `G`                      | gewählte Fähigkeit zum Mauszeiger auslösen     |
 | `E`                      | in ein Fahrzeug ein- und wieder aussteigen     |
 | `F`                      | markiertes Objekt reparieren (nur Bauphase)    |
 | `V`                      | eigenes markiertes Objekt verkaufen (Bauphase) |
+| `X`                      | markiertes Objekt gemeinsam verschieben        |
 | Rechtsklick              | ausgewählten Bau abwählen                      |
 
 Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange er
@@ -302,9 +303,10 @@ Bestätigung beenden. Der bis dahin erreichte permanente Lohn wird gesichert und
 der verbundene Trupp kehrt gemeinsam in dieselbe Lobby zurück.
 
 Wer neben einer eigenen oder fremden Verteidigung steht, sieht sie umrandet,
-dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Was in der
-laufenden Bauphase gesetzt wurde, gibt es zum vollen Preis zurück; ab der
-nächsten Welle nur noch anteilig.
+dazu ihre Lebenspunkte, den Reparaturpreis und den Verkaufserlös. Nur der
+Besitzer darf verkaufen; verschieben und reparieren bleiben bewusst kooperativ.
+Was in der laufenden Bauphase gesetzt wurde, gibt es zum vollen Preis zurück;
+ab der nächsten Welle nur noch anteilig.
 
 Die Bauphase läuft ohne Uhr: Sobald alle auf „Bereit“ gedrückt haben, startet
 die nächste Welle automatisch. Der Host kann fehlende Stimmen mit
@@ -338,15 +340,18 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 
 - **Stufen-Upgrades** – maximales Spielerleben, Panzerung, Tempo, Waffenschaden,
   Nahkampf-Angriffstempo und -Reichweite, Nachladen, Magazin, Munitionsvorrat,
-  Granaten inklusive bis zu zehn Mini-Granaten, Barrikaden, Turmschaden,
-  Turmreichweite, Fahrzeugleben, Fahrzeugpanzerung, Motorleistung, Rammschaden, Bordwaffen,
-  Wiederbelebung, Dash-Ladungen, Dash-Aufladung, Dash-Schadensreduktion,
-  Dash-Schaden und Dash-Schild
+  Barrikaden, Turmschaden, Turmreichweite, Fahrzeugleben, Fahrzeugpanzerung,
+  Motorleistung, Rammschaden, Bordwaffen, Dash-Ladungen, Dash-Aufladung,
+  Dash-Schadensreduktion, Dash-Schaden und Dash-Schild
 - **Besondere Vorteile** – günstigere erste Waffe, erste Barrikaden, erster
   Turm und erstes Fahrzeug eines Runs, ein Dash der Zombies wegschleudert, ein
   Dash der durch Gegner schneidet und Schild auflädt, doppelt so schnelles
-  Wiederbeleben, günstigere Reparaturen, eine Granate mehr und ein Aufbäumen,
-  das einen tödlichen Treffer pro Welle überlebt
+  Wiederbeleben, günstigere Reparaturen und ein Aufbäumen, das einen tödlichen
+  Treffer pro Welle überlebt
+- **Fähigkeiten** – genau eine Auswahl für `G`: Granaten, ein verzögerter großer
+  Mörserschlag oder ein sichtbarer Vernichtungsschuss mit enormem Einzelschaden
+  ohne Durchschlag. Granaten-Upgrades samt zweitem Gürtel liegen vollständig in
+  diesem Reiter; Mörser und Vernichtungsschuss besitzen eigene Upgrade-Leitern.
 
 Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als

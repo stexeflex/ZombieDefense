@@ -5,6 +5,7 @@
 export * from './arena.js';
 export * from './defenses.js';
 export * from './maps.js';
+export * from './player-abilities.js';
 export * from './snapshots.js';
 export * from './upgrades.js';
 export * from './vehicles.js';

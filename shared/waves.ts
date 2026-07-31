@@ -139,8 +139,16 @@ function rareShield(wave: number, finalWave: number) {
   return wave >= 4 && wave < finalWave && (wave === 4 || (wave - 4) % 5 === 0);
 }
 
-function withRareShield(zombies: ZombieType[], wave: number, finalWave: number) {
-  return rareShield(wave, finalWave) ? [...zombies, 'shieldbearer' as ZombieType] : zombies;
+/** The all-round shield appears later and even less often than the front plate. */
+function rarePhaseguard(wave: number, finalWave: number) {
+  return wave >= 6 && wave < finalWave && (wave === 6 || (wave - 6) % 6 === 0);
+}
+
+function withRareShields(zombies: ZombieType[], wave: number, finalWave: number) {
+  const extra: ZombieType[] = [];
+  if (rareShield(wave, finalWave)) extra.push('shieldbearer');
+  if (rarePhaseguard(wave, finalWave)) extra.push('phaseguard');
+  return extra.length > 0 ? [...zombies, ...extra] : zombies;
 }
 
 const ENDLESS_MINIS: ZombieType[] = ['brute', 'warden', 'stalker', 'mortar'];
@@ -203,7 +211,7 @@ export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
     return {
       kind: 'swarm',
       label: 'SCHWARM',
-      zombies: withRareShield(
+      zombies: withRareShields(
         shuffled(pack(swarm(size, ENDLESS_ROSTER, wave)), seed),
         wave,
         Number.POSITIVE_INFINITY,
@@ -224,7 +232,7 @@ export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
   return {
     kind: 'normal',
     label: 'Welle',
-    zombies: withRareShield(
+    zombies: withRareShields(
       shuffled(pack(horde(size, ENDLESS_ROSTER, wave)), seed),
       wave,
       Number.POSITIVE_INFINITY,
@@ -262,7 +270,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
       waves.push({
         kind: 'mini',
         label: plan.labels?.[wave] ?? 'Mini-Boss',
-        zombies: withRareShield(
+        zombies: withRareShields(
           [...leaders, ...shuffled(pack(horde(size * 0.65, plan.roster, wave)), seed)],
           wave,
           plan.waves,
@@ -275,7 +283,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
       waves.push({
         kind: 'swarm',
         label: plan.labels?.[wave] ?? 'SCHWARM',
-        zombies: withRareShield(
+        zombies: withRareShields(
           shuffled(pack(swarm(size, plan.roster, wave)), seed),
           wave,
           plan.waves,
@@ -287,7 +295,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
     waves.push({
       kind: 'normal',
       label: plan.labels?.[wave] ?? 'Welle',
-      zombies: withRareShield(
+      zombies: withRareShields(
         shuffled(pack(horde(size, plan.roster, wave)), seed),
         wave,
         plan.waves,

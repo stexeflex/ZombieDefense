@@ -398,4 +398,79 @@ export class BuildSystem {
     target.refund = sellValue(target.type, target.health, target.maxHealth);
     this.world.pushFx({ k: 'structure', x: target.x, y: target.y, s: target.type });
   }
+
+  /**
+   * Repositioning is cooperative: unlike selling it never transfers money or
+   * ownership, so any nearby team mate may tidy the shared defense line.
+   */
+  movePlaced(
+    sessionId: string,
+    payload?: { id?: string; x?: number; y?: number; rotation?: number },
+  ) {
+    const player = this.world.state.players.get(sessionId);
+    if (!player || !payload?.id || this.world.state.phase !== 'build' || player.vehicleId) return;
+    const defense = this.world.state.defenses.get(payload.id);
+    const vehicle = this.world.state.vehicles.get(payload.id);
+    if (!defense && !vehicle) return;
+
+    const sourceDistance = defense
+      ? distanceToDefense(player.x, player.y, defense)
+      : distanceToVehicle(player.x, player.y, vehicle!);
+    const sourceReach = defense ? DEFENSE_REACH + 40 : VEHICLE_REACH + 40;
+    if (sourceDistance > sourceReach || (vehicle && vehicle.crew.length > 0)) return;
+
+    const x = this.world.clamp(Number(payload.x) || player.x, 70, ARENA.width - 70);
+    const y = this.world.clamp(Number(payload.y) || player.y, 70, ARENA.height - 70);
+    if (Math.hypot(player.x - x, player.y - y) > PLACE_RANGE) return;
+
+    if (defense) {
+      const config = DEFENSES[defense.type];
+      const rotation =
+        config.kind === 'barricade'
+          ? (Math.round((Number(payload.rotation) || 0) / (Math.PI / 2)) * (Math.PI / 2)) % Math.PI
+          : 0;
+      if (!this.world.objectiveClear(x, y, Math.max(config.width, config.height) / 2)) return;
+      const others = [...this.world.state.defenses.values()].filter(
+        (entry) => entry.id !== defense.id,
+      );
+      if (
+        !canPlaceDefense({ type: defense.type, x, y, rotation }, others, this.world.map.obstacles)
+      ) {
+        return;
+      }
+      for (const hull of this.world.state.vehicles.values()) {
+        if (distanceToVehicle(x, y, hull) < Math.max(config.width, config.height) / 2) return;
+      }
+      defense.x = x;
+      defense.y = y;
+      defense.rotation = rotation;
+      this.world.pushFx({ k: 'structure', x, y, s: defense.type });
+      return;
+    }
+
+    if (!vehicle) return;
+    const config = VEHICLES[vehicle.type];
+    const rotation =
+      (Math.round((Number(payload.rotation) || 0) / (Math.PI / 2)) * (Math.PI / 2)) % Math.PI;
+    if (!this.world.objectiveClear(x, y, Math.max(config.width, config.height) / 2)) return;
+    const otherVehicles = [...this.world.state.vehicles.values()].filter(
+      (entry) => entry.id !== vehicle.id,
+    );
+    if (
+      !canPlaceVehicle(
+        { type: vehicle.type, x, y, rotation },
+        this.world.state.defenses.values(),
+        otherVehicles,
+        this.world.map.obstacles,
+      )
+    ) {
+      return;
+    }
+    vehicle.x = x;
+    vehicle.y = y;
+    vehicle.rotation = rotation;
+    vehicle.vx = 0;
+    vehicle.vy = 0;
+    this.world.pushFx({ k: 'engine', x, y, s: vehicle.type });
+  }
 }

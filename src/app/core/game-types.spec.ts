@@ -23,6 +23,8 @@ import {
   MAPS,
   MINI_BOSSES,
   PERK_COST,
+  PLAYER_ABILITIES,
+  PLAYER_ABILITY_ORDER,
   PLAYER_BASE_SPEED,
   REPAIR_COST_PER_HP,
   REVIVE_RADIUS,
@@ -47,6 +49,8 @@ import {
   ZOMBIES,
   ZOMBIE_TYPES,
   ammoRefillCost,
+  abilityMaxCharges,
+  abilityRechargeTime,
   armorReduction,
   campaignRunReward,
   canPlaceDefense,
@@ -295,6 +299,20 @@ describe('enemy roster', () => {
     expect(ZOMBIES.shieldbearer.frontShield!.arc).toBeLessThan(Math.PI);
   });
 
+  it('introduces rare Phasenwächter with a short all-round shield', () => {
+    for (const map of MAPS) {
+      const guards = map.waves
+        .flatMap((wave) => wave.zombies)
+        .filter((type) => type === 'phaseguard');
+      expect(guards.length).toBeGreaterThan(0);
+      expect(guards.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 5));
+    }
+    const shield = timedAbilities('phaseguard').find((ability) => ability.kind === 'phaseShield');
+    expect(shield).toBeDefined();
+    expect(shield!.duration).toBeLessThan(2);
+    expect(shield!.every).toBeGreaterThan(shield!.duration * 4);
+  });
+
   it('pays more money for tougher enemies', () => {
     expect(ZOMBIES.big.reward).toBeGreaterThan(ZOMBIES.normal.reward);
     expect(ZOMBIES.butcher.reward).toBeGreaterThan(ZOMBIES.brute.reward);
@@ -440,7 +458,9 @@ describe('weapon balance', () => {
     expect(elephant.cost).toBeGreaterThan(WEAPONS.lmg.cost);
     expect(elephant.cost).toBeLessThan(WEAPONS.flamer.cost);
     expect(elephant.magazine).toBeLessThanOrEqual(2);
-    expect(elephant.magazine + elephant.reserve).toBeLessThanOrEqual(12);
+    expect(elephant.magazine).toBe(2);
+    expect(elephant.reserve).toBe(8);
+    expect(elephant.damage).toBe(850);
     expect(elephant.damage).toBeGreaterThan(WEAPONS.railgun.damage);
     expect(elephant.pierce).toBe(0);
     expect(elephant.splashRadius).toBeUndefined();
@@ -864,6 +884,18 @@ describe('arsenal and ammunition', () => {
 });
 
 describe('permanent upgrades', () => {
+  it('offers three mutually exclusive G abilities with their own recharge rules', () => {
+    expect(PLAYER_ABILITY_ORDER).toEqual(['grenade', 'mortarStrike', 'precisionShot']);
+    expect(PLAYER_ABILITIES.mortarStrike.charges).toBe(1);
+    expect(PLAYER_ABILITIES.precisionShot.charges).toBe(1);
+    expect(PLAYER_ABILITIES.precisionShot.description).toContain('ohne Durchschlag');
+    expect(abilityMaxCharges('grenade', { ...EMPTY_PERKS, extraGrenade: true })).toBe(4);
+    expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraGrenade: true })).toBe(1);
+    expect(
+      abilityRechargeTime('precisionShot', { ...EMPTY_UPGRADES, precisionCooldown: 40 }),
+    ).toBeGreaterThanOrEqual(PLAYER_ABILITIES.precisionShot.minCooldown);
+  });
+
   it('leaves room to specialise without runaway prices', () => {
     expect(UPGRADE_MAX_LEVEL).toBeGreaterThanOrEqual(40);
     for (let level = 1; level < UPGRADE_MAX_LEVEL; level += 1) {

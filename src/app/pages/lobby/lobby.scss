@@ -846,7 +846,7 @@ kbd {
   position: absolute;
   z-index: 20;
   top: 20px;
-  left: -14px;
+  right: -14px;
   width: min(245px, 66vw);
   display: none;
   padding: 8px 9px;
@@ -932,7 +932,7 @@ kbd {
 
 .defense-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 7px;
 }
 

@@ -23,6 +23,7 @@ import {
   type MapObstacle,
   type PermanentPerks,
   type PermanentUpgrades,
+  type PlayerAbilityType,
   type PlayerInput,
   type WeaponType,
   type ZombieType,
@@ -46,8 +47,9 @@ export interface RuntimePlayer {
   input: PlayerInput;
   upgrades: PermanentUpgrades;
   perks: PermanentPerks;
-  grenadeRecharge: number[];
-  grenadeThrowLock: number;
+  ability: PlayerAbilityType;
+  abilityRecharge: number[];
+  abilityUseLock: number;
   /** One countdown per spent dash charge. */
   dashRecharge: number[];
   dashLock: number;

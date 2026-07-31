@@ -50,9 +50,3 @@ export const DASH_SHIELD_PER_HIT = 10;
 export const SHIELD_SHARE = 0.35;
 /** Shield points that fade away per second when nothing refreshes them. */
 export const SHIELD_DECAY = 4;
-
-/** Shared grenade baselines, used by combat and by the permanent-upgrade shop. */
-export const GRENADE_BASE_DAMAGE = 120;
-export const GRENADE_BASE_RADIUS = 110;
-export const GRENADE_BASE_COOLDOWN = 18;
-export const GRENADE_MIN_COOLDOWN = 6;

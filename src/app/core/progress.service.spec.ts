@@ -51,12 +51,14 @@ describe('ProgressService run rewards', () => {
 describe('ProgressService upgrade shop', () => {
   beforeEach(() => localStorage.clear());
 
-  it('groups every levelled upgrade into the seven readable shop sections', () => {
+  it('groups regular and active-ability upgrades into readable shop sections', () => {
     expect(UPGRADE_GROUPS.map((group) => group.label)).toEqual([
       'Spieler',
       'Waffen (alle)',
       'Nahkampf',
       'Granaten',
+      'Mörserschlag',
+      'Vernichtungsschuss',
       'Türme',
       'Fahrzeuge',
       'Dash',
@@ -74,8 +76,18 @@ describe('ProgressService upgrade shop', () => {
     expect(upgradeCurrentValue('maxHealth', 5)).toContain('110 maximales Leben');
     expect(upgradeCurrentValue('dashCharges', 2)).toContain('4 Dash-Ladungen');
     expect(upgradeCurrentValue('grenadeSplit', 6)).toContain('6 Mini-Granaten');
+    expect(upgradeCurrentValue('mortarSlow', 4)).toContain('1,5 s Verlangsamung');
+    expect(upgradeCurrentValue('precisionExecute', 10)).toContain('+30 %');
     expect(upgradeCurrentValue('armor', 35)).not.toContain('max.');
     expect(upgradeCurrentValue('vehicleArmor', 10)).toContain('10 % weniger Schaden');
+  });
+
+  it('starts with grenades and persists exactly one selected ability', () => {
+    const progress = new ProgressService();
+    expect(progress.ability()).toBe('grenade');
+    expect(progress.selectAbility('mortarStrike')).toBe(true);
+    expect(progress.ability()).toBe('mortarStrike');
+    expect(new ProgressService().ability()).toBe('mortarStrike');
   });
 
   it('refunds old Wiederbelebung levels once and removes them from the save', () => {

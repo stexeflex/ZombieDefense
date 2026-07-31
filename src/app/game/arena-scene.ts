@@ -89,6 +89,7 @@ export class ArenaScene extends Phaser.Scene {
   private ghost!: Phaser.GameObjects.Image;
   private ghostRange!: Phaser.GameObjects.Arc;
   private placement?: PlacedDefense;
+  private relocationValid = false;
   private focusOutline!: Phaser.GameObjects.Graphics;
   private focusLabel!: Phaser.GameObjects.Text;
   private focusPulse = 0;
@@ -112,7 +113,7 @@ export class ArenaScene extends Phaser.Scene {
     this.cameras.main.setDeadzone(220, 140);
 
     this.keys = this.input.keyboard!.addKeys(
-      'W,S,A,D,UP,DOWN,LEFT,RIGHT,R,G,F,V,E,SPACE,SHIFT,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,ZERO',
+      'W,S,A,D,UP,DOWN,LEFT,RIGHT,R,G,F,V,X,E,SPACE,SHIFT,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,ZERO',
     ) as Record<string, Phaser.Input.Keyboard.Key>;
 
     this.effects = new EffectLayer(this, this.audio);
@@ -170,14 +171,22 @@ export class ArenaScene extends Phaser.Scene {
       this.audio.unlock();
       const selectedBuild = this.gameService.selectedBuild();
       const selectedVehicle = this.gameService.selectedVehicle();
-      if (pointer.rightButtonDown() && (selectedBuild || selectedVehicle)) {
+      const relocating = this.gameService.relocating();
+      if (pointer.rightButtonDown() && (selectedBuild || selectedVehicle || relocating)) {
         this.gameService.clearSelection();
         this.shooting = false;
         return;
       }
       if (pointer.leftButtonDown()) {
         const building = this.snapshot?.phase === 'build';
-        if (building && selectedBuild) {
+        if (building && relocating) {
+          if (!this.relocationValid) return;
+          const spot = this.placement;
+          this.gameService.moveFocused(
+            spot ? spot.x : pointer.worldX,
+            spot ? spot.y : pointer.worldY,
+          );
+        } else if (building && selectedBuild) {
           const spot = this.placement;
           this.gameService.placeDefense(
             selectedBuild,
@@ -205,7 +214,10 @@ export class ArenaScene extends Phaser.Scene {
 
   override update(_time: number, deltaMs: number) {
     const rotateOrReload = Phaser.Input.Keyboard.JustDown(this.keys['R']);
-    const selected = this.gameService.selectedBuild() ?? this.gameService.selectedVehicle();
+    const selected =
+      this.gameService.selectedBuild() ??
+      this.gameService.selectedVehicle() ??
+      this.gameService.relocating();
     if (rotateOrReload && this.snapshot?.phase === 'build' && selected) {
       this.gameService.rotateBuild();
     } else if (
@@ -219,6 +231,7 @@ export class ArenaScene extends Phaser.Scene {
     if (this.snapshot?.phase === 'build') {
       if (Phaser.Input.Keyboard.JustDown(this.keys['F'])) this.gameService.repairFocused();
       if (Phaser.Input.Keyboard.JustDown(this.keys['V'])) this.gameService.sellFocused();
+      if (Phaser.Input.Keyboard.JustDown(this.keys['X'])) this.gameService.beginMoveFocused();
     }
     if (Phaser.Input.Keyboard.JustDown(this.keys['E'])) this.gameService.useVehicle();
     this.checkWeaponSlots();
@@ -256,10 +269,7 @@ export class ArenaScene extends Phaser.Scene {
       this.dashQueued = false;
     }
     if (this.snapshot?.phase === 'combat' && Phaser.Input.Keyboard.JustDown(this.keys['G'])) {
-      this.gameService.throwGrenade(
-        this.input.activePointer.worldX,
-        this.input.activePointer.worldY,
-      );
+      this.gameService.useAbility(this.input.activePointer.worldX, this.input.activePointer.worldY);
     }
   }
 
@@ -406,6 +416,11 @@ export class ArenaScene extends Phaser.Scene {
     const pointer = this.input.activePointer;
     this.crosshair.setPosition(pointer.worldX, pointer.worldY);
     const building = this.snapshot?.phase === 'build';
+    const relocating = this.gameService.relocating();
+    if (building && relocating) {
+      this.previewRelocation(relocating, pointer);
+      return;
+    }
     const vehicle = this.gameService.selectedVehicle();
     if (building && vehicle) {
       this.previewVehicle(vehicle, pointer);
@@ -415,6 +430,7 @@ export class ArenaScene extends Phaser.Scene {
     const showGhost = building && Boolean(selected);
     if (!showGhost || !selected) {
       this.placement = undefined;
+      this.relocationValid = false;
       this.ghost.setVisible(false);
       this.ghostRange.setVisible(false);
       return;
@@ -506,6 +522,91 @@ export class ArenaScene extends Phaser.Scene {
     );
   }
 
+  private previewRelocation(
+    moving: NonNullable<ReturnType<GameService['relocating']>>,
+    pointer: Phaser.Input.Pointer,
+  ) {
+    const me = this.players.get(this.gameService.sessionId());
+    const inRange = me
+      ? Math.hypot(me.root.x - pointer.worldX, me.root.y - pointer.worldY) <= PLACE_RANGE
+      : true;
+    const rotation = this.gameService.placementRotation();
+
+    if (moving.kind === 'defense') {
+      const type = moving.entity.type;
+      const config = DEFENSES[type];
+      const turret = config.kind === 'turret';
+      const others = Object.values(this.snapshot?.defenses ?? {}).filter(
+        (defense) => defense.id !== moving.id,
+      );
+      const spot = snapDefense(
+        {
+          type,
+          x: Math.round(pointer.worldX),
+          y: Math.round(pointer.worldY),
+          rotation: turret ? 0 : rotation,
+        },
+        others,
+        this.map.obstacles,
+      );
+      this.placement = spot;
+      const avoidsVehicles = Object.values(this.snapshot?.vehicles ?? {}).every(
+        (vehicle) =>
+          distanceToVehicle(spot.x, spot.y, vehicle) >= Math.max(config.width, config.height) / 2,
+      );
+      const valid =
+        inRange &&
+        avoidsVehicles &&
+        this.objectiveClear(spot.x, spot.y, Math.max(config.width, config.height) / 2) &&
+        canPlaceDefense(spot, others, this.map.obstacles);
+      this.relocationValid = valid;
+      this.ghost
+        .setVisible(true)
+        .setTexture(turret ? `turret-base-${type}` : `defense-${type}`)
+        .setPosition(spot.x, spot.y)
+        .setDisplaySize(config.width, config.height)
+        .setRotation(spot.rotation)
+        .setAlpha(valid ? 0.62 : 0.4);
+      if (valid) this.ghost.clearTint();
+      else this.ghost.setTint(0xff5f71);
+      this.ghostRange
+        .setVisible(turret)
+        .setPosition(spot.x, spot.y)
+        .setRadius(config.range ?? 100);
+      return;
+    }
+
+    const type = moving.entity.type;
+    const config = VEHICLES[type];
+    const spot = {
+      type,
+      x: Math.round(pointer.worldX),
+      y: Math.round(pointer.worldY),
+      rotation,
+    };
+    this.placement = undefined;
+    const valid =
+      inRange &&
+      this.objectiveClear(spot.x, spot.y, Math.max(config.width, config.height) / 2) &&
+      canPlaceVehicle(
+        spot,
+        Object.values(this.snapshot?.defenses ?? {}),
+        Object.values(this.snapshot?.vehicles ?? {}).filter((vehicle) => vehicle.id !== moving.id),
+        this.map.obstacles,
+      );
+    this.relocationValid = valid;
+    this.ghost
+      .setVisible(true)
+      .setTexture(`vehicle-${type}`)
+      .setPosition(spot.x, spot.y)
+      .setDisplaySize(config.width, config.height)
+      .setRotation(rotation)
+      .setAlpha(valid ? 0.62 : 0.4);
+    if (valid) this.ghost.clearTint();
+    else this.ghost.setTint(0xff5f71);
+    this.ghostRange.setVisible(false);
+  }
+
   // ------------------------------------------------------------- build focus
 
   private createFocusHighlight() {
@@ -535,6 +636,12 @@ export class ArenaScene extends Phaser.Scene {
     const inside = Boolean(snapshot?.players[this.gameService.sessionId()]?.vehicleId);
     let target: DefenseSnapshot | undefined;
     let hull: VehicleSnapshot | undefined;
+    if (this.gameService.relocating()) {
+      this.gameService.setFocusedDefense('');
+      this.focusOutline.setVisible(false);
+      this.focusLabel.setVisible(false);
+      return;
+    }
     if (snapshot?.phase === 'build' && me && !inside) {
       let bestDistance = DEFENSE_REACH;
       for (const defense of Object.values(snapshot.defenses)) {
@@ -585,6 +692,7 @@ export class ArenaScene extends Phaser.Scene {
     const actions = [
       `[F] ${repair > 0 ? `Reparieren $${repair}` : 'ganz repariert'}`,
       hull ? '[E] Einsteigen' : '',
+      !hull || hull.crew.length === 0 ? '[X] Verschieben' : '',
       canSell
         ? `[V] Verkaufen +$${spot.refund}${spot.refund >= cost ? ' (voller Preis)' : ''}`
         : !own
@@ -963,7 +1071,20 @@ export class ArenaScene extends Phaser.Scene {
       .rectangle(-radius * 1.1, -radius - 13, radius * 2.2, 5, 0xff6b6b)
       .setOrigin(0, 0.5);
 
-    const children: Phaser.GameObjects.GameObject[] = [shadow, actor, healthBackground, healthBar];
+    const phaseShield =
+      zombie.type === 'phaseguard'
+        ? this.add
+            .circle(0, 0, radius + 12, 0x73f7e5, 0.08)
+            .setStrokeStyle(3, 0x73f7e5, 0.9)
+            .setVisible(false)
+        : undefined;
+    const children: Phaser.GameObjects.GameObject[] = [
+      shadow,
+      ...(phaseShield ? [phaseShield] : []),
+      actor,
+      healthBackground,
+      healthBar,
+    ];
     let aura: Phaser.GameObjects.Arc | undefined;
     if (zombie.type === 'exploder') {
       aura = this.add.circle(0, 0, radius + 9).setStrokeStyle(3, 0xff5a36, 0.82);
@@ -991,6 +1112,7 @@ export class ArenaScene extends Phaser.Scene {
       healthBackground,
       aura,
       frontShield,
+      phaseShield,
       walk: Math.random() * Math.PI * 2,
       type: zombie.type,
       radius,
@@ -1007,6 +1129,15 @@ export class ArenaScene extends Phaser.Scene {
     view.healthBar.setDisplaySize(view.radius * 2.2 * ratio, 5);
     const damaged = zombie.health < view.lastHealth;
     view.lastHealth = zombie.health;
+
+    if (view.phaseShield) {
+      const protectedNow = zombie.shielding > 0;
+      view.phaseShield.setVisible(protectedNow);
+      if (protectedNow) {
+        const pulse = 1 + Math.sin(zombie.shielding * 18) * 0.05;
+        view.phaseShield.setScale(pulse).setAlpha(0.78 + Math.sin(zombie.shielding * 24) * 0.14);
+      }
+    }
 
     if (zombie.casting > 0) view.body.setTint(0xffd166);
     else if (zombie.burning > 0) view.body.setTint(0xffab5c);

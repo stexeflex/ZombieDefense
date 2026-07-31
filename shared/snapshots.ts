@@ -1,6 +1,7 @@
 import type { DefenseType } from './defenses.js';
 import type { VehicleType } from './vehicles.js';
 import type { WeaponType } from './weapons.js';
+import type { PlayerAbilityType } from './player-abilities.js';
 import type { HazardKind, ZombieType } from './zombies.js';
 
 export type GamePhase = 'lobby' | 'combat' | 'build' | 'gameover';
@@ -69,8 +70,11 @@ export interface PlayerSnapshot {
   weaponRefunds: Partial<Record<WeaponType, number>>;
   ammo: number;
   reserveAmmo: number;
-  grenades: number;
-  grenadeCooldown: number;
+  /** The one tool fired with G, its ready charges and next recharge. */
+  ability: PlayerAbilityType;
+  abilityCharges: number;
+  abilityMax: number;
+  abilityCooldown: number;
   /** Dash charges ready right now and the maximum this player can hold. */
   dashCharges: number;
   dashMax: number;
@@ -107,6 +111,8 @@ export interface ZombieSnapshot {
   charging: number;
   /** Above zero while a boss is winding up a telegraphed attack. */
   casting: number;
+  /** Temporary all-round projectile shield. */
+  shielding: number;
 }
 
 export interface ProjectileSnapshot {

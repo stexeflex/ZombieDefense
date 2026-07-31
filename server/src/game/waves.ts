@@ -152,8 +152,10 @@ export class WaveSystem {
       player.weaponRefunds.clear();
       player.ammo = this.players.magazineSize('pistol', upgrades);
       player.reserveAmmo = reserveCapacity('pistol', upgrades.reserveAmmo);
-      player.grenades = this.players.maxGrenades(this.world.perksOf(id));
-      player.grenadeCooldown = 0;
+      player.ability = runtime?.ability ?? 'grenade';
+      player.abilityMax = this.players.maxAbilityCharges(player.ability, this.world.perksOf(id));
+      player.abilityCharges = player.abilityMax;
+      player.abilityCooldown = 0;
       player.dashMax = this.players.maxDashes(upgrades);
       player.dashCharges = player.dashMax;
       player.dashCooldown = 0;
@@ -166,8 +168,8 @@ export class WaveSystem {
       player.hurt = 0;
       player.vehicleId = '';
       if (runtime) {
-        runtime.grenadeRecharge = [];
-        runtime.grenadeThrowLock = 0;
+        runtime.abilityRecharge = [];
+        runtime.abilityUseLock = 0;
         runtime.dashRecharge = [];
         runtime.dashLock = 0;
         runtime.wasDashing = false;
@@ -457,16 +459,20 @@ export class WaveSystem {
       player.alive = true;
       player.health = player.maxHealth;
       player.reviveProgress = 0;
-      player.grenades = this.players.maxGrenades(this.world.perksOf(player.id));
-      player.grenadeCooldown = 0;
+      player.abilityMax = this.players.maxAbilityCharges(
+        player.ability,
+        this.world.perksOf(player.id),
+      );
+      player.abilityCharges = player.abilityMax;
+      player.abilityCooldown = 0;
       player.dashCharges = player.dashMax;
       player.dashCooldown = 0;
       player.dashing = 0;
       player.ready = false;
       const runtime = this.world.runtime.get(player.id);
       if (runtime) {
-        runtime.grenadeRecharge = [];
-        runtime.grenadeThrowLock = 0;
+        runtime.abilityRecharge = [];
+        runtime.abilityUseLock = 0;
         runtime.dashRecharge = [];
         runtime.dashLock = 0;
         runtime.pushX = 0;

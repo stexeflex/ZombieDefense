@@ -134,6 +134,40 @@ describe('GameService', () => {
     expect(sent).toEqual([['sell', { id: 'own' }]]);
   });
 
+  it('allows moving a team-mates structure without changing its ownership', () => {
+    const sent: Array<[string, unknown]> = [];
+    service.sessionId.set('player-1');
+    service.snapshot.set({
+      ...snapshotWith('build'),
+      defenses: {
+        foreign: {
+          id: 'foreign',
+          ownerId: 'player-2',
+          type: 'wood',
+          x: 100,
+          y: 100,
+          rotation: 0,
+          health: 420,
+          maxHealth: 420,
+          refund: 160,
+        },
+      },
+      vehicles: {},
+    } as unknown as GameSnapshot);
+    (service as unknown as { room: { send(type: string, payload?: unknown): void } }).room = {
+      send: (type, payload) => sent.push([type, payload]),
+    };
+
+    service.focusedDefenseId.set('foreign');
+    expect(service.focusedDefense()?.sellable).toBe(false);
+    expect(service.focusedDefense()?.movable).toBe(true);
+    service.beginMoveFocused();
+    expect(service.relocatingId()).toBe('foreign');
+    service.moveFocused(240, 260);
+
+    expect(sent).toEqual([['move_placed', { id: 'foreign', x: 240, y: 260, rotation: 0 }]]);
+  });
+
   it('settles the run before leaving without changing the shared room phase', async () => {
     const sent: string[] = [];
     let confirmed: ((payload: { runId: string }) => void) | undefined;

@@ -8,6 +8,7 @@ import {
   PLAYER_BASE_HEALTH,
   SHIELD_SHARE,
   findMap,
+  isPlayerAbility,
   reserveCapacity,
   sellValue,
   startingMoney,
@@ -17,6 +18,7 @@ import {
   type PermanentPerks,
   type PermanentUpgrades,
   type PlayerInput,
+  type PlayerAbilityType,
   type UpgradeKey,
   type VehicleType,
   type WeaponType,
@@ -40,6 +42,7 @@ interface JoinOptions {
   endless?: boolean;
   upgrades?: Partial<PermanentUpgrades>;
   perks?: Partial<PermanentPerks>;
+  ability?: PlayerAbilityType;
 }
 
 const COLORS = ['#69f0ae', '#57b8ff', '#ffcc66', '#ff6b8a'];
@@ -52,7 +55,7 @@ const PLAYER_PRECISION: Record<string, number> = {
   shield: 1,
   reviveProgress: 100,
   reloading: 100,
-  grenadeCooldown: 10,
+  abilityCooldown: 10,
   dashCooldown: 10,
   dashing: 100,
   firing: 100,
@@ -70,6 +73,7 @@ const ZOMBIE_PRECISION: Record<string, number> = {
   attacking: 100,
   charging: 100,
   casting: 100,
+  shielding: 100,
 };
 const PROJECTILE_PRECISION: Record<string, number> = { x: 10, y: 10, vx: 1, vy: 1 };
 const DEFENSE_PRECISION: Record<string, number> = {
@@ -217,14 +221,20 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     this.onMessage('repair', (client, payload?: { id?: string }) =>
       this.build.repairDefense(client.sessionId, payload?.id),
     );
-    this.onMessage('grenade', (client, target: { x?: number; y?: number }) =>
-      this.playerSystem.throwGrenade(client.sessionId, target),
+    this.onMessage(
+      'move_placed',
+      (client, payload?: { id?: string; x?: number; y?: number; rotation?: number }) =>
+        this.build.movePlaced(client.sessionId, payload),
+    );
+    this.onMessage('ability', (client, target: { x?: number; y?: number }) =>
+      this.playerSystem.useAbility(client.sessionId, target),
     );
   }
 
   onJoin(client: Client, options: JoinOptions) {
     const upgrades = this.cleanUpgrades(options.upgrades);
     const perks = this.cleanPerks(options.perks);
+    const ability = this.cleanAbility(options.ability);
     const player = new PlayerState();
     player.id = client.sessionId;
     player.name = this.cleanName(options.name);
@@ -243,7 +253,9 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.reserveAmmo = reserveCapacity('pistol', upgrades.reserveAmmo);
     player.dashMax = this.playerSystem.maxDashes(upgrades);
     player.dashCharges = player.dashMax;
-    player.grenades = this.playerSystem.maxGrenades(perks);
+    player.ability = ability;
+    player.abilityMax = this.playerSystem.maxAbilityCharges(ability, perks);
+    player.abilityCharges = player.abilityMax;
     player.owned.clear();
     player.owned.push('pistol');
 
@@ -252,8 +264,9 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       input: { ...EMPTY_INPUT },
       upgrades,
       perks,
-      grenadeRecharge: [],
-      grenadeThrowLock: 0,
+      ability,
+      abilityRecharge: [],
+      abilityUseLock: 0,
       dashRecharge: [],
       dashLock: 0,
       wasDashing: false,
@@ -339,6 +352,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     if (!player || !runtime) return;
     runtime.upgrades = this.cleanUpgrades(options.upgrades);
     runtime.perks = this.cleanPerks(options.perks);
+    runtime.ability = this.cleanAbility(options.ability);
     player.maxHealth = Math.round(PLAYER_BASE_HEALTH * (1 + runtime.upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
     player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
@@ -348,7 +362,12 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.reserveAmmo = reserveCapacity(player.weapon, runtime.upgrades.reserveAmmo);
     player.dashMax = this.playerSystem.maxDashes(runtime.upgrades);
     player.dashCharges = player.dashMax;
-    player.grenades = this.playerSystem.maxGrenades(runtime.perks);
+    player.ability = runtime.ability;
+    player.abilityMax = this.playerSystem.maxAbilityCharges(runtime.ability, runtime.perks);
+    player.abilityCharges = player.abilityMax;
+    player.abilityCooldown = 0;
+    runtime.abilityRecharge = [];
+    runtime.abilityUseLock = 0;
     this.build.resetDiscounts(sessionId);
     this.broadcastSnapshot();
   }
@@ -426,7 +445,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     if (
       !this.waves.checkDefeat() &&
       this.waves.enemiesLeft() === 0 &&
-      !this.playerSystem.hasPendingGrenadeBlasts()
+      !this.playerSystem.hasPendingAbilityBlasts()
     ) {
       this.waves.finishWave();
     }
@@ -505,6 +524,10 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     return Object.fromEntries(
       Object.keys(EMPTY_PERKS).map((key) => [key, Boolean(perks?.[key as keyof PermanentPerks])]),
     ) as unknown as PermanentPerks;
+  }
+
+  private cleanAbility(ability?: PlayerAbilityType): PlayerAbilityType {
+    return isPlayerAbility(ability) ? ability : 'grenade';
   }
 
   private cleanName(name?: string) {

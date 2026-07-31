@@ -20,6 +20,14 @@ export interface PermanentUpgrades {
   grenadeCooldown: number;
   grenadeRadius: number;
   grenadeSplit: number;
+  mortarDamage: number;
+  mortarCooldown: number;
+  mortarRadius: number;
+  mortarSlow: number;
+  precisionDamage: number;
+  precisionCooldown: number;
+  precisionWidth: number;
+  precisionExecute: number;
   barricadeHealth: number;
   turretDamage: number;
   turretRange: number;
@@ -53,6 +61,14 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   grenadeCooldown: 0,
   grenadeRadius: 0,
   grenadeSplit: 0,
+  mortarDamage: 0,
+  mortarCooldown: 0,
+  mortarRadius: 0,
+  mortarSlow: 0,
+  precisionDamage: 0,
+  precisionCooldown: 0,
+  precisionWidth: 0,
+  precisionExecute: 0,
   barricadeHealth: 0,
   turretDamage: 0,
   turretRange: 0,
@@ -86,6 +102,9 @@ export const UPGRADE_LIMITS: Partial<Record<UpgradeKey, number>> = {
   armor: 35,
   vehicleArmor: 35,
   grenadeSplit: 10,
+  mortarSlow: 8,
+  precisionWidth: 8,
+  precisionExecute: 10,
   dashCharges: 3,
   dashResist: 6,
 };

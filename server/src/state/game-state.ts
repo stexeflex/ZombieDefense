@@ -7,6 +7,7 @@ import type {
   WaveKind,
   WeaponType,
   ZombieType,
+  PlayerAbilityType,
 } from '../../../shared/game-types.js';
 
 export class PlayerState extends Schema {
@@ -29,8 +30,11 @@ export class PlayerState extends Schema {
   @type({ map: 'number' }) weaponRefunds = new MapSchema<number>();
   @type('number') ammo = 12;
   @type('number') reserveAmmo = 96;
-  @type('number') grenades = 3;
-  @type('number') grenadeCooldown = 0;
+  /** The one tool fired with G, its ready charges and next recharge. */
+  @type('string') ability: PlayerAbilityType = 'grenade';
+  @type('number') abilityCharges = 3;
+  @type('number') abilityMax = 3;
+  @type('number') abilityCooldown = 0;
   @type('number') dashCharges = 2;
   @type('number') dashMax = 2;
   /** Seconds left of the current dash — above zero means damage is reduced. */
@@ -69,6 +73,8 @@ export class ZombieState extends Schema {
   @type('number') charging = 0;
   /** Above zero while a telegraphed attack is winding up. */
   @type('number') casting = 0;
+  /** Seconds left of a temporary all-round projectile shield. */
+  @type('number') shielding = 0;
   speed = 70;
   baseSpeed = 70;
   damage = 12;
@@ -122,6 +128,8 @@ export class ProjectileState extends Schema {
   acidSeconds = 0;
   slow = 0;
   slowSeconds = 0;
+  /** Missing-health multiplier used only by the one-target ability shot. */
+  execute = 0;
   pull = 0;
   hitIds = new Set<string>();
 }

@@ -7,6 +7,7 @@ import {
   DEFENSES,
   ENGINEER_DISCOUNT,
   PLAYER_BASE_SPEED,
+  PLAYER_ABILITIES,
   VEHICLES,
   WEAPONS,
   discountedCost,
@@ -55,6 +56,7 @@ export class GameService {
   readonly preferredMap = signal(this.storedMap());
   readonly preferredEndless = signal(this.storedEndless());
   readonly focusedDefenseId = signal('');
+  readonly relocatingId = signal('');
   readonly fx$ = new Subject<FxEvent[]>();
   readonly snapshot$ = new Subject<GameSnapshot>();
 
@@ -92,12 +94,25 @@ export class GameService {
       // A hull with the squad inside stays where it is, and another player's
       // purchase can never be converted into the local player's build money.
       sellable: owned && !occupied,
+      movable: !occupied,
       sellBlockedTitle: !owned
         ? 'Nur der Besitzer kann dieses Objekt verkaufen'
         : occupied
           ? 'Erst aussteigen'
           : '',
     };
+  });
+
+  /** Structure or parked hull currently attached to the placement cursor. */
+  readonly relocating = computed(() => {
+    const snapshot = this.snapshot();
+    const id = this.relocatingId();
+    if (!snapshot || snapshot.phase !== 'build' || !id) return null;
+    const defense = snapshot.defenses[id];
+    if (defense) return { id, kind: 'defense' as const, entity: defense };
+    const vehicle = snapshot.vehicles[id];
+    if (vehicle) return { id, kind: 'vehicle' as const, entity: vehicle };
+    return null;
   });
 
   /** The vehicle the local player is sitting in, for the HUD. */
@@ -139,6 +154,19 @@ export class GameService {
     return {
       value: Math.max(1, Math.round(player.shield)),
       percent: player.shieldMax > 0 ? Math.min(100, (player.shield / player.shieldMax) * 100) : 0,
+    };
+  });
+
+  /** Compact HUD copy for the one selected G ability. */
+  readonly ability = computed(() => {
+    const player = this.player();
+    const type = player?.ability ?? this.progress.ability();
+    return {
+      type,
+      ...PLAYER_ABILITIES[type],
+      charges: player?.abilityCharges ?? PLAYER_ABILITIES[type].charges,
+      max: player?.abilityMax ?? PLAYER_ABILITIES[type].charges,
+      cooldown: player?.abilityCooldown ?? 0,
     };
   });
 
@@ -202,6 +230,7 @@ export class GameService {
         endless: this.preferredEndless(),
         upgrades: this.progress.upgrades(),
         perks: this.progress.perks(),
+        ability: this.progress.ability(),
       };
       this.room = create
         ? await this.client.create('zombie_defense', options)
@@ -240,6 +269,7 @@ export class GameService {
     this.selectedVehicle.set(null);
     this.placementRotation.set(0);
     this.focusedDefenseId.set('');
+    this.relocatingId.set('');
     this.connection.set('idle');
     this.lastPhase = null;
     this.lastWave = 0;
@@ -352,6 +382,7 @@ export class GameService {
     this.room?.send('loadout', {
       upgrades: this.progress.upgrades(),
       perks: this.progress.perks(),
+      ability: this.progress.ability(),
     });
   }
 
@@ -416,6 +447,7 @@ export class GameService {
   }
 
   selectBuild(type: DefenseType | null) {
+    if (type) this.cancelMove();
     if (type !== this.selectedBuild()) this.placementRotation.set(0);
     this.selectedBuild.set(type);
     this.selectedVehicle.set(null);
@@ -423,6 +455,7 @@ export class GameService {
   }
 
   selectVehicle(type: VehicleType | null) {
+    if (type) this.cancelMove();
     if (type !== this.selectedVehicle()) this.placementRotation.set(0);
     this.selectedVehicle.set(type);
     this.selectedBuild.set(null);
@@ -432,11 +465,16 @@ export class GameService {
   clearSelection() {
     this.selectBuild(null);
     this.selectedVehicle.set(null);
+    this.cancelMove();
   }
 
   rotateBuild() {
     const type = this.selectedBuild();
-    if (this.selectedVehicle() || (type && DEFENSES[type].kind === 'barricade')) {
+    const moving = this.relocating();
+    const movingRotates =
+      moving?.kind === 'vehicle' ||
+      (moving?.kind === 'defense' && DEFENSES[moving.entity.type].kind === 'barricade');
+    if (this.selectedVehicle() || (type && DEFENSES[type].kind === 'barricade') || movingRotates) {
       this.placementRotation.update((rotation) => (rotation + Math.PI / 2) % Math.PI);
     }
   }
@@ -498,8 +536,39 @@ export class GameService {
     this.room?.send('repair', { id: target.id });
   }
 
-  throwGrenade(x: number, y: number) {
-    this.room?.send('grenade', { x, y });
+  beginMoveFocused() {
+    const target = this.focusedDefense();
+    const snapshot = this.snapshot();
+    const defense = target ? snapshot?.defenses[target.id] : undefined;
+    const vehicle = target ? snapshot?.vehicles[target.id] : undefined;
+    if (!target?.movable || (!defense && !vehicle)) return;
+    this.selectedBuild.set(null);
+    this.selectedVehicle.set(null);
+    this.placementRotation.set((defense ?? vehicle)!.rotation);
+    this.relocatingId.set(target.id);
+    this.audio.play('ui');
+  }
+
+  moveFocused(x: number, y: number) {
+    const moving = this.relocating();
+    if (!moving) return;
+    this.room?.send('move_placed', {
+      id: moving.id,
+      x,
+      y,
+      rotation: this.placementRotation(),
+    });
+    this.relocatingId.set('');
+    this.focusedDefenseId.set('');
+    this.audio.play('build');
+  }
+
+  cancelMove() {
+    this.relocatingId.set('');
+  }
+
+  useAbility(x: number, y: number) {
+    this.room?.send('ability', { x, y });
   }
 
   private bindRoom(room: Room) {
@@ -548,7 +617,10 @@ export class GameService {
       if (snapshot.phase === 'lobby') this.lastReward.set(null);
       // A ghost left over from the last build phase would come back with the
       // next one, so the start of a wave drops the selection.
-      if (snapshot.phase !== 'build' && (this.selectedBuild() || this.selectedVehicle())) {
+      if (
+        snapshot.phase !== 'build' &&
+        (this.selectedBuild() || this.selectedVehicle() || this.relocatingId())
+      ) {
         this.clearSelection();
       }
       if (snapshot.phase === 'combat') this.audio.play('wave', 0.9);

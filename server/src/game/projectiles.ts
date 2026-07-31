@@ -39,9 +39,16 @@ export class ProjectileSystem {
         if (wallAt !== undefined && at > wallAt) continue;
 
         if (this.blockedByShield(projectile, zombie)) {
-          const shieldX = zombie.x + Math.cos(zombie.rotation) * (zombie.radius + 5);
-          const shieldY = zombie.y + Math.sin(zombie.rotation) * (zombie.radius + 5);
-          this.world.pushFx({ k: 'deflect', x: shieldX, y: shieldY, s: 'front-shield' });
+          const impactAngle =
+            zombie.shielding > 0 ? Math.atan2(-projectile.vy, -projectile.vx) : zombie.rotation;
+          const shieldX = zombie.x + Math.cos(impactAngle) * (zombie.radius + 5);
+          const shieldY = zombie.y + Math.sin(impactAngle) * (zombie.radius + 5);
+          this.world.pushFx({
+            k: 'deflect',
+            x: shieldX,
+            y: shieldY,
+            s: zombie.shielding > 0 ? 'phase-shield' : 'front-shield',
+          });
           spent = true;
           break;
         }
@@ -65,7 +72,9 @@ export class ProjectileSystem {
         if (projectile.slow > 0) {
           this.world.chillZombie(zombie, projectile.slow, projectile.slowSeconds);
         }
-        this.world.damageZombie(zombieId, zombie, projectile.damage, projectile.ownerId);
+        const missingHealth = zombie.maxHealth > 0 ? 1 - zombie.health / zombie.maxHealth : 0;
+        const damage = projectile.damage * (1 + projectile.execute * Math.max(0, missingHealth));
+        this.world.damageZombie(zombieId, zombie, damage, projectile.ownerId);
 
         if (projectile.chain > 0) {
           this.chainLightning(projectile, zombie, zombieId);
@@ -105,6 +114,7 @@ export class ProjectileSystem {
 
   /** The shield eats the complete shot before splash, chain or pierce can trigger. */
   private blockedByShield(projectile: ProjectileState, zombie: ZombieState) {
+    if (zombie.shielding > 0) return true;
     const shield = ZOMBIES[zombie.type].frontShield;
     if (!shield) return false;
     const incoming = Math.atan2(-projectile.vy, -projectile.vx);

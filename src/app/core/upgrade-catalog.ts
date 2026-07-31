@@ -7,7 +7,16 @@ import {
   GRENADE_BASE_RADIUS,
   GRENADE_MIN_COOLDOWN,
   HEALTH_REGEN_PER_LEVEL,
+  MORTAR_BASE_COOLDOWN,
+  MORTAR_BASE_DAMAGE,
+  MORTAR_BASE_RADIUS,
+  MORTAR_BASE_SLOW_SECONDS,
+  MORTAR_MIN_COOLDOWN,
   PLAYER_BASE_HEALTH,
+  PRECISION_BASE_COOLDOWN,
+  PRECISION_BASE_DAMAGE,
+  PRECISION_MIN_COOLDOWN,
+  PRECISION_PROJECTILE_RADIUS,
   START_MONEY_PER_LEVEL,
   VEHICLE_MAX_SPEED_BONUS,
   VEHICLE_SPEED_STEP,
@@ -21,7 +30,15 @@ import {
 } from '../../../shared/game-types';
 
 export type UpgradeCategory =
-  'player' | 'weapons' | 'melee' | 'grenades' | 'turrets' | 'vehicles' | 'dash';
+  | 'player'
+  | 'weapons'
+  | 'melee'
+  | 'grenades'
+  | 'mortar'
+  | 'precision'
+  | 'turrets'
+  | 'vehicles'
+  | 'dash';
 
 export interface UpgradeDefinition {
   key: UpgradeKey;
@@ -68,6 +85,18 @@ export const UPGRADE_GROUPS: UpgradeGroupDefinition[] = [
     label: 'Granaten',
     description: 'Stärkere Explosionen und Granaten, die in Mini-Granaten zerfallen',
     icon: '●',
+  },
+  {
+    key: 'mortar',
+    label: 'Mörserschlag',
+    description: 'Gewaltiger Flächentreffer mit Vorwarnung und bremsender Druckwelle',
+    icon: '⌖',
+  },
+  {
+    key: 'precision',
+    label: 'Vernichtungsschuss',
+    description: 'Ein sichtbares Projektil für maximalen Schaden an genau einem Ziel',
+    icon: '➤',
   },
   {
     key: 'turrets',
@@ -120,6 +149,14 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'grenadeCooldown', category: 'grenades', label: 'Granaten-Cooldown', icon: '◷' },
   { key: 'grenadeRadius', category: 'grenades', label: 'Explosionsradius', icon: '◎' },
   { key: 'grenadeSplit', category: 'grenades', label: 'Splittergranate', icon: '✹' },
+  { key: 'mortarDamage', category: 'mortar', label: 'Einschlagsschaden', icon: '✹' },
+  { key: 'mortarCooldown', category: 'mortar', label: 'Feuerbereitschaft', icon: '◷' },
+  { key: 'mortarRadius', category: 'mortar', label: 'Zielgebiet', icon: '◎' },
+  { key: 'mortarSlow', category: 'mortar', label: 'Druckwelle', icon: '≈' },
+  { key: 'precisionDamage', category: 'precision', label: 'Hochkaliber', icon: '➤' },
+  { key: 'precisionCooldown', category: 'precision', label: 'Ladezyklus', icon: '◷' },
+  { key: 'precisionWidth', category: 'precision', label: 'Schussbreite', icon: '━' },
+  { key: 'precisionExecute', category: 'precision', label: 'Vollstrecker', icon: '†' },
   { key: 'barricadeHealth', category: 'turrets', label: 'Barrikadenleben', icon: '▰' },
   { key: 'turretDamage', category: 'turrets', label: 'Turmschaden', icon: '⌖' },
   { key: 'turretRange', category: 'turrets', label: 'Turmreichweite', icon: '◈' },
@@ -189,6 +226,22 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
       return `${number(GRENADE_BASE_RADIUS * (1 + safeLevel * 0.02))} Explosionsradius (+2 % pro Stufe)`;
     case 'grenadeSplit':
       return `${number(safeLevel)} Mini-Granaten (+1 pro Stufe)`;
+    case 'mortarDamage':
+      return `${number(MORTAR_BASE_DAMAGE * (1 + safeLevel * 0.03))} Einschlagsschaden (+3 % pro Stufe)`;
+    case 'mortarCooldown':
+      return `${number(Math.max(MORTAR_MIN_COOLDOWN, MORTAR_BASE_COOLDOWN / (1 + safeLevel * 0.02)))} s Cooldown (+2 % Tempo pro Stufe, min. ${number(MORTAR_MIN_COOLDOWN)} s)`;
+    case 'mortarRadius':
+      return `${number(MORTAR_BASE_RADIUS * (1 + safeLevel * 0.015))} Zielradius (+1,5 % pro Stufe)`;
+    case 'mortarSlow':
+      return `${number(MORTAR_BASE_SLOW_SECONDS + safeLevel * 0.25)} s Verlangsamung (+0,25 s pro Stufe)`;
+    case 'precisionDamage':
+      return `${number(PRECISION_BASE_DAMAGE * (1 + safeLevel * 0.03))} Einzelschaden (+3 % pro Stufe)`;
+    case 'precisionCooldown':
+      return `${number(Math.max(PRECISION_MIN_COOLDOWN, PRECISION_BASE_COOLDOWN / (1 + safeLevel * 0.02)))} s Cooldown (+2 % Tempo pro Stufe, min. ${number(PRECISION_MIN_COOLDOWN)} s)`;
+    case 'precisionWidth':
+      return `${number(PRECISION_PROJECTILE_RADIUS * 2 + safeLevel * 2)} Projektilbreite (+2 pro Stufe)`;
+    case 'precisionExecute':
+      return `Bis zu +${number(safeLevel * 3)} % Schaden gegen verwundete Ziele (+3 % pro Stufe)`;
     case 'barricadeHealth':
       return percentMultiplier(safeLevel, 'Barrikadenleben');
     case 'turretDamage':
