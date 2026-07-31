@@ -44,6 +44,8 @@ export interface WavePlan {
   spawnDelayScales?: Partial<Record<number, number>>;
   /** A special title shown instead of the generic wave label. */
   labels?: Partial<Record<number, string>>;
+  /** Late maps may field small pairs of the rare shield and stealth threats. */
+  rareThreatCopies?: number;
 }
 
 function seeded(seed: number) {
@@ -154,12 +156,24 @@ function rarePhantom(wave: number, finalWave: number) {
   return wave >= 5 && wave < finalWave && (wave === 5 || (wave - 5) % 5 === 0);
 }
 
-function withRareThreats(zombies: ZombieType[], wave: number, finalWave: number) {
+function withRareThreats(
+  zombies: ZombieType[],
+  wave: number,
+  finalWave: number,
+  rareThreatCopies = 1,
+) {
+  const copies = Math.max(1, Math.floor(rareThreatCopies));
   const extra: ZombieType[] = [];
-  if (rareShield(wave, finalWave)) extra.push('shieldbearer');
-  if (rarePhaseguard(wave, finalWave)) extra.push('phaseguard');
+  if (rareShield(wave, finalWave)) {
+    for (let copy = 0; copy < copies; copy += 1) extra.push('shieldbearer');
+  }
+  if (rarePhaseguard(wave, finalWave)) {
+    for (let copy = 0; copy < copies; copy += 1) extra.push('phaseguard');
+  }
   if (rareEvasive(wave, finalWave)) extra.push('evasive');
-  if (rarePhantom(wave, finalWave)) extra.push('phantom');
+  if (rarePhantom(wave, finalWave)) {
+    for (let copy = 0; copy < copies; copy += 1) extra.push('phantom');
+  }
   return extra.length > 0 ? [...zombies, ...extra] : zombies;
 }
 
@@ -207,7 +221,7 @@ export function endlessSpeedScale(wave: number) {
  * swarm every fifth and the boss of the map every tenth. Everything is seeded
  * from the wave number, so the same wave always looks the same.
  */
-export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
+export function endlessWave(boss: ZombieType, wave: number, rareThreatCopies = 1): WaveDefinition {
   const size = Math.min(ENDLESS_CAP, ENDLESS_BASE + (wave - 1) * ENDLESS_STEP);
   const seed = 8801 + wave * 17;
 
@@ -227,6 +241,7 @@ export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
         shuffled(pack(swarm(size, ENDLESS_ROSTER, wave)), seed),
         wave,
         Number.POSITIVE_INFINITY,
+        rareThreatCopies,
       ),
     };
   }
@@ -248,6 +263,7 @@ export function endlessWave(boss: ZombieType, wave: number): WaveDefinition {
       shuffled(pack(horde(size, ENDLESS_ROSTER, wave)), seed),
       wave,
       Number.POSITIVE_INFINITY,
+      rareThreatCopies,
     ),
   };
 }
@@ -286,6 +302,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
           [...leaders, ...shuffled(pack(horde(size * 0.65, plan.roster, wave)), seed)],
           wave,
           plan.waves,
+          plan.rareThreatCopies,
         ),
         ...flavour,
       });
@@ -299,6 +316,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
           shuffled(pack(swarm(size, plan.roster, wave)), seed),
           wave,
           plan.waves,
+          plan.rareThreatCopies,
         ),
         ...flavour,
       });
@@ -311,6 +329,7 @@ export function buildWaves(plan: WavePlan): WaveDefinition[] {
         shuffled(pack(horde(size, plan.roster, wave)), seed),
         wave,
         plan.waves,
+        plan.rareThreatCopies,
       ),
       ...flavour,
     });

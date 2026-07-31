@@ -132,6 +132,8 @@ export class ProjectileState extends Schema {
   slowSeconds = 0;
   /** Missing-health multiplier used only by the one-target ability shot. */
   execute = 0;
+  /** Upgrade levels that turn part of the victim's maximum health into bonus damage. */
+  precisionHealthDamageLevel = 0;
   /** The Todesurteil perk reduces this ability's cooldown after a killing blow. */
   reduceAbilityCooldownOnKill = false;
   pull = 0;

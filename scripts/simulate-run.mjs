@@ -2221,6 +2221,38 @@ console.log('\n== Sonderzombies ==');
       player.abilityCooldown < 11,
   );
 }
+{
+  function precisionDamageAgainst(type) {
+    const room = makeRoom('outpost');
+    const player = join(room, 'p1', {
+      ability: 'precisionShot',
+      upgrades: { precisionHealthDamage: 5 },
+    });
+    startCombat(room);
+    room.systems.waves.spawnQueue = [];
+    room.state.zombies.clear();
+    const victim = room.systems.world.spawnZombie(type, { x: player.x + 120, y: player.y });
+    victim.maxHealth = 100000;
+    victim.health = victim.maxHealth;
+    room.systems.players.useAbility('p1', { x: victim.x, y: victim.y });
+    room.systems.projectiles.update(0.1);
+    return victim.maxHealth - victim.health;
+  }
+
+  const eliteDamage = precisionDamageAgainst('normal');
+  const miniDamage = precisionDamageAgainst('stalker');
+  const bossDamage = precisionDamageAgainst('butcher');
+  check(
+    'Zielanalyse verursacht prozentualen Maximalleben-Schaden',
+    eliteDamage > 6000,
+    `(${Math.round(eliteDamage)})`,
+  );
+  check(
+    'Zielanalyse ist gegen Mini-Bosse schwächer und gegen Bosse am schwächsten',
+    eliteDamage > miniDamage && miniDamage > bossDamage && bossDamage > 1850,
+    `(${Math.round(eliteDamage)} / ${Math.round(miniDamage)} / ${Math.round(bossDamage)})`,
+  );
+}
 
 console.log('\n== Boss-Fähigkeiten ==');
 {

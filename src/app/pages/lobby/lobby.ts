@@ -37,9 +37,25 @@ import { GameCanvas } from '../../game/game-canvas';
 import { UpgradeShop } from '../../shared/upgrade-shop';
 
 type ShopTab = 'weapons' | 'melee' | 'barricades' | 'turrets' | 'vehicles';
+type ShopFavoriteItem =
+  | { id: string; kind: 'weapon'; type: WeaponType; label: string; short: string }
+  | { id: string; kind: 'defense'; type: DefenseType; label: string; short: string }
+  | { id: string; kind: 'vehicle'; type: VehicleType; label: string; short: string };
 
 /** How long an armed sell button waits for the confirming second click. */
 const SALE_CONFIRM_MS = 4000;
+const SHOP_FAVORITES_KEY = 'zombie-defense-shop-favorites-v1';
+
+function loadShopFavorites() {
+  try {
+    const value = JSON.parse(localStorage.getItem(SHOP_FAVORITES_KEY) ?? '[]');
+    return Array.isArray(value)
+      ? Array.from(new Set(value.filter((entry): entry is string => typeof entry === 'string')))
+      : [];
+  } catch {
+    return [];
+  }
+}
 
 @Component({
   selector: 'app-lobby',
@@ -61,6 +77,7 @@ export class Lobby implements OnInit, OnDestroy {
   readonly lobbyCode = signal('');
   readonly shopTab = signal<ShopTab>('weapons');
   readonly showBasicStats = signal(false);
+  readonly favoriteIds = signal<string[]>(loadShopFavorites());
   readonly upgradesOpen = signal(false);
   readonly combatPanelCollapsed = signal(false);
   /** Which half of leaving a run is running right now, for the button label. */
@@ -94,6 +111,50 @@ export class Lobby implements OnInit, OnDestroy {
   readonly barricades = BARRICADE_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
   readonly turrets = TURRET_ORDER.map((type) => ({ type, ...DEFENSES[type] }));
   readonly vehicles = VEHICLE_ORDER.map((type) => ({ type, ...VEHICLES[type] }));
+  private readonly favoriteCatalog: ShopFavoriteItem[] = [
+    ...this.weapons.map(({ type, label, short }) => ({
+      id: `weapon:${type}`,
+      kind: 'weapon' as const,
+      type,
+      label,
+      short,
+    })),
+    ...this.meleeWeapons.map(({ type, label, short }) => ({
+      id: `weapon:${type}`,
+      kind: 'weapon' as const,
+      type,
+      label,
+      short,
+    })),
+    ...this.barricades.map(({ type, label, short }) => ({
+      id: `defense:${type}`,
+      kind: 'defense' as const,
+      type,
+      label,
+      short,
+    })),
+    ...this.turrets.map(({ type, label, short }) => ({
+      id: `defense:${type}`,
+      kind: 'defense' as const,
+      type,
+      label,
+      short,
+    })),
+    ...this.vehicles.map(({ type, label, short }) => ({
+      id: `vehicle:${type}`,
+      kind: 'vehicle' as const,
+      type,
+      label,
+      short,
+    })),
+  ];
+  readonly favoriteItems = computed(() => {
+    const ids = this.favoriteIds();
+    return ids.flatMap((id) => {
+      const item = this.favoriteCatalog.find((entry) => entry.id === id);
+      return item ? [item] : [];
+    });
+  });
 
   readonly activeMap = computed(() =>
     findMap(this.game.snapshot()?.mapId ?? this.game.preferredMap()),
@@ -106,7 +167,7 @@ export class Lobby implements OnInit, OnDestroy {
     const map = this.activeMap();
     const wave =
       snapshot.endless && number > map.waves.length
-        ? endlessWave(map.boss, number)
+        ? endlessWave(map.boss, number, map.difficulty >= 6 ? 2 : 1)
         : map.waves[number - 1];
     if (!wave) return null;
     return { number, label: wave.label, kind: wave.kind, enemies: wave.zombies.length };
@@ -161,6 +222,57 @@ export class Lobby implements OnInit, OnDestroy {
 
   setBasicStats(event: Event) {
     this.showBasicStats.set((event.target as HTMLInputElement).checked);
+  }
+
+  isFavorite(kind: ShopFavoriteItem['kind'], type: string) {
+    return this.favoriteIds().includes(`${kind}:${type}`);
+  }
+
+  toggleFavorite(event: MouseEvent, kind: ShopFavoriteItem['kind'], type: string) {
+    event.stopPropagation();
+    const id = `${kind}:${type}`;
+    this.favoriteIds.update((current) =>
+      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
+    );
+    try {
+      localStorage.setItem(SHOP_FAVORITES_KEY, JSON.stringify(this.favoriteIds()));
+    } catch {
+      // The favorites still work for this session when storage is unavailable.
+    }
+    this.audio.play('ui');
+  }
+
+  favoriteSelected(item: ShopFavoriteItem) {
+    if (item.kind === 'weapon') return this.game.player()?.weapon === item.type;
+    if (item.kind === 'defense') return this.game.selectedBuild() === item.type;
+    return this.game.selectedVehicle() === item.type;
+  }
+
+  favoriteUnavailable(item: ShopFavoriteItem) {
+    const money = this.game.player()?.money ?? 0;
+    if (item.kind === 'weapon') {
+      return (
+        (!this.owns(item.type) && money < this.weaponPrice(item.type)) ||
+        this.favoriteSelected(item)
+      );
+    }
+    if (item.kind === 'defense') return money < this.defensePrice(item.type);
+    return money < this.vehiclePrice(item.type);
+  }
+
+  favoriteStatus(item: ShopFavoriteItem) {
+    if (item.kind === 'weapon') {
+      if (this.game.player()?.weapon === item.type) return 'Ausgerüstet';
+      return this.owns(item.type) ? 'Ausrüsten' : `$ ${this.weaponPrice(item.type)}`;
+    }
+    if (item.kind === 'defense') return `$ ${this.defensePrice(item.type)}`;
+    return `$ ${this.vehiclePrice(item.type)}`;
+  }
+
+  activateFavorite(item: ShopFavoriteItem) {
+    if (item.kind === 'weapon') this.weaponAction(item.type);
+    else if (item.kind === 'defense') this.selectBuild(item.type);
+    else this.selectVehicle(item.type);
   }
 
   toggleCombatPanel() {

@@ -294,8 +294,10 @@ steht, auch über den Köpfen der Mitspieler.
 Jeder Run beginnt mit einer Bauphase vor Welle 1. Im Seitenmenü wird zwischen
 Waffen, Barrikaden, Türmen und Fahrzeugen gewechselt, ein Bauteil ausgewählt und
 danach auf dem Spielfeld platziert.
-Basiswerte bleiben standardmäßig ausgeblendet und lassen sich über die kleine
-Checkbox **Basic Stats anzeigen** für alle Shop-Einträge zugleich einblenden.
+Basiswerte bleiben standardmäßig ausgeblendet und lassen sich über den kompakten
+Schalter **Basiswerte** für alle Shop-Einträge zugleich einblenden. Sterne merken
+persönliche Favoriten dauerhaft und zeigen sie zusätzlich als Schnellzugriff
+oberhalb der Shop-Kategorien an.
 Spieler können sich dabei weiterhin bewegen. Die Vorschau rastet an
 Nachbarbauten und Hindernissen ein, sodass Wände lückenlos entstehen; rot
 bedeutet, dass dort nicht gebaut werden kann. Mit dem Start der Welle fällt die
@@ -349,7 +351,9 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
   Nahkampf-Angriffstempo und -Reichweite, Nachladen, Magazin, Munitionsvorrat,
   Barrikaden, Turmschaden, Turmreichweite, Fahrzeugleben, Fahrzeugpanzerung,
   Motorleistung, Rammschaden, Bordwaffen, Dash-Ladungen, Dash-Aufladung,
-  Dash-Schadensreduktion, Dash-Schaden und Dash-Schild
+  Dash-Schadensreduktion, Dash-Schaden, Dash-Schild und Zielanalyse für den
+  Vernichtungsschuss. Zielanalyse verursacht anteiligen Maximallebensschaden,
+  abgeschwächt gegen Mini-Bosse und noch stärker abgeschwächt gegen Bosse.
 - **Besondere Vorteile** – günstigere erste Waffe, erste Barrikaden, erster
   Turm und erstes Fahrzeug eines Runs, ein Dash der Zombies wegschleudert, ein
   Dash der durch Gegner schneidet und Schild auflädt, doppelt so schnelles

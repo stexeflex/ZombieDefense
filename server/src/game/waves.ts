@@ -351,7 +351,9 @@ export class WaveSystem {
   private waveFor(wave: number) {
     const map = this.world.map;
     if (wave <= map.waves.length) return map.waves[wave - 1];
-    return this.world.state.endless ? endlessWave(map.boss, wave) : undefined;
+    return this.world.state.endless
+      ? endlessWave(map.boss, wave, map.difficulty >= 6 ? 2 : 1)
+      : undefined;
   }
 
   startNextWave() {

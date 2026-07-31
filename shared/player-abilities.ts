@@ -1,4 +1,5 @@
 import type { PermanentPerks, PermanentUpgrades } from './upgrades.js';
+import type { ZombieRank } from './zombies.js';
 
 /** The one active tool a survivor may fire with G. */
 export type PlayerAbilityType = 'grenade' | 'mortarStrike' | 'precisionShot';
@@ -37,8 +38,22 @@ export const PRECISION_MIN_COOLDOWN = 14;
 export const PRECISION_PROJECTILE_SPEED = 2100;
 export const PRECISION_PROJECTILE_RADIUS = 9;
 export const PRECISION_PROJECTILE_LIFE = 1.35;
+/** Each level adds max-health damage; sturdy leaders resist most of that scaling. */
+export const PRECISION_HEALTH_DAMAGE_PER_LEVEL = 0.01;
+export const PRECISION_MINI_HEALTH_DAMAGE_FACTOR = 0.4;
+export const PRECISION_BOSS_HEALTH_DAMAGE_FACTOR = 0.15;
 /** Todesurteil removes most of a running reload, but never grants a free shot. */
 export const PRECISION_KILL_COOLDOWN_REDUCTION = 0.7;
+
+export function precisionHealthDamageFraction(level: number, rank: ZombieRank) {
+  const rankFactor =
+    rank === 'boss'
+      ? PRECISION_BOSS_HEALTH_DAMAGE_FACTOR
+      : rank === 'mini'
+        ? PRECISION_MINI_HEALTH_DAMAGE_FACTOR
+        : 1;
+  return Math.max(0, Math.floor(level)) * PRECISION_HEALTH_DAMAGE_PER_LEVEL * rankFactor;
+}
 
 export const PLAYER_ABILITIES: Record<PlayerAbilityType, PlayerAbilityConfig> = {
   grenade: {

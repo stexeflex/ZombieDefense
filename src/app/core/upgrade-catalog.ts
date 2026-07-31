@@ -15,7 +15,10 @@ import {
   PLAYER_BASE_HEALTH,
   PRECISION_BASE_COOLDOWN,
   PRECISION_BASE_DAMAGE,
+  PRECISION_BOSS_HEALTH_DAMAGE_FACTOR,
+  PRECISION_HEALTH_DAMAGE_PER_LEVEL,
   PRECISION_MIN_COOLDOWN,
+  PRECISION_MINI_HEALTH_DAMAGE_FACTOR,
   PRECISION_PROJECTILE_RADIUS,
   START_MONEY_PER_LEVEL,
   VEHICLE_MAX_SPEED_BONUS,
@@ -36,6 +39,7 @@ export type UpgradeCategory =
   | 'grenades'
   | 'mortar'
   | 'precision'
+  | 'barricades'
   | 'turrets'
   | 'vehicles'
   | 'dash';
@@ -99,9 +103,15 @@ export const UPGRADE_GROUPS: UpgradeGroupDefinition[] = [
     icon: '➤',
   },
   {
+    key: 'barricades',
+    label: 'Barrikaden',
+    description: 'Mehr Widerstandskraft für alle gebauten Sperren',
+    icon: '▰',
+  },
+  {
     key: 'turrets',
     label: 'Türme',
-    description: 'Barrikaden und automatische Verteidigung',
+    description: 'Schaden und Reichweite automatischer Verteidigung',
     icon: '⌖',
   },
   {
@@ -157,7 +167,13 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'precisionCooldown', category: 'precision', label: 'Ladezyklus', icon: '◷' },
   { key: 'precisionWidth', category: 'precision', label: 'Schussbreite', icon: '━' },
   { key: 'precisionExecute', category: 'precision', label: 'Vollstrecker', icon: '†' },
-  { key: 'barricadeHealth', category: 'turrets', label: 'Barrikadenleben', icon: '▰' },
+  {
+    key: 'precisionHealthDamage',
+    category: 'precision',
+    label: 'Zielanalyse',
+    icon: '%',
+  },
+  { key: 'barricadeHealth', category: 'barricades', label: 'Barrikadenleben', icon: '▰' },
   { key: 'turretDamage', category: 'turrets', label: 'Turmschaden', icon: '⌖' },
   { key: 'turretRange', category: 'turrets', label: 'Turmreichweite', icon: '◈' },
   { key: 'vehicleHealth', category: 'vehicles', label: 'Fahrzeugleben', icon: '🚙' },
@@ -242,6 +258,8 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
       return `${number(PRECISION_PROJECTILE_RADIUS * 2 + safeLevel * 2)} Projektilbreite (+2 pro Stufe)`;
     case 'precisionExecute':
       return `Bis zu +${number(safeLevel * 3)} % Schaden gegen verwundete Ziele (+3 % pro Stufe)`;
+    case 'precisionHealthDamage':
+      return `${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * 100)} % maximales Gegnerleben als Bonusschaden · Mini-Bosse ${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * PRECISION_MINI_HEALTH_DAMAGE_FACTOR * 100)} % · Bosse ${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * PRECISION_BOSS_HEALTH_DAMAGE_FACTOR * 100)} % (+1 % pro Stufe)`;
     case 'barricadeHealth':
       return percentMultiplier(safeLevel, 'Barrikadenleben');
     case 'turretDamage':

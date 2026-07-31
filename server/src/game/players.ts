@@ -762,6 +762,7 @@ export class PlayerSystem {
     projectile.life = PRECISION_PROJECTILE_LIFE;
     projectile.pierce = 0;
     projectile.execute = runtime.upgrades.precisionExecute * 0.03;
+    projectile.precisionHealthDamageLevel = runtime.upgrades.precisionHealthDamage;
     projectile.reduceAbilityCooldownOnKill = runtime.perks.precisionReload;
     this.world.state.projectiles.set(projectile.id, projectile);
     this.world.pushFx({

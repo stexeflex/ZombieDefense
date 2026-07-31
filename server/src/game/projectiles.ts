@@ -1,4 +1,9 @@
-import { ARENA, PRECISION_KILL_COOLDOWN_REDUCTION, ZOMBIES } from '../../../shared/game-types.js';
+import {
+  ARENA,
+  PRECISION_KILL_COOLDOWN_REDUCTION,
+  ZOMBIES,
+  precisionHealthDamageFraction,
+} from '../../../shared/game-types.js';
 import type { ProjectileState, ZombieState } from '../state/game-state.js';
 import type { GameWorld } from './world.js';
 
@@ -73,7 +78,15 @@ export class ProjectileSystem {
           this.world.chillZombie(zombie, projectile.slow, projectile.slowSeconds);
         }
         const missingHealth = zombie.maxHealth > 0 ? 1 - zombie.health / zombie.maxHealth : 0;
-        const damage = projectile.damage * (1 + projectile.execute * Math.max(0, missingHealth));
+        const precisionHealthDamage =
+          zombie.maxHealth *
+          precisionHealthDamageFraction(
+            projectile.precisionHealthDamageLevel,
+            ZOMBIES[zombie.type].rank,
+          );
+        const damage =
+          projectile.damage * (1 + projectile.execute * Math.max(0, missingHealth)) +
+          precisionHealthDamage;
         this.world.damageZombie(zombieId, zombie, damage, projectile.ownerId);
         if (projectile.reduceAbilityCooldownOnKill && !this.world.state.zombies.has(zombieId)) {
           this.reducePrecisionCooldown(projectile.ownerId);

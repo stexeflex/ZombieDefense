@@ -694,8 +694,47 @@
                   [checked]="showBasicStats()"
                   (change)="setBasicStats($event)"
                 />
-                <span>Basic Stats anzeigen</span>
+                <span class="basic-stats-switch" aria-hidden="true"><i></i></span>
+                <span class="basic-stats-label">
+                  <b>Basiswerte</b>
+                  <small>{{ showBasicStats() ? 'Sichtbar' : 'Ausgeblendet' }}</small>
+                </span>
               </label>
+
+              @if (favoriteItems().length > 0) {
+                <section class="shop-favorites" aria-label="Shop-Favoriten">
+                  <header>
+                    <strong>★ Favoriten</strong>
+                    <small>Schnellzugriff</small>
+                  </header>
+                  <div class="favorite-strip">
+                    @for (item of favoriteItems(); track item.id) {
+                      <div class="favorite-entry">
+                        <button
+                          class="favorite-action"
+                          type="button"
+                          [class.selected]="favoriteSelected(item)"
+                          [class.unavailable]="favoriteUnavailable(item)"
+                          [attr.aria-disabled]="favoriteUnavailable(item)"
+                          (click)="activateFavorite(item)"
+                        >
+                          <span>{{ item.short }}</span>
+                          <b>{{ item.label }}</b>
+                          <small>{{ favoriteStatus(item) }}</small>
+                        </button>
+                        <button
+                          class="favorite-star active"
+                          type="button"
+                          [attr.aria-label]="item.label + ' aus Favoriten entfernen'"
+                          (click)="toggleFavorite($event, item.kind, item.type)"
+                        >
+                          ★
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
 
               <div class="shop-tabs">
                 <button
@@ -808,6 +847,20 @@
                           }}
                         </strong>
                       </button>
+                      <button
+                        class="favorite-star"
+                        type="button"
+                        [class.active]="isFavorite('weapon', weapon.type)"
+                        [attr.aria-label]="
+                          weapon.label +
+                          (isFavorite('weapon', weapon.type)
+                            ? ' aus Favoriten entfernen'
+                            : ' zu Favoriten hinzufügen')
+                        "
+                        (click)="toggleFavorite($event, 'weapon', weapon.type)"
+                      >
+                        {{ isFavorite('weapon', weapon.type) ? '★' : '☆' }}
+                      </button>
                       @if (owns(weapon.type)) {
                         <button
                           class="sell-item"
@@ -884,6 +937,20 @@
                           }}
                         </strong>
                       </button>
+                      <button
+                        class="favorite-star"
+                        type="button"
+                        [class.active]="isFavorite('weapon', weapon.type)"
+                        [attr.aria-label]="
+                          weapon.label +
+                          (isFavorite('weapon', weapon.type)
+                            ? ' aus Favoriten entfernen'
+                            : ' zu Favoriten hinzufügen')
+                        "
+                        (click)="toggleFavorite($event, 'weapon', weapon.type)"
+                      >
+                        {{ isFavorite('weapon', weapon.type) ? '★' : '☆' }}
+                      </button>
                       @if (owns(weapon.type)) {
                         <button
                           class="sell-item"
@@ -907,114 +974,168 @@
               } @else if (shopTab() === 'barricades') {
                 <div class="shop-scroll">
                   @for (defense of barricades; track defense.type) {
-                    <button
-                      class="shop-item build-item"
-                      type="button"
-                      [class.selected]="game.selectedBuild() === defense.type"
-                      [class.deal]="defenseDeal(defense.type)"
-                      [class.unavailable]="(game.player()?.money ?? 0) < defensePrice(defense.type)"
-                      [attr.aria-disabled]="
-                        (game.player()?.money ?? 0) < defensePrice(defense.type)
-                      "
-                      (click)="selectBuild(defense.type)"
-                    >
-                      <span class="item-icon">{{ defense.short }}</span>
-                      <span class="item-copy">
-                        <span class="item-heading">
-                          <b>{{ defense.label }}</b>
-                          <span
-                            class="item-info"
-                            [attr.aria-label]="'Aktuelle Werte: ' + defenseStats(defense.type)"
-                          >
-                            i
-                            <span class="item-tooltip">{{ defenseStats(defense.type) }}</span>
+                    <div class="build-shop-entry">
+                      <button
+                        class="shop-item build-item"
+                        type="button"
+                        [class.selected]="game.selectedBuild() === defense.type"
+                        [class.deal]="defenseDeal(defense.type)"
+                        [class.unavailable]="
+                          (game.player()?.money ?? 0) < defensePrice(defense.type)
+                        "
+                        [attr.aria-disabled]="
+                          (game.player()?.money ?? 0) < defensePrice(defense.type)
+                        "
+                        (click)="selectBuild(defense.type)"
+                      >
+                        <span class="item-icon">{{ defense.short }}</span>
+                        <span class="item-copy">
+                          <span class="item-heading">
+                            <b>{{ defense.label }}</b>
+                            <span
+                              class="item-info"
+                              [attr.aria-label]="'Aktuelle Werte: ' + defenseStats(defense.type)"
+                            >
+                              i
+                              <span class="item-tooltip">{{ defenseStats(defense.type) }}</span>
+                            </span>
                           </span>
+                          <small>{{ defense.description }}</small>
+                          @if (showBasicStats()) {
+                            <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
+                          }
                         </span>
-                        <small>{{ defense.description }}</small>
-                        @if (showBasicStats()) {
-                          <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
-                        }
-                      </span>
-                      <strong>$ {{ defensePrice(defense.type) }}</strong>
-                    </button>
+                        <strong>$ {{ defensePrice(defense.type) }}</strong>
+                      </button>
+                      <button
+                        class="favorite-star"
+                        type="button"
+                        [class.active]="isFavorite('defense', defense.type)"
+                        [attr.aria-label]="
+                          defense.label +
+                          (isFavorite('defense', defense.type)
+                            ? ' aus Favoriten entfernen'
+                            : ' zu Favoriten hinzufügen')
+                        "
+                        (click)="toggleFavorite($event, 'defense', defense.type)"
+                      >
+                        {{ isFavorite('defense', defense.type) ? '★' : '☆' }}
+                      </button>
+                    </div>
                   }
                 </div>
               } @else if (shopTab() === 'turrets') {
                 <div class="shop-scroll">
                   @for (defense of turrets; track defense.type) {
-                    <button
-                      class="shop-item build-item"
-                      type="button"
-                      [class.selected]="game.selectedBuild() === defense.type"
-                      [class.deal]="defenseDeal(defense.type)"
-                      [class.unavailable]="(game.player()?.money ?? 0) < defensePrice(defense.type)"
-                      [attr.aria-disabled]="
-                        (game.player()?.money ?? 0) < defensePrice(defense.type)
-                      "
-                      (click)="selectBuild(defense.type)"
-                    >
-                      <span class="item-icon">{{ defense.short }}</span>
-                      <span class="item-copy">
-                        <span class="item-heading">
-                          <b>{{ defense.label }}</b>
-                          <span
-                            class="item-info"
-                            [attr.aria-label]="'Aktuelle Werte: ' + defenseStats(defense.type)"
-                          >
-                            i
-                            <span class="item-tooltip">{{ defenseStats(defense.type) }}</span>
+                    <div class="build-shop-entry">
+                      <button
+                        class="shop-item build-item"
+                        type="button"
+                        [class.selected]="game.selectedBuild() === defense.type"
+                        [class.deal]="defenseDeal(defense.type)"
+                        [class.unavailable]="
+                          (game.player()?.money ?? 0) < defensePrice(defense.type)
+                        "
+                        [attr.aria-disabled]="
+                          (game.player()?.money ?? 0) < defensePrice(defense.type)
+                        "
+                        (click)="selectBuild(defense.type)"
+                      >
+                        <span class="item-icon">{{ defense.short }}</span>
+                        <span class="item-copy">
+                          <span class="item-heading">
+                            <b>{{ defense.label }}</b>
+                            <span
+                              class="item-info"
+                              [attr.aria-label]="'Aktuelle Werte: ' + defenseStats(defense.type)"
+                            >
+                              i
+                              <span class="item-tooltip">{{ defenseStats(defense.type) }}</span>
+                            </span>
                           </span>
+                          <small>{{ defense.description }}</small>
+                          @if (showBasicStats()) {
+                            <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
+                          }
                         </span>
-                        <small>{{ defense.description }}</small>
-                        @if (showBasicStats()) {
-                          <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
-                        }
-                      </span>
-                      <strong>$ {{ defensePrice(defense.type) }}</strong>
-                    </button>
+                        <strong>$ {{ defensePrice(defense.type) }}</strong>
+                      </button>
+                      <button
+                        class="favorite-star"
+                        type="button"
+                        [class.active]="isFavorite('defense', defense.type)"
+                        [attr.aria-label]="
+                          defense.label +
+                          (isFavorite('defense', defense.type)
+                            ? ' aus Favoriten entfernen'
+                            : ' zu Favoriten hinzufügen')
+                        "
+                        (click)="toggleFavorite($event, 'defense', defense.type)"
+                      >
+                        {{ isFavorite('defense', defense.type) ? '★' : '☆' }}
+                      </button>
+                    </div>
                   }
                 </div>
               } @else {
                 <div class="shop-scroll">
                   @for (vehicle of vehicles; track vehicle.type) {
-                    <button
-                      class="shop-item build-item"
-                      type="button"
-                      [class.selected]="game.selectedVehicle() === vehicle.type"
-                      [class.deal]="vehicleDeal(vehicle.type)"
-                      [class.unavailable]="(game.player()?.money ?? 0) < vehiclePrice(vehicle.type)"
-                      [attr.aria-disabled]="
-                        (game.player()?.money ?? 0) < vehiclePrice(vehicle.type)
-                      "
-                      (click)="selectVehicle(vehicle.type)"
-                    >
-                      <span class="item-icon">{{ vehicle.short }}</span>
-                      <span class="item-copy">
-                        <span class="item-heading">
-                          <b>{{ vehicle.label }}</b>
-                          <span
-                            class="item-info"
-                            [attr.aria-label]="'Aktuelle Werte: ' + vehicleStats(vehicle.type)"
-                          >
-                            i
-                            <span class="item-tooltip">{{ vehicleStats(vehicle.type) }}</span>
+                    <div class="build-shop-entry">
+                      <button
+                        class="shop-item build-item"
+                        type="button"
+                        [class.selected]="game.selectedVehicle() === vehicle.type"
+                        [class.deal]="vehicleDeal(vehicle.type)"
+                        [class.unavailable]="
+                          (game.player()?.money ?? 0) < vehiclePrice(vehicle.type)
+                        "
+                        [attr.aria-disabled]="
+                          (game.player()?.money ?? 0) < vehiclePrice(vehicle.type)
+                        "
+                        (click)="selectVehicle(vehicle.type)"
+                      >
+                        <span class="item-icon">{{ vehicle.short }}</span>
+                        <span class="item-copy">
+                          <span class="item-heading">
+                            <b>{{ vehicle.label }}</b>
+                            <span
+                              class="item-info"
+                              [attr.aria-label]="'Aktuelle Werte: ' + vehicleStats(vehicle.type)"
+                            >
+                              i
+                              <span class="item-tooltip">{{ vehicleStats(vehicle.type) }}</span>
+                            </span>
                           </span>
+                          <small>
+                            {{ vehicle.seats }} {{ vehicle.seats === 1 ? 'Platz' : 'Plätze' }} ·
+                            {{ vehicleHealth(vehicle.type) }} HP · Insassen unverwundbar
+                          </small>
+                          @if (vehicleArmorPercent() > 0) {
+                            <small>+{{ vehicleArmorPercent() }} % Fahrzeugpanzerung</small>
+                          }
+                          <small>{{ vehicle.description }}</small>
+                          <small class="vehicle-perk">★ {{ vehicle.perk }}</small>
+                          @if (showBasicStats()) {
+                            <small class="item-base">{{ vehicleBaseDamage(vehicle.type) }}</small>
+                          }
                         </span>
-                        <small>
-                          {{ vehicle.seats }} {{ vehicle.seats === 1 ? 'Platz' : 'Plätze' }} ·
-                          {{ vehicleHealth(vehicle.type) }} HP · Insassen unverwundbar
-                        </small>
-                        @if (vehicleArmorPercent() > 0) {
-                          <small>+{{ vehicleArmorPercent() }} % Fahrzeugpanzerung</small>
-                        }
-                        <small>{{ vehicle.description }}</small>
-                        <small class="vehicle-perk">★ {{ vehicle.perk }}</small>
-                        @if (showBasicStats()) {
-                          <small class="item-base">{{ vehicleBaseDamage(vehicle.type) }}</small>
-                        }
-                      </span>
-                      <strong>$ {{ vehiclePrice(vehicle.type) }}</strong>
-                    </button>
+                        <strong>$ {{ vehiclePrice(vehicle.type) }}</strong>
+                      </button>
+                      <button
+                        class="favorite-star"
+                        type="button"
+                        [class.active]="isFavorite('vehicle', vehicle.type)"
+                        [attr.aria-label]="
+                          vehicle.label +
+                          (isFavorite('vehicle', vehicle.type)
+                            ? ' aus Favoriten entfernen'
+                            : ' zu Favoriten hinzufügen')
+                        "
+                        (click)="toggleFavorite($event, 'vehicle', vehicle.type)"
+                      >
+                        {{ isFavorite('vehicle', vehicle.type) ? '★' : '☆' }}
+                      </button>
+                    </div>
                   }
                 </div>
               }

@@ -27,6 +27,7 @@ import {
   PLAYER_ABILITY_COST,
   PLAYER_ABILITY_ORDER,
   PRECISION_KILL_COOLDOWN_REDUCTION,
+  PRECISION_HEALTH_DAMAGE_PER_LEVEL,
   PLAYER_BASE_SPEED,
   REPAIR_COST_PER_HP,
   REVIVE_RADIUS,
@@ -74,6 +75,7 @@ import {
   healthRegenPerSecond,
   isMeleeWeapon,
   magazineCapacity,
+  precisionHealthDamageFraction,
   repairCost,
   reserveCapacity,
   sellValue,
@@ -292,24 +294,28 @@ describe('enemy roster', () => {
   });
 
   it('uses shield carriers as rare isolated threats on every map', () => {
-    for (const map of MAPS) {
+    for (const [mapIndex, map] of MAPS.entries()) {
       const carriers = map.waves
         .flatMap((wave) => wave.zombies)
         .filter((type) => type === 'shieldbearer');
       expect(carriers.length).toBeGreaterThan(0);
-      expect(carriers.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 4));
+      expect(carriers.length).toBeLessThanOrEqual(
+        Math.ceil(map.waves.length / (mapIndex >= 7 ? 2 : 4)),
+      );
     }
     expect(ZOMBIES.shieldbearer.frontShield!.turnSpeed).toBeLessThan(1);
     expect(ZOMBIES.shieldbearer.frontShield!.arc).toBeLessThan(Math.PI);
   });
 
   it('introduces rare Phasenwächter with a short all-round shield', () => {
-    for (const map of MAPS) {
+    for (const [mapIndex, map] of MAPS.entries()) {
       const guards = map.waves
         .flatMap((wave) => wave.zombies)
         .filter((type) => type === 'phaseguard');
       expect(guards.length).toBeGreaterThan(0);
-      expect(guards.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 5));
+      expect(guards.length).toBeLessThanOrEqual(
+        Math.ceil(map.waves.length / (mapIndex >= 7 ? 3 : 5)),
+      );
     }
     const shield = timedAbilities('phaseguard').find((ability) => ability.kind === 'phaseShield');
     expect(shield).toBeDefined();
@@ -318,19 +324,31 @@ describe('enemy roster', () => {
   });
 
   it('sprinkles rare zig-zag runners and turret-invisible phantoms across the campaign', () => {
-    for (const map of MAPS) {
+    for (const [mapIndex, map] of MAPS.entries()) {
       const roster = map.waves.flatMap((wave) => wave.zombies);
       const evasive = roster.filter((type) => type === 'evasive');
       const phantoms = roster.filter((type) => type === 'phantom');
       expect(evasive.length).toBeGreaterThan(0);
       expect(phantoms.length).toBeGreaterThan(0);
       expect(evasive.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 3));
-      expect(phantoms.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 4));
+      expect(phantoms.length).toBeLessThanOrEqual(
+        Math.ceil(map.waves.length / (mapIndex >= 7 ? 2 : 4)),
+      );
     }
     expect(ZOMBIES.evasive.zigzag?.angle).toBeGreaterThan(0.5);
     expect(ZOMBIES.evasive.speed).toBeGreaterThan(ZOMBIES.normal.speed);
     expect(canTurretTarget('phantom')).toBe(false);
     expect(canTurretTarget('normal')).toBe(true);
+  });
+
+  it('fields small pairs of shield and stealth threats from map eight onward', () => {
+    const before = MAPS[6].waves.flatMap((wave) => wave.zombies);
+    const late = MAPS[7].waves.flatMap((wave) => wave.zombies);
+    for (const type of ['shieldbearer', 'phaseguard', 'phantom'] as const) {
+      expect(late.filter((entry) => entry === type).length).toBeGreaterThan(
+        before.filter((entry) => entry === type).length,
+      );
+    }
   });
 
   it('pays more money for tougher enemies', () => {
@@ -907,6 +925,9 @@ describe('permanent upgrades', () => {
     expect(PLAYER_ABILITY_COST.mortarStrike).toBe(PLAYER_ABILITY_COST.precisionShot);
     expect(PLAYER_ABILITY_COST.mortarStrike).toBeGreaterThan(0);
     expect(PRECISION_KILL_COOLDOWN_REDUCTION).toBe(0.7);
+    expect(precisionHealthDamageFraction(5, 'elite')).toBe(5 * PRECISION_HEALTH_DAMAGE_PER_LEVEL);
+    expect(precisionHealthDamageFraction(5, 'mini')).toBeCloseTo(0.02);
+    expect(precisionHealthDamageFraction(5, 'boss')).toBeCloseTo(0.0075);
     expect(abilityMaxCharges('grenade', { ...EMPTY_PERKS, extraGrenade: true })).toBe(4);
     expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraGrenade: true })).toBe(1);
     expect(EMPTY_PERKS.mortarNapalm).toBe(false);

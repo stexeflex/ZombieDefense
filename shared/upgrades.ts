@@ -28,6 +28,7 @@ export interface PermanentUpgrades {
   precisionCooldown: number;
   precisionWidth: number;
   precisionExecute: number;
+  precisionHealthDamage: number;
   barricadeHealth: number;
   turretDamage: number;
   turretRange: number;
@@ -69,6 +70,7 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   precisionCooldown: 0,
   precisionWidth: 0,
   precisionExecute: 0,
+  precisionHealthDamage: 0,
   barricadeHealth: 0,
   turretDamage: 0,
   turretRange: 0,
@@ -105,6 +107,7 @@ export const UPGRADE_LIMITS: Partial<Record<UpgradeKey, number>> = {
   mortarSlow: 8,
   precisionWidth: 8,
   precisionExecute: 10,
+  precisionHealthDamage: 10,
   dashCharges: 3,
   dashResist: 6,
 };
@@ -115,6 +118,7 @@ export function upgradeMaxLevel(key: UpgradeKey) {
 
 export function upgradeLevelCost(key: UpgradeKey, level: number) {
   if (key === 'grenadeSplit') return 900 + level * 650;
+  if (key === 'precisionHealthDamage') return 850 + level * 550;
   if (key === 'dashCharges') return 700 + level * 750;
   if (key === 'dashResist') return 500 + level * 450;
   return upgradeCost(level);

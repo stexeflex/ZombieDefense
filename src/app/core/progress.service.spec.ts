@@ -60,6 +60,7 @@ describe('ProgressService upgrade shop', () => {
       'Granaten',
       'Mörserschlag',
       'Vernichtungsschuss',
+      'Barrikaden',
       'Türme',
       'Fahrzeuge',
       'Dash',
@@ -79,6 +80,7 @@ describe('ProgressService upgrade shop', () => {
     expect(upgradeCurrentValue('grenadeSplit', 6)).toContain('6 Mini-Granaten');
     expect(upgradeCurrentValue('mortarSlow', 4)).toContain('1,5 s Verlangsamung');
     expect(upgradeCurrentValue('precisionExecute', 10)).toContain('+30 %');
+    expect(upgradeCurrentValue('precisionHealthDamage', 5)).toContain('5 % maximales Gegnerleben');
     expect(upgradeCurrentValue('armor', 35)).not.toContain('max.');
     expect(upgradeCurrentValue('vehicleArmor', 10)).toContain('10 % weniger Schaden');
   });
