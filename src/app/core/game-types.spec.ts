@@ -98,12 +98,14 @@ function dps(weapon: WeaponType) {
 }
 
 describe('map campaign', () => {
-  it('offers fifteen maps that get harder and pay out more', () => {
-    expect(MAPS).toHaveLength(15);
+  it('offers sixteen maps that get harder and pay out more', () => {
+    expect(MAPS).toHaveLength(16);
     for (let index = 1; index < MAPS.length; index += 1) {
       expect(MAPS[index].difficulty).toBeGreaterThan(MAPS[index - 1].difficulty);
       expect(MAPS[index].reward).toBeGreaterThan(MAPS[index - 1].reward);
-      expect(MAPS[index].waves.length).toBeGreaterThanOrEqual(MAPS[index - 1].waves.length);
+      if (MAPS[index].mission?.kind !== 'timed') {
+        expect(MAPS[index].waves.length).toBeGreaterThanOrEqual(MAPS[index - 1].waves.length);
+      }
     }
   });
 
@@ -151,18 +153,41 @@ describe('map campaign', () => {
     expect(endlessRunReward(map, 50)).toBeGreaterThan(endlessRunReward(map, 30) * 2);
   });
 
-  it('ends every map with its own boss', () => {
+  it('ends regular maps with their own boss and timed survival with three at once', () => {
     const seen = new Set<string>();
     for (const map of MAPS) {
       const bossWaves = map.waves.filter((wave) => wave.kind === 'boss');
       expect(bossWaves).toHaveLength(1);
       expect(map.waves[map.waves.length - 1].kind).toBe('boss');
-      expect(bossWaves[0].zombies[0]).toBe(map.boss);
+      expect(bossWaves[0].zombies).toContain(map.boss);
       expect(ZOMBIES[map.boss].rank).toBe('boss');
-      expect(seen.has(map.boss)).toBe(false);
-      seen.add(map.boss);
+      if (map.mission?.kind === 'timed') {
+        expect(bossWaves[0].zombies.filter((type) => ZOMBIES[type].rank === 'boss')).toHaveLength(
+          3,
+        );
+      } else {
+        expect(seen.has(map.boss)).toBe(false);
+        seen.add(map.boss);
+      }
     }
     expect(seen.size).toBe(BOSSES.length);
+  });
+
+  it('defines a sparse eight-minute elite survival finale', () => {
+    const map = MAPS.find((entry) => entry.id === 'deadzone');
+    expect(map?.mission?.kind).toBe('timed');
+    if (!map || map.mission?.kind !== 'timed') throw new Error('timed map missing');
+    expect(map.mission.durationSeconds).toBe(480);
+    expect(map.mission.reinforcementTimes).toHaveLength(map.waves.length - 1);
+    expect(map.mission.reinforcementTimes.at(-1)).toBeLessThan(map.mission.durationSeconds);
+    expect(map.obstacles.length).toBeLessThanOrEqual(5);
+    expect(map.waves.every((wave) => wave.zombies.length <= 18)).toBe(true);
+    expect(
+      map.waves
+        .slice(0, -1)
+        .flatMap((wave) => wave.zombies)
+        .every((type) => ZOMBIES[type].rank !== 'trash'),
+    ).toBe(true);
   });
 
   it('schedules mini boss and swarm waves before the finale', () => {
@@ -249,13 +274,13 @@ describe('map campaign', () => {
 });
 
 describe('enemy roster', () => {
-  it('covers trash, elites, mini bosses and one boss per map', () => {
+  it('covers trash, elites, mini bosses and every dedicated campaign boss', () => {
     expect(ZOMBIE_TYPES.length).toBeGreaterThanOrEqual(20);
     expect(ZOMBIES.exploder.explode).toBeDefined();
     expect(ZOMBIES.shieldbearer.frontShield).toBeDefined();
     expect(MINI_BOSSES.every((type) => ZOMBIES[type].rank === 'mini')).toBe(true);
     expect(BOSSES.every((type) => ZOMBIES[type].rank === 'boss')).toBe(true);
-    expect(BOSSES).toHaveLength(MAPS.length);
+    expect(new Set(MAPS.map((map) => map.boss)).size).toBe(BOSSES.length);
   });
 
   it('uses shield carriers as rare isolated threats on every map', () => {
@@ -956,6 +981,7 @@ describe('permanent upgrades', () => {
       expect(PERK_COST[key]).toBeGreaterThan(0);
       expect(EMPTY_PERKS[key]).toBe(false);
     }
+    expect(STARTER_DISCOUNT).toBe(0.3);
     expect(discountedCost(1000, 1)).toBe(Math.round(1000 * (1 - STARTER_DISCOUNT)));
     expect(discountedCost(1000, 0)).toBe(1000);
   });

@@ -6,6 +6,7 @@ import {
   endlessWave,
   reserveCapacity,
   startingMoney,
+  type MapMission,
   type SpawnPattern,
   type ZombieType,
 } from '../../../shared/game-types.js';
@@ -28,6 +29,8 @@ export class WaveSystem {
   private spawnPattern: SpawnPattern = 'all';
   private spawnDelayScale = 1;
   private spawnIndex = 0;
+  /** Next planned map wave that a timed mission has not released yet. */
+  private timedWaveIndex = 0;
   private runId = '';
 
   constructor(
@@ -72,7 +75,13 @@ export class WaveSystem {
     state.waveKind = 'normal';
     state.waveLabel = 'Welle';
     state.enemiesRemaining = 0;
-    state.statusText = 'Bauphase vor Welle 1 · Baut eure erste Verteidigung';
+    const timedMission =
+      !state.endless && this.world.map.mission?.kind === 'timed'
+        ? this.world.map.mission
+        : undefined;
+    state.statusText = timedMission
+      ? `Bauphase · Bereitet euch auf ${Math.round(timedMission.durationSeconds / 60)} Minuten vor`
+      : 'Bauphase vor Welle 1 · Baut eure erste Verteidigung';
   }
 
   /** Put the whole connected squad back into the shared pre-run lobby. */
@@ -88,9 +97,15 @@ export class WaveSystem {
     state.enemiesRemaining = 0;
     state.phase = 'lobby';
     state.totalWaves = state.endless ? 0 : this.world.map.waves.length;
+    const timedMission =
+      !state.endless && this.world.map.mission?.kind === 'timed'
+        ? this.world.map.mission
+        : undefined;
     state.statusText = state.endless
       ? `${this.world.map.name} · Endlos`
-      : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
+      : timedMission
+        ? `${this.world.map.name} · ${Math.round(timedMission.durationSeconds / 60)} Minuten überleben`
+        : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
     this.clearRunField();
     this.clearObjective();
     this.resetPlayers();
@@ -103,6 +118,7 @@ export class WaveSystem {
     this.spawnPattern = 'all';
     this.spawnDelayScale = 1;
     this.spawnIndex = 0;
+    this.timedWaveIndex = 0;
     state.zombies.clear();
     state.projectiles.clear();
     state.defenses.clear();
@@ -171,7 +187,17 @@ export class WaveSystem {
     const state = this.world.state;
     const mission = this.world.map.mission;
     this.clearObjective();
-    if (!mission || mission.kind === 'survival') return;
+    // Map missions are campaign rules. In endless mode the selected arena
+    // keeps its layout and roster without an objective that can end the run.
+    if (state.endless || !mission || mission.kind === 'survival') return;
+
+    if (mission.kind === 'timed') {
+      state.objectiveKind = mission.kind;
+      state.objectiveTitle = mission.title;
+      state.objectiveTimeRemaining = mission.durationSeconds;
+      state.objectiveDuration = mission.durationSeconds;
+      return;
+    }
 
     state.objectiveActive = true;
     state.objectiveKind = mission.kind;
@@ -200,6 +226,8 @@ export class WaveSystem {
     state.objectiveHealth = 0;
     state.objectiveMaxHealth = 0;
     state.objectiveProgress = 0;
+    state.objectiveTimeRemaining = 0;
+    state.objectiveDuration = 0;
   }
 
   /**
@@ -209,6 +237,10 @@ export class WaveSystem {
   updateMission(delta: number) {
     const state = this.world.state;
     const mission = this.world.map.mission;
+    if (!state.endless && mission?.kind === 'timed') {
+      this.updateTimedMission(delta, mission);
+      return;
+    }
     if (
       state.phase !== 'combat' ||
       !state.objectiveActive ||
@@ -244,6 +276,42 @@ export class WaveSystem {
     const point = this.escortPoint(mission.path, state.objectiveProgress);
     state.objectiveX = point.x;
     state.objectiveY = point.y;
+  }
+
+  /**
+   * Timed survival never pauses for another build phase. Small, deliberately
+   * spaced elite groups enter as the clock advances; clearing the field only
+   * buys breathing room. Reaching zero wins even when the final bosses live.
+   */
+  private updateTimedMission(delta: number, mission: Extract<MapMission, { kind: 'timed' }>) {
+    const state = this.world.state;
+    if (state.phase !== 'combat' || state.objectiveDuration <= 0) return;
+
+    state.objectiveTimeRemaining = Math.max(0, state.objectiveTimeRemaining - delta);
+    const elapsed = state.objectiveDuration - state.objectiveTimeRemaining;
+    state.objectiveProgress = Math.min(1, elapsed / state.objectiveDuration);
+
+    while (this.timedWaveIndex < this.world.map.waves.length) {
+      const releaseAt = mission.reinforcementTimes[this.timedWaveIndex - 1];
+      if (releaseAt === undefined || elapsed < releaseAt) break;
+      const definition = this.world.map.waves[this.timedWaveIndex];
+      this.spawnQueue.push(...definition.zombies);
+      this.spawnPattern = definition.spawnPattern ?? 'all';
+      this.spawnDelayScale = definition.spawnDelayScale ?? 1;
+      this.spawnDelay = Math.min(this.spawnDelay, 0.25);
+      this.spawnIndex = 0;
+      this.timedWaveIndex += 1;
+      state.wave = this.timedWaveIndex;
+      state.waveKind = definition.kind;
+      state.waveLabel = definition.label;
+      state.statusText =
+        definition.kind === 'boss'
+          ? `ENDPHASE · Mehrere Bosse gleichzeitig`
+          : `${definition.label} · Evakuierung halten`;
+      state.runGold = this.rewardGold(false);
+    }
+
+    if (state.objectiveTimeRemaining <= 0) this.endRun(true);
   }
 
   private escortPathLength(path: Array<{ x: number; y: number }>) {
@@ -300,7 +368,11 @@ export class WaveSystem {
     this.spawnIndex = 0;
     state.waveKind = definition.kind;
     state.waveLabel = definition.label;
-    state.statusText = this.waveStatus(definition.kind, definition.label);
+    const timed = !state.endless && this.world.map.mission?.kind === 'timed';
+    if (timed) this.timedWaveIndex = state.wave;
+    state.statusText = timed
+      ? `${this.world.map.mission!.title} · ${definition.label}`
+      : this.waveStatus(definition.kind, definition.label);
     state.runGold = this.rewardGold(false);
     state.runVictory = false;
     state.players.forEach((player) => {
@@ -457,6 +529,8 @@ export class WaveSystem {
   /** True while the field still holds enemies or the queue still has some. */
   enemiesLeft() {
     const remaining = this.spawnQueue.length + this.world.state.zombies.size;
+    const timed = !this.world.state.endless && this.world.map.mission?.kind === 'timed';
+    if (timed && this.world.state.objectiveTimeRemaining > 0) return Math.max(1, remaining);
     if (remaining > 0) return remaining;
     const state = this.world.state;
     if (state.objectiveActive && state.objectiveKind === 'escort') {

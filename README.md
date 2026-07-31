@@ -1,8 +1,8 @@
 # Zombie Defense
 
 Kooperatives 2D-Top-down-Spiel für 1–4 Freunde. Ein Spieler erstellt eine
-Lobby, teilt den Link und kämpft sich durch 15 Karten mit festen Wellen,
-Mini-Bossen und einem eigenen Endboss pro Karte.
+Lobby, teilt den Link und kämpft sich durch 16 Karten mit festen Wellen,
+Mini-Bossen, Endbossen und einer achtminütigen Überlebensmission.
 
 Der aktuelle Stand ist ein spielbarer Online-Prototyp. Er braucht keine
 Accounts und keine Datenbank.
@@ -16,11 +16,12 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 - Link-Lobbys mit fünfstelligem Code, 1–4 Spieler über Colyseus/WebSockets
 - autoritative Bewegung, Zombie-KI, Treffer und Wellen auf dem Server
-- 15 Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
-- jede Karte endet mit ihrem **eigenen** Endboss und schaltet die nächste frei
+- 16 Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
+- fünfzehn Karten enden mit einem **eigenen** Endboss; die Todeszone Null wird
+  nach acht Minuten Überleben gewonnen und schickt zum Schluss drei Bosse zugleich
 - späte Karten bringen gerichtete Angriffe, extrem dichte Kleinwellen, eine
   kompakte Killbox, ein offenes Großfeld sowie echte Verteidigungs- und
-  Eskortmissionen
+  Eskortmissionen sowie eine durchgehende Zeitmission
 - **Endlosmodus** auf jeder freigeschalteten Karte: nach der letzten geplanten
   Welle geht es weiter, alle zehn Wellen kommt der Boss der Karte zurück
 - Dash auf der Leertaste: zwei Ladungen, kurzer Cooldown, schluckt 40 % des
@@ -45,7 +46,7 @@ Aufruf kann das Laden deshalb kurz dauern.
   unter einer dichten Horde schnell zertrampelt wird
 - die Verteidigung in Reichweite wird markiert und zeigt Reparatur- und
   Verkaufspreis
-- Munition, Reparieren und Verkaufen im Bau-Shop
+- Munition, Reparieren und Verkauf der eigenen Objekte im Bau-Shop
 - vor Welle 1 und zwischen allen späteren Wellen gibt es eine Bauphase ohne Uhr:
   alle können sich bereit melden, der Host kann die Welle trotzdem sofort starten
 - am Wellenende wird der ganze Trupp geheilt und wieder aufgestellt
@@ -254,19 +255,19 @@ Windows-Firewall muss die verwendeten Ports gegebenenfalls freigeben.
 
 ## Steuerung
 
-| Taste                    | Aktion                                      |
-| ------------------------ | ------------------------------------------- |
-| `WASD` oder Pfeiltasten  | Bewegen                                     |
-| `Leertaste` oder `Shift` | Dash — schluckt einen Großteil des Schadens |
-| Maus                     | Zielen                                      |
-| Linke Maustaste          | Schießen                                    |
-| `R`                      | Nachladen; beim Platzieren Barrikade drehen |
-| `1`–`9` oder Mausrad     | Waffe aus dem Arsenal wählen                |
-| `G`                      | Granate zum Mauszeiger werfen               |
-| `E`                      | in ein Fahrzeug ein- und wieder aussteigen  |
-| `F`                      | markiertes Objekt reparieren (nur Bauphase) |
-| `V`                      | markiertes Objekt verkaufen (nur Bauphase)  |
-| Rechtsklick              | ausgewählten Bau abwählen                   |
+| Taste                    | Aktion                                         |
+| ------------------------ | ---------------------------------------------- |
+| `WASD` oder Pfeiltasten  | Bewegen                                        |
+| `Leertaste` oder `Shift` | Dash — schluckt einen Großteil des Schadens    |
+| Maus                     | Zielen                                         |
+| Linke Maustaste          | Schießen                                       |
+| `R`                      | Nachladen; beim Platzieren Barrikade drehen    |
+| `1`–`9` oder Mausrad     | Waffe aus dem Arsenal wählen                   |
+| `G`                      | Granate zum Mauszeiger werfen                  |
+| `E`                      | in ein Fahrzeug ein- und wieder aussteigen     |
+| `F`                      | markiertes Objekt reparieren (nur Bauphase)    |
+| `V`                      | eigenes markiertes Objekt verkaufen (Bauphase) |
+| Rechtsklick              | ausgewählten Bau abwählen                      |
 
 Der Dash bringt zwei Ladungen mit, die sich einzeln wieder aufladen. Solange er
 läuft, schluckt er 40 % jedes Treffers — der blaue Ring zeigt an, wann das gilt.

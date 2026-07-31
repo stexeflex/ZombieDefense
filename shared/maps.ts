@@ -1,6 +1,6 @@
 import { ARENA } from './arena.js';
 import type { WaveDefinition } from './waves.js';
-import { buildWaves, type SpawnPattern, type WavePlan } from './waves.js';
+import { buildWaves, pack, type SpawnPattern, type WavePlan } from './waves.js';
 import type { ZombieType } from './zombies.js';
 
 export type ObstacleKind =
@@ -59,6 +59,15 @@ export type MapMission =
       maxHealth: number;
       speed: number;
       path: Array<{ x: number; y: number }>;
+    }
+  | {
+      /** A continuous campaign fight won as soon as this countdown expires. */
+      kind: 'timed';
+      title: string;
+      briefing: string;
+      durationSeconds: number;
+      /** Start times for map waves two and onward, measured from combat start. */
+      reinforcementTimes: number[];
     };
 
 export interface GameMap {
@@ -1174,6 +1183,107 @@ export const MAPS: GameMap[] = [
     }),
     obstacles: scatter(ECLIPSE_STRUCTURES, ['rock', 'ruin', 'crate', 'pipe'], 18, 155051),
     decor: decorate(15015, ['blood', 'bones', 'crack', 'rubble', 'puddle'], 175),
+  },
+  {
+    id: 'deadzone',
+    name: 'Todeszone Null',
+    subtitle: 'Acht Minuten bis zur Evakuierung',
+    description:
+      'Ein riesiges, fast leeres Großfeld. Wenige Gegner, dafür fast nur Eliten und Mini-Bosse — in den letzten 45 Sekunden greifen drei Bosse gleichzeitig an.',
+    difficulty: 12.8,
+    moneyScale: 7.3,
+    reward: 46000,
+    boss: 'omega',
+    theme: {
+      ground: '#111816',
+      groundAlt: '#18221e',
+      grid: '#24372f',
+      accent: '#d7ff63',
+      edge: '#455b45',
+      fog: '#060b08',
+    },
+    mission: {
+      kind: 'timed',
+      title: 'Evakuierung überleben',
+      briefing:
+        'Haltet acht Minuten durch. Kleine Eliteverbände rücken nach; kurz vor der Evakuierung kommen mehrere Bosse zugleich.',
+      durationSeconds: 8 * 60,
+      reinforcementTimes: [45, 90, 135, 180, 225, 270, 315, 375, 435],
+    },
+    waves: [
+      {
+        kind: 'normal',
+        label: 'ELITE-VORHUT',
+        zombies: pack({ big: 5, armored: 5, spitter: 3, exploder: 2 }),
+        spawnPattern: 'clockwise',
+        spawnDelayScale: 1.25,
+      },
+      {
+        kind: 'mini',
+        label: 'SCHWERE JÄGER',
+        zombies: pack({ brute: 2, stalker: 2, armored: 5, screamer: 2 }),
+        spawnPattern: 'east-west',
+        spawnDelayScale: 1.3,
+      },
+      {
+        kind: 'normal',
+        label: 'PANZERKEIL',
+        zombies: pack({ big: 5, armored: 8, shieldbearer: 1, spitter: 2 }),
+        spawnPattern: 'north-south',
+        spawnDelayScale: 1.2,
+      },
+      {
+        kind: 'mini',
+        label: 'BELAGERUNGSTRUPP',
+        zombies: pack({ mortar: 3, warden: 2, armored: 5, exploder: 3 }),
+        spawnPattern: 'clockwise',
+        spawnDelayScale: 1.35,
+      },
+      {
+        kind: 'normal',
+        label: 'GIFTFRONT',
+        zombies: pack({ spitter: 7, screamer: 3, armored: 2, big: 4 }),
+        spawnPattern: 'south',
+        spawnDelayScale: 1.2,
+      },
+      {
+        kind: 'mini',
+        label: 'JAGDKOMMANDO',
+        zombies: pack({ stalker: 4, brute: 3, armored: 5, exploder: 2 }),
+        spawnPattern: 'east-west',
+        spawnDelayScale: 1.3,
+      },
+      {
+        kind: 'normal',
+        label: 'EISERNER RING',
+        zombies: pack({ armored: 10, shieldbearer: 1, big: 5, screamer: 2 }),
+        spawnPattern: 'clockwise',
+        spawnDelayScale: 1.15,
+      },
+      {
+        kind: 'mini',
+        label: 'LETZTE BLOCKADE',
+        zombies: pack({ warden: 3, mortar: 3, brute: 3, spitter: 4 }),
+        spawnPattern: 'north-south',
+        spawnDelayScale: 1.25,
+      },
+      {
+        kind: 'mini',
+        label: 'EVAKUIERUNG GEFÄHRDET',
+        zombies: pack({ stalker: 4, warden: 3, mortar: 3, armored: 6, shieldbearer: 1 }),
+        spawnPattern: 'west',
+        spawnDelayScale: 0.9,
+      },
+      {
+        kind: 'boss',
+        label: 'DREIFACHER ENDSCHLAG',
+        zombies: pack({ render: 1, plague: 1, omega: 1, brute: 2, warden: 2 }),
+        spawnPattern: 'clockwise',
+        spawnDelayScale: 0.35,
+      },
+    ],
+    obstacles: scatter([], ['rock', 'container', 'car'], 5, 168061),
+    decor: decorate(16016, ['grass', 'crack', 'marking', 'bones', 'blood'], 185),
   },
 ];
 

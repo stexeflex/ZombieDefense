@@ -187,7 +187,7 @@ export interface GameSnapshot {
   statusText: string;
   /** Campaign-only structure that the squad must defend or escort. */
   objectiveActive?: boolean;
-  objectiveKind?: '' | 'holdout' | 'escort';
+  objectiveKind?: '' | 'holdout' | 'escort' | 'timed';
   objectiveTitle?: string;
   objectiveX?: number;
   objectiveY?: number;
@@ -195,6 +195,9 @@ export interface GameSnapshot {
   objectiveHealth?: number;
   objectiveMaxHealth?: number;
   objectiveProgress?: number;
+  /** Countdown for a continuous timed-survival mission. */
+  objectiveTimeRemaining?: number;
+  objectiveDuration?: number;
   bossName: string;
   bossHealth: number;
   bossMaxHealth: number;

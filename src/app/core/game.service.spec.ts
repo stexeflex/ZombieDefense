@@ -93,6 +93,47 @@ describe('GameService', () => {
     expect(sent).toEqual([['sell_weapon', 'rifle']]);
   });
 
+  it('only offers and sends structure sales for the local owner', () => {
+    const sent: Array<[string, unknown]> = [];
+    service.sessionId.set('player-1');
+    service.snapshot.set({
+      ...snapshotWith('build'),
+      defenses: {
+        foreign: {
+          id: 'foreign',
+          ownerId: 'player-2',
+          type: 'wood',
+          health: 420,
+          maxHealth: 420,
+          refund: 160,
+        },
+        own: {
+          id: 'own',
+          ownerId: 'player-1',
+          type: 'wood',
+          health: 420,
+          maxHealth: 420,
+          refund: 160,
+        },
+      },
+      vehicles: {},
+    } as unknown as GameSnapshot);
+    (service as unknown as { room: { send(type: string, payload?: unknown): void } }).room = {
+      send: (type, payload) => sent.push([type, payload]),
+    };
+
+    service.focusedDefenseId.set('foreign');
+    expect(service.focusedDefense()?.sellable).toBe(false);
+    expect(service.focusedDefense()?.sellBlockedTitle).toContain('Besitzer');
+    service.sellFocused();
+
+    service.focusedDefenseId.set('own');
+    expect(service.focusedDefense()?.sellable).toBe(true);
+    service.sellFocused();
+
+    expect(sent).toEqual([['sell', { id: 'own' }]]);
+  });
+
   it('settles the run before leaving without changing the shared room phase', async () => {
     const sent: string[] = [];
     let confirmed: ((payload: { runId: string }) => void) | undefined;

@@ -78,6 +78,8 @@ export class GameService {
     const target = defense ?? vehicle;
     if (!target) return null;
     const cost = defense ? DEFENSES[defense.type].cost : VEHICLES[vehicle.type].cost;
+    const owned = target.ownerId === this.sessionId();
+    const occupied = Boolean(vehicle && vehicle.crew.length > 0);
     return {
       id: target.id,
       label: defense ? DEFENSES[defense.type].label : VEHICLES[vehicle.type].label,
@@ -86,8 +88,15 @@ export class GameService {
       repairCost: repairCost(target, this.progress.perks().engineer ? ENGINEER_DISCOUNT : 0),
       sellRefund: target.refund,
       fullPrice: target.refund >= cost,
-      // A hull with the squad inside stays where it is.
-      sellable: !vehicle || vehicle.crew.length === 0,
+      owned,
+      // A hull with the squad inside stays where it is, and another player's
+      // purchase can never be converted into the local player's build money.
+      sellable: owned && !occupied,
+      sellBlockedTitle: !owned
+        ? 'Nur der Besitzer kann dieses Objekt verkaufen'
+        : occupied
+          ? 'Erst aussteigen'
+          : '',
     };
   });
 

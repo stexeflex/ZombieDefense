@@ -367,9 +367,15 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     // An endless run has no total, so the client can show it as such.
     this.state.totalWaves = this.state.endless ? 0 : this.world.map.waves.length;
     if (this.state.phase === 'lobby') {
+      const timedMission =
+        !this.state.endless && this.world.map.mission?.kind === 'timed'
+          ? this.world.map.mission
+          : undefined;
       this.state.statusText = this.state.endless
         ? `${this.world.map.name} · Endlos`
-        : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
+        : timedMission
+          ? `${this.world.map.name} · ${Math.round(timedMission.durationSeconds / 60)} Minuten überleben`
+          : `${this.world.map.name} · ${this.world.map.waves.length} Wellen`;
     }
   }
 

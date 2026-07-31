@@ -161,6 +161,9 @@
               Endlosmodus: Nach der letzten geplanten Welle geht es weiter, bis der Trupp fällt.
               Alle zehn Wellen kommt der Boss der Karte zurück — freischalten lässt sich hier
               nichts.
+            } @else if (timedCampaign()) {
+              {{ activeMap().mission!.briefing }} Sobald der Countdown abläuft, ist die Mission
+              gewonnen — auch wenn die Endgegner noch stehen.
             } @else {
               Teile den Lobby-Link mit bis zu drei Freunden. Jede Karte endet mit einem Endboss und
               schaltet die nächste, härtere Karte frei.
@@ -210,7 +213,7 @@
                 <small>{{ map.subtitle }}</small>
                 <p>{{ map.description }}</p>
                 <div class="map-stats">
-                  <span>{{ snapshot.endless ? '∞' : map.waves.length }} Wellen</span>
+                  <span>{{ mapRunLength(map.id) }}</span>
                   <span>Härte ×{{ map.difficulty }}</span>
                   <span>☠ {{ bossName(map.id) }}</span>
                   @if (map.mission) {
@@ -283,7 +286,9 @@
                 {{
                   snapshot.endless
                     ? 'Endlos · zuerst Bauphase'
-                    : 'Bauphase vor Welle 1 / ' + activeMap().waves.length
+                    : timedCampaign()
+                      ? mapRunLength(activeMap().id) + ' · zuerst Bauphase'
+                      : 'Bauphase vor Welle 1 / ' + activeMap().waves.length
                 }}
               </span>
             </button>
@@ -315,23 +320,43 @@
                   ? 'Bauphase'
                   : snapshot.phase === 'gameover'
                     ? 'Run beendet'
-                    : snapshot.waveLabel
+                    : snapshot.objectiveKind === 'timed'
+                      ? 'Überleben'
+                      : snapshot.waveLabel
               }}
             </span>
-            <strong
-              >{{ snapshot.phase === 'build' && snapshot.wave === 0 ? 1 : snapshot.wave
-              }}<em>/{{ totalLabel() }}</em></strong
-            >
+            @if (snapshot.objectiveKind === 'timed' && snapshot.phase !== 'gameover') {
+              <strong class="clock-value">{{ missionClock() }}</strong>
+            } @else {
+              <strong
+                >{{ snapshot.phase === 'build' && snapshot.wave === 0 ? 1 : snapshot.wave
+                }}<em>/{{ totalLabel() }}</em></strong
+              >
+            }
             @if (snapshot.phase === 'combat') {
               <small>{{ snapshot.enemiesRemaining }} Gegner</small>
             } @else if (snapshot.phase === 'build') {
               <small>{{
-                snapshot.wave === 0 ? 'Erste Verteidigung aufbauen' : 'Baut in Ruhe auf'
+                snapshot.wave === 0 && timedCampaign()
+                  ? 'Für acht Minuten vorbereiten'
+                  : snapshot.wave === 0
+                    ? 'Erste Verteidigung aufbauen'
+                    : 'Baut in Ruhe auf'
               }}</small>
             }
           </div>
 
-          @if (snapshot.objectiveActive && (snapshot.objectiveMaxHealth ?? 0) > 0) {
+          @if (snapshot.objectiveKind === 'timed' && snapshot.phase === 'combat') {
+            <div class="survival-timer" [class.finale]="missionFinale()">
+              <div>
+                <span>{{
+                  missionFinale() ? 'ENDPHASE · BOSSE IM FELD' : snapshot.objectiveTitle
+                }}</span>
+                <b>{{ missionClock() }}</b>
+              </div>
+              <i><span [style.width.%]="missionTimePercent()"></span></i>
+            </div>
+          } @else if (snapshot.objectiveActive && (snapshot.objectiveMaxHealth ?? 0) > 0) {
             <div class="objective-bar" [class.escort]="snapshot.objectiveKind === 'escort'">
               <div class="objective-name">
                 <span>
@@ -492,7 +517,7 @@
                 }}</span
               >
               <span><kbd>F</kbd> Reparieren</span>
-              <span><kbd>V</kbd> Verkaufen</span>
+              <span><kbd>V</kbd> Eigene verkaufen</span>
             } @else {
               @if (!meleeEquipped()) {
                 <span><kbd>R</kbd> Nachladen</span>
@@ -535,9 +560,15 @@
                   }}
                 </h2>
                 <div class="run-stats">
-                  <span
-                    ><b>{{ snapshot.wave }}</b> / {{ totalLabel() }} Wellen</span
-                  >
+                  @if (timedCampaign()) {
+                    <span
+                      ><b>{{ missionClock() }}</b> Restzeit</span
+                    >
+                  } @else {
+                    <span
+                      ><b>{{ snapshot.wave }}</b> / {{ totalLabel() }} Wellen</span
+                    >
+                  }
                   <span
                     ><b>{{ game.player()?.kills }}</b> Abschüsse</span
                   >
@@ -708,7 +739,12 @@
                         type="button"
                         [class.selected]="game.player()?.weapon === weapon.type"
                         [class.deal]="!owns(weapon.type) && weaponDeal(weapon.type)"
-                        [disabled]="
+                        [class.unavailable]="
+                          (!owns(weapon.type) &&
+                            (game.player()?.money ?? 0) < weaponPrice(weapon.type)) ||
+                          game.player()?.weapon === weapon.type
+                        "
+                        [attr.aria-disabled]="
                           (!owns(weapon.type) &&
                             (game.player()?.money ?? 0) < weaponPrice(weapon.type)) ||
                           game.player()?.weapon === weapon.type
@@ -716,11 +752,17 @@
                         (click)="weaponAction(weapon.type)"
                       >
                         <span class="item-icon">{{ weapon.short }}</span>
-                        <span
-                          ><b>{{ weapon.label }}</b
-                          ><small>{{ weapon.description }}</small>
-                          <small class="item-stats">ℹ {{ weaponStats(weapon.type) }}</small></span
-                        >
+                        <span class="item-copy">
+                          <span class="item-heading">
+                            <b>{{ weapon.label }}</b>
+                            <span class="item-info" [attr.title]="weaponStats(weapon.type)">
+                              i
+                              <span class="item-tooltip">{{ weaponStats(weapon.type) }}</span>
+                            </span>
+                          </span>
+                          <small>{{ weapon.description }}</small>
+                          <small class="item-base">{{ weaponBaseDamage(weapon.type) }}</small>
+                        </span>
                         <strong>
                           {{
                             game.player()?.weapon === weapon.type
@@ -764,7 +806,12 @@
                         type="button"
                         [class.selected]="game.player()?.weapon === weapon.type"
                         [class.deal]="!owns(weapon.type) && weaponDeal(weapon.type)"
-                        [disabled]="
+                        [class.unavailable]="
+                          (!owns(weapon.type) &&
+                            (game.player()?.money ?? 0) < weaponPrice(weapon.type)) ||
+                          game.player()?.weapon === weapon.type
+                        "
+                        [attr.aria-disabled]="
                           (!owns(weapon.type) &&
                             (game.player()?.money ?? 0) < weaponPrice(weapon.type)) ||
                           game.player()?.weapon === weapon.type
@@ -772,13 +819,22 @@
                         (click)="weaponAction(weapon.type)"
                       >
                         <span class="item-icon">{{ weapon.short }}</span>
-                        <span
-                          ><b>{{ weapon.label }}</b
-                          ><small>{{ weapon.description }}</small>
-                          <small class="item-stats"
-                            >ℹ {{ weaponStats(weapon.type) }} · keine Munition</small
-                          ></span
-                        >
+                        <span class="item-copy">
+                          <span class="item-heading">
+                            <b>{{ weapon.label }}</b>
+                            <span
+                              class="item-info"
+                              [attr.title]="weaponStats(weapon.type) + ' · keine Munition'"
+                            >
+                              i
+                              <span class="item-tooltip"
+                                >{{ weaponStats(weapon.type) }} · keine Munition</span
+                              >
+                            </span>
+                          </span>
+                          <small>{{ weapon.description }}</small>
+                          <small class="item-base">{{ weaponBaseDamage(weapon.type) }}</small>
+                        </span>
                         <strong>
                           {{
                             game.player()?.weapon === weapon.type
@@ -817,15 +873,24 @@
                       type="button"
                       [class.selected]="game.selectedBuild() === defense.type"
                       [class.deal]="defenseDeal(defense.type)"
-                      [disabled]="(game.player()?.money ?? 0) < defensePrice(defense.type)"
+                      [class.unavailable]="(game.player()?.money ?? 0) < defensePrice(defense.type)"
+                      [attr.aria-disabled]="
+                        (game.player()?.money ?? 0) < defensePrice(defense.type)
+                      "
                       (click)="selectBuild(defense.type)"
                     >
                       <span class="item-icon">{{ defense.short }}</span>
-                      <span
-                        ><b>{{ defense.label }}</b
-                        ><small>{{ defense.description }}</small>
-                        <small class="item-stats">ℹ {{ defenseStats(defense.type) }}</small></span
-                      >
+                      <span class="item-copy">
+                        <span class="item-heading">
+                          <b>{{ defense.label }}</b>
+                          <span class="item-info" [attr.title]="defenseStats(defense.type)">
+                            i
+                            <span class="item-tooltip">{{ defenseStats(defense.type) }}</span>
+                          </span>
+                        </span>
+                        <small>{{ defense.description }}</small>
+                        <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
+                      </span>
                       <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
                   }
@@ -838,15 +903,24 @@
                       type="button"
                       [class.selected]="game.selectedBuild() === defense.type"
                       [class.deal]="defenseDeal(defense.type)"
-                      [disabled]="(game.player()?.money ?? 0) < defensePrice(defense.type)"
+                      [class.unavailable]="(game.player()?.money ?? 0) < defensePrice(defense.type)"
+                      [attr.aria-disabled]="
+                        (game.player()?.money ?? 0) < defensePrice(defense.type)
+                      "
                       (click)="selectBuild(defense.type)"
                     >
                       <span class="item-icon">{{ defense.short }}</span>
-                      <span
-                        ><b>{{ defense.label }}</b
-                        ><small>{{ defense.description }}</small>
-                        <small class="item-stats">ℹ {{ defenseStats(defense.type) }}</small></span
-                      >
+                      <span class="item-copy">
+                        <span class="item-heading">
+                          <b>{{ defense.label }}</b>
+                          <span class="item-info" [attr.title]="defenseStats(defense.type)">
+                            i
+                            <span class="item-tooltip">{{ defenseStats(defense.type) }}</span>
+                          </span>
+                        </span>
+                        <small>{{ defense.description }}</small>
+                        <small class="item-base">{{ defenseBaseDamage(defense.type) }}</small>
+                      </span>
                       <strong>$ {{ defensePrice(defense.type) }}</strong>
                     </button>
                   }
@@ -859,12 +933,21 @@
                       type="button"
                       [class.selected]="game.selectedVehicle() === vehicle.type"
                       [class.deal]="vehicleDeal(vehicle.type)"
-                      [disabled]="(game.player()?.money ?? 0) < vehiclePrice(vehicle.type)"
+                      [class.unavailable]="(game.player()?.money ?? 0) < vehiclePrice(vehicle.type)"
+                      [attr.aria-disabled]="
+                        (game.player()?.money ?? 0) < vehiclePrice(vehicle.type)
+                      "
                       (click)="selectVehicle(vehicle.type)"
                     >
                       <span class="item-icon">{{ vehicle.short }}</span>
-                      <span>
-                        <b>{{ vehicle.label }}</b>
+                      <span class="item-copy">
+                        <span class="item-heading">
+                          <b>{{ vehicle.label }}</b>
+                          <span class="item-info" [attr.title]="vehicleStats(vehicle.type)">
+                            i
+                            <span class="item-tooltip">{{ vehicleStats(vehicle.type) }}</span>
+                          </span>
+                        </span>
                         <small>
                           {{ vehicle.seats }} {{ vehicle.seats === 1 ? 'Platz' : 'Plätze' }} ·
                           {{ vehicleHealth(vehicle.type) }} HP · Insassen unverwundbar
@@ -874,7 +957,7 @@
                         }
                         <small>{{ vehicle.description }}</small>
                         <small class="vehicle-perk">★ {{ vehicle.perk }}</small>
-                        <small class="item-stats">ℹ {{ vehicleStats(vehicle.type) }}</small>
+                        <small class="item-base">{{ vehicleBaseDamage(vehicle.type) }}</small>
                       </span>
                       <strong>$ {{ vehiclePrice(vehicle.type) }}</strong>
                     </button>
@@ -910,20 +993,22 @@
                     <button
                       type="button"
                       [disabled]="!focus.sellable"
-                      [attr.title]="focus.sellable ? null : 'Erst aussteigen'"
+                      [attr.title]="focus.sellable ? null : focus.sellBlockedTitle"
                       (click)="game.sellFocused()"
                     >
                       <span
-                        ><kbd>V</kbd> Verkaufen{{ focus.fullPrice ? ' (voller Preis)' : '' }}</span
+                        ><kbd>V</kbd> Verkaufen{{
+                          focus.owned && focus.fullPrice ? ' (voller Preis)' : ''
+                        }}</span
                       >
-                      <b>+$ {{ focus.sellRefund }}</b>
+                      <b>{{ focus.owned ? '+$ ' + focus.sellRefund : 'Nur Besitzer' }}</b>
                     </button>
                   </div>
                 </div>
               } @else {
                 <p class="focus-hint">
                   Stell dich neben eine Barrikade, einen Turm oder ein Fahrzeug, um es zu
-                  reparieren, zu verkaufen oder mit <kbd>E</kbd> einzusteigen.
+                  reparieren, eigene Objekte zu verkaufen oder mit <kbd>E</kbd> einzusteigen.
                 </p>
               }
 
@@ -936,9 +1021,11 @@
                 {{
                   game.player()?.ready
                     ? 'Bereit ✓'
-                    : snapshot.wave === 0
-                      ? 'Bereit für Welle 1'
-                      : 'Bereit für nächste Welle'
+                    : snapshot.wave === 0 && timedCampaign()
+                      ? 'Bereit für 8 Minuten Überleben'
+                      : snapshot.wave === 0
+                        ? 'Bereit für Welle 1'
+                        : 'Bereit für nächste Welle'
                 }}
                 @if (players().length > 1) {
                   <span>{{ readyCount() }} / {{ players().length }} bereit</span>
@@ -948,7 +1035,13 @@
               </button>
               @if (game.isHost() && players().length > 1 && readyCount() < players().length) {
                 <button class="force-start-button" type="button" (click)="forceStartWave()">
-                  {{ snapshot.wave === 0 ? 'Welle 1 jetzt starten' : 'Welle jetzt starten' }}
+                  {{
+                    snapshot.wave === 0 && timedCampaign()
+                      ? 'Countdown jetzt starten'
+                      : snapshot.wave === 0
+                        ? 'Welle 1 jetzt starten'
+                        : 'Welle jetzt starten'
+                  }}
                   <span>Host-Start · unbereite Spieler werden übergangen</span>
                 </button>
               }
@@ -958,12 +1051,19 @@
               <small>{{ activeMap().subtitle }}</small>
               <h2>{{ snapshot.statusText }}</h2>
               <p>
-                Bleibt zusammen. Gefallene Freunde können innerhalb der Welle wiederbelebt werden.
+                {{ activeMap().mission?.briefing ?? 'Bleibt zusammen und haltet die Stellung.' }}
               </p>
-              <div>
-                <span>Wellenfortschritt</span>
-                <b>{{ snapshot.wave }} / {{ totalLabel() }}</b>
-              </div>
+              @if (snapshot.objectiveKind === 'timed') {
+                <div>
+                  <span>Evakuierung in</span>
+                  <b>{{ missionClock() }}</b>
+                </div>
+              } @else {
+                <div>
+                  <span>Wellenfortschritt</span>
+                  <b>{{ snapshot.wave }} / {{ totalLabel() }}</b>
+                </div>
+              }
             </section>
           }
         </aside>

@@ -232,6 +232,9 @@ export class GameState extends Schema {
   @type('number') objectiveHealth = 0;
   @type('number') objectiveMaxHealth = 0;
   @type('number') objectiveProgress = 0;
+  /** Timed-survival countdown; zero on every regular mission. */
+  @type('number') objectiveTimeRemaining = 0;
+  @type('number') objectiveDuration = 0;
   @type('string') bossName = '';
   @type('number') bossHealth = 0;
   @type('number') bossMaxHealth = 0;

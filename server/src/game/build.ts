@@ -309,6 +309,9 @@ export class BuildSystem {
     const player = this.world.state.players.get(sessionId);
     const target = this.focusedVehicle(sessionId, id);
     if (!player || !target) return false;
+    // Repairs and interaction stay cooperative, but only the buyer may turn
+    // their upgraded vehicle back into money.
+    if (target.ownerId !== sessionId) return false;
     // Selling with the squad on board would drop everyone into the horde.
     if (target.crew.length > 0) return false;
     player.money += vehicleSellValue(target.type, target.health, target.maxHealth);
@@ -368,6 +371,9 @@ export class BuildSystem {
       this.sellVehicle(sessionId, id);
       return;
     }
+    // Ownership only limits selling. Team mates may still work with and repair
+    // structures placed by somebody else.
+    if (target.ownerId !== sessionId) return;
     // Exactly the price the client shows on the highlighted structure.
     const refund = sellValue(target.type, target.health, target.maxHealth);
     player.money += refund;

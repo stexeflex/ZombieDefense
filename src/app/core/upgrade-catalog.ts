@@ -228,25 +228,25 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
   {
     key: 'starterWeapon',
     label: 'Waffenhändler',
-    description: 'Die erste gekaufte Waffe eines Runs kostet 40 % weniger.',
+    description: 'Die erste gekaufte Waffe eines Runs kostet 30 % weniger.',
     icon: '⚒',
   },
   {
     key: 'starterBarricade',
     label: 'Bausatz',
-    description: 'Die ersten vier Barrikaden eines Runs kosten 40 % weniger.',
+    description: 'Die ersten vier Barrikaden eines Runs kosten 30 % weniger.',
     icon: '▰',
   },
   {
     key: 'starterTurret',
     label: 'Erstausstattung',
-    description: 'Der erste Turm eines Runs kostet 40 % weniger.',
+    description: 'Der erste Turm eines Runs kostet 30 % weniger.',
     icon: '⌖',
   },
   {
     key: 'motorPool',
     label: 'Fuhrpark',
-    description: 'Das erste Fahrzeug eines Runs kostet 40 % weniger.',
+    description: 'Das erste Fahrzeug eines Runs kostet 30 % weniger.',
     icon: '🚙',
   },
   {

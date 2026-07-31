@@ -197,10 +197,12 @@ export class Lobby implements OnInit, OnDestroy {
   }
 
   selectBuild(type: DefenseType) {
+    if ((this.game.player()?.money ?? 0) < this.defensePrice(type)) return;
     this.game.selectBuild(this.game.selectedBuild() === type ? null : type);
   }
 
   selectVehicle(type: VehicleType) {
+    if ((this.game.player()?.money ?? 0) < this.vehiclePrice(type)) return;
     this.game.selectVehicle(this.game.selectedVehicle() === type ? null : type);
   }
 
@@ -242,6 +244,14 @@ export class Lobby implements OnInit, OnDestroy {
     return `${damageLabel} · ${this.stat(1000 / weapon.fireDelay)} Schuss/s · Magazin ${magazine} + ${reserve} · ${this.stat(reload)} s Nachladen`;
   }
 
+  /** The unmodified hit value stays visible without opening the detail hint. */
+  weaponBaseDamage(type: WeaponType) {
+    const weapon = WEAPONS[type];
+    return (weapon.pellets ?? 1) > 1
+      ? `Basis: ${this.stat(weapon.damage)} × ${weapon.pellets} Schaden`
+      : `Basis: ${this.stat(weapon.damage)} Schaden`;
+  }
+
   /** Barricade and turret values after all relevant permanent upgrades. */
   defenseStats(type: DefenseType) {
     const defense = DEFENSES[type];
@@ -275,6 +285,21 @@ export class Lobby implements OnInit, OnDestroy {
     return effects.join(' · ');
   }
 
+  /** Primary unupgraded damage of a structure, including passive traps. */
+  defenseBaseDamage(type: DefenseType) {
+    const defense = DEFENSES[type];
+    if (defense.damage) {
+      const shots = defense.radialShots ?? defense.pellets ?? defense.targets ?? 1;
+      return shots > 1
+        ? `Basis: ${this.stat(defense.damage)} × ${shots} Schaden`
+        : `Basis: ${this.stat(defense.damage)} Schaden`;
+    }
+    if (defense.blastDamage) return `Basis: ${this.stat(defense.blastDamage)} Explosionsschaden`;
+    if (defense.contactDamage) return `Basis: ${this.stat(defense.contactDamage)} Kontaktschaden/s`;
+    if (defense.thorns) return `Basis: ${this.stat(defense.thorns)} Rückschaden`;
+    return 'Basis: kein Schaden';
+  }
+
   /** Upgraded hull values, including the slow turning that defines heavy machines. */
   vehicleStats(type: VehicleType) {
     const vehicle = VEHICLES[type];
@@ -293,6 +318,13 @@ export class Lobby implements OnInit, OnDestroy {
     return effects.join(' · ');
   }
 
+  /** Vehicles always expose ram damage; an installed gun is shown beside it. */
+  vehicleBaseDamage(type: VehicleType) {
+    const vehicle = VEHICLES[type];
+    const gun = vehicle.gun ? ` · ${this.stat(vehicle.gun.damage)} Bordwaffe` : '';
+    return `Basis: ${this.stat(vehicle.ram)} Rammschaden${gun}`;
+  }
+
   private stat(value: number) {
     return this.statFormatter.format(value);
   }
@@ -305,6 +337,43 @@ export class Lobby implements OnInit, OnDestroy {
   selectMode(endless: boolean) {
     if (!this.game.isHost() || this.endless() === endless) return;
     this.game.selectEndless(endless);
+  }
+
+  /** True only for the campaign version; endless deliberately ignores map missions. */
+  timedCampaign() {
+    return !this.endless() && this.activeMap().mission?.kind === 'timed';
+  }
+
+  mapRunLength(mapId: string) {
+    const map = findMap(mapId);
+    if (this.endless()) return '∞ Wellen';
+    if (map.mission?.kind === 'timed')
+      return `${this.clock(map.mission.durationSeconds)} Überleben`;
+    return `${map.waves.length} Wellen`;
+  }
+
+  missionClock() {
+    return this.clock(this.game.snapshot()?.objectiveTimeRemaining ?? 0);
+  }
+
+  missionTimePercent() {
+    const snapshot = this.game.snapshot();
+    if (!snapshot?.objectiveDuration) return 0;
+    return Math.max(
+      0,
+      Math.min(100, ((snapshot.objectiveTimeRemaining ?? 0) / snapshot.objectiveDuration) * 100),
+    );
+  }
+
+  missionFinale() {
+    const remaining = this.game.snapshot()?.objectiveTimeRemaining ?? Number.POSITIVE_INFINITY;
+    return remaining > 0 && remaining <= 45;
+  }
+
+  private clock(seconds: number) {
+    const whole = Math.max(0, Math.ceil(seconds));
+    const minutes = Math.floor(whole / 60);
+    return `${minutes}:${String(whole % 60).padStart(2, '0')}`;
   }
 
   /** An endless run has no last wave, so the counter shows infinity instead. */
@@ -422,6 +491,9 @@ export class Lobby implements OnInit, OnDestroy {
   /** Buying puts a new weapon in the arsenal, a second click just equips it. */
   weaponAction(weapon: WeaponType) {
     this.disarmSale();
+    const player = this.game.player();
+    if (!player || player.weapon === weapon) return;
+    if (!this.owns(weapon) && player.money < this.weaponPrice(weapon)) return;
     if (this.owns(weapon)) this.game.switchWeapon(weapon);
     else this.game.buyWeapon(weapon);
   }

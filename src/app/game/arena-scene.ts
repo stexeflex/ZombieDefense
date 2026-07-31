@@ -579,14 +579,17 @@ export class ArenaScene extends Phaser.Scene {
     const repair = repairCost(spot);
     const cost = target ? DEFENSES[target.type].cost : VEHICLES[hull!.type].cost;
     const label = target ? DEFENSES[target.type].label : VEHICLES[hull!.type].label;
-    // A hull is only for sale while nobody is sitting in it.
-    const canSell = !hull || hull.crew.length === 0;
+    // Repairs stay cooperative; selling is reserved for the player who paid.
+    const own = spot.ownerId === this.gameService.sessionId();
+    const canSell = own && (!hull || hull.crew.length === 0);
     const actions = [
       `[F] ${repair > 0 ? `Reparieren $${repair}` : 'ganz repariert'}`,
       hull ? '[E] Einsteigen' : '',
       canSell
         ? `[V] Verkaufen +$${spot.refund}${spot.refund >= cost ? ' (voller Preis)' : ''}`
-        : '',
+        : !own
+          ? 'Verkauf nur durch Besitzer'
+          : '',
     ].filter((entry) => entry.length > 0);
     this.focusLabel
       .setVisible(true)
