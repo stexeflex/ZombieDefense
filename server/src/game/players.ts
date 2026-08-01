@@ -42,6 +42,7 @@ import {
   VEHICLES,
   VEHICLE_BOOST_SECONDS,
   WEAPONS,
+  canPlaceVehicle,
   circleOverlapsVehicle,
   healthRegenPerSecond,
   isMeleeWeapon,
@@ -60,6 +61,7 @@ import {
   ProjectileState,
   type DefenseState,
   type PlayerState,
+  type VehicleState,
   type ZombieState,
 } from '../state/game-state.js';
 import type { GameWorld, RuntimePlayer } from './world.js';
@@ -225,19 +227,76 @@ export class PlayerSystem {
     runtime.wasDashing = runtime.input.dash;
     if (!pressed || !player.alive) return;
     if (player.dashCharges <= 0 || runtime.dashLock > 0 || player.dashing > 0) return;
-    // In a seat there is nothing to dodge with, so the charge goes into the
-    // nitro of the vehicles that have one.
+    // In a seat there is nothing to dodge with, so specialist vehicles turn
+    // the charge into their own movement ability.
     const vehicle = this.world.vehicleOf(player.id);
     if (vehicle) {
-      if (!VEHICLES[vehicle.type].boost) return;
-      vehicle.boost = VEHICLE_BOOST_SECONDS;
+      const config = VEHICLES[vehicle.type];
+      if (config.teleport) {
+        if (!this.teleportVehicle(vehicle, runtime, config.teleport)) return;
+      } else if (config.boost) {
+        vehicle.boost = VEHICLE_BOOST_SECONDS;
+        this.world.pushFx({ k: 'engine', x: vehicle.x, y: vehicle.y, s: vehicle.type });
+      } else {
+        return;
+      }
       player.dashCharges -= 1;
       runtime.dashLock = DASH_LOCK;
       runtime.dashRecharge.push(this.dashRechargeTime(runtime.upgrades));
-      this.world.pushFx({ k: 'engine', x: vehicle.x, y: vehicle.y, s: vehicle.type });
       return;
     }
     this.startDash(player, runtime);
+  }
+
+  /**
+   * The Sprungfahrzeug may pass through danger, but never materialises inside
+   * scenery, a placed structure, another hull or a mission objective.
+   */
+  private teleportVehicle(vehicle: VehicleState, runtime: RuntimePlayer, distance: number) {
+    let dx = Number(runtime.input.right) - Number(runtime.input.left);
+    let dy = Number(runtime.input.down) - Number(runtime.input.up);
+    if (dx === 0 && dy === 0) {
+      dx = Math.cos(vehicle.rotation);
+      dy = Math.sin(vehicle.rotation);
+    }
+    const length = Math.hypot(dx, dy) || 1;
+    dx /= length;
+    dy /= length;
+    const rotation = Math.atan2(dy, dx);
+    const config = VEHICLES[vehicle.type];
+    const otherVehicles = [...this.world.state.vehicles.values()].filter(
+      (other) => other.id !== vehicle.id,
+    );
+    const minimumDistance = Math.max(100, distance * 0.35);
+
+    for (let jump = distance; jump >= minimumDistance; jump -= 20) {
+      const x = vehicle.x + dx * jump;
+      const y = vehicle.y + dy * jump;
+      if (!this.world.objectiveClear(x, y, Math.max(config.width, config.height) / 2)) continue;
+      if (
+        !canPlaceVehicle(
+          { type: vehicle.type, x, y, rotation },
+          this.world.state.defenses.values(),
+          otherVehicles,
+          this.world.map.obstacles,
+        )
+      ) {
+        continue;
+      }
+
+      const fromX = vehicle.x;
+      const fromY = vehicle.y;
+      vehicle.x = x;
+      vehicle.y = y;
+      vehicle.rotation = rotation;
+      vehicle.vx = 0;
+      vehicle.vy = 0;
+      vehicle.boost = 0;
+      this.world.pushFx({ k: 'engine', x: fromX, y: fromY, s: vehicle.type });
+      this.world.pushFx({ k: 'engine', x, y, s: vehicle.type });
+      return true;
+    }
+    return false;
   }
 
   private startDash(player: PlayerState, runtime: RuntimePlayer) {

@@ -125,9 +125,9 @@ describe('map campaign', () => {
     }
   });
 
-  it('caps every campaign plan at thirty waves', () => {
-    expect(Math.max(...MAPS.map((map) => map.waves.length))).toBe(30);
-    expect(MAPS.find((map) => map.id === 'eclipse')?.waves).toHaveLength(30);
+  it('caps every campaign plan at twenty-five waves', () => {
+    expect(Math.max(...MAPS.map((map) => map.waves.length))).toBe(25);
+    expect(MAPS.find((map) => map.id === 'eclipse')?.waves).toHaveLength(25);
   });
 
   it('pays enough boss gold to fund several upgrade paths across the campaign', () => {
@@ -535,18 +535,31 @@ describe('weapon balance', () => {
     expect(WEAPONS.dashknife.charge?.kind).toBe('dash');
   });
 
+  it('makes the five premium rebalances substantially pricier and stronger', () => {
+    expect(WEAPONS.knife.cost).toBeGreaterThanOrEqual(3500);
+    expect(WEAPONS.knife.damage).toBeGreaterThanOrEqual(450);
+    expect(WEAPONS.throwshield.cost).toBeGreaterThanOrEqual(8000);
+    expect(WEAPONS.throwshield.damage).toBeGreaterThanOrEqual(500);
+    expect(WEAPONS.thunderhammer.cost).toBeGreaterThanOrEqual(11000);
+    expect(WEAPONS.thunderhammer.lightningPulse!.damage).toBeGreaterThanOrEqual(170);
+    expect(WEAPONS.stormorb.cost).toBeGreaterThanOrEqual(16000);
+    expect(WEAPONS.stormorb.lightningPulse!.targets).toBeGreaterThanOrEqual(4);
+    expect(WEAPONS.colossus.cost).toBeGreaterThanOrEqual(20000);
+    expect(WEAPONS.colossus.damage).toBeGreaterThanOrEqual(2300);
+  });
+
   it('offers ten ammo-free melee weapons from cheap to endgame', () => {
     const melee = WEAPON_ORDER.filter(isMeleeWeapon);
     expect(melee).toEqual([
       'crowbar',
       'fireaxe',
-      'knife',
       'chainsaw',
       'spear',
-      'throwshield',
+      'knife',
       'phaselance',
-      'thunderhammer',
+      'throwshield',
       'dashknife',
+      'thunderhammer',
       'worldbreaker',
     ]);
     for (const weapon of melee) {
@@ -929,7 +942,8 @@ describe('vehicles', () => {
     expect(VEHICLES.ricochet.bounce).toBeGreaterThan(0.9);
     expect(VEHICLES.ricochet.directionalDrive).toBe(true);
     expect(VEHICLES.ricochet.turn).toBeLessThan(VEHICLES.bulldozer.turn);
-    expect(VEHICLES.jumper.boost).toBeGreaterThan(VEHICLES.quad.boost! * 4);
+    expect(VEHICLES.jumper.teleport).toBeGreaterThan(500);
+    expect(VEHICLES.jumper.boost).toBeUndefined();
     expect(VEHICLES.explosive.wreckExplosion?.radius).toBeGreaterThan(500);
     expect(VEHICLES.explosive.wreckExplosion?.damage).toBeGreaterThan(2000);
     for (const type of VEHICLE_ORDER) expect(VEHICLES[type].perk.length).toBeGreaterThan(0);

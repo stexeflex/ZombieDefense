@@ -63,6 +63,8 @@ export interface VehicleConfig {
   resupply?: number;
   /** Extra top speed while the dash key is held. */
   boost?: number;
+  /** Instant forward jump paid with one dash charge. */
+  teleport?: number;
   /** Remaining momentum after reflecting from a boundary, prop, building or hull. */
   bounce?: number;
   /** Steering rotates the velocity gradually instead of instantly choosing a new direction. */
@@ -240,9 +242,10 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     grip: 3,
     turn: 3.6,
     ram: 115,
-    boost: 690,
-    perk: 'Dash-Taste entfesselt einen gewaltigen Geschwindigkeitssprung',
-    description: 'Langsam im Normalbetrieb, schießt mit einer Dash-Ladung explosiv nach vorn',
+    teleport: 620,
+    perk: 'Dash-Taste teleportiert das Fahrzeug augenblicklich nach vorn',
+    description:
+      'Langsam im Normalbetrieb, überspringt mit einer Dash-Ladung sofort weite Strecken',
   },
   ricochet: {
     label: 'Turbo-Abpraller',

@@ -303,12 +303,14 @@ export class ArenaScene extends Phaser.Scene {
     if (!me || !me.alive || (phase !== 'combat' && phase !== 'build')) return;
     if (me.dashCharges <= 0 || this.localDash > 0 || this.localDashLock > 0) return;
 
-    // Behind the wheel the same key is the nitro, so the burst is predicted on
-    // the hull instead of on the body.
+    // Behind the wheel the same key triggers the hull's movement ability. Nitro
+    // is predicted locally; teleportation arrives with the next server snapshot
+    // because only the server can validate the landing zone.
     if (me.vehicleId) {
       const view = this.vehicles.get(me.vehicleId);
-      if (view && VEHICLES[view.type].boost && view.driverId === me.id) {
-        view.boost = VEHICLE_BOOST_SECONDS;
+      const config = view ? VEHICLES[view.type] : undefined;
+      if (view && config && (config.boost || config.teleport) && view.driverId === me.id) {
+        if (config.boost) view.boost = VEHICLE_BOOST_SECONDS;
         this.localDashLock = DASH_LOCK;
         this.dashQueued = true;
       }
@@ -1004,6 +1006,14 @@ export class ArenaScene extends Phaser.Scene {
     const head = this.add.image(9, 0, `player-head-${colorIndex}`);
     const actor = this.add.container(0, 0, [legA, legB, body, weapon, head]);
 
+    const chargeBackground = this.add
+      .rectangle(0, -61, 56, 9, 0x04100b, 0.94)
+      .setStrokeStyle(1, 0xc8f8ff, 0.55)
+      .setVisible(false);
+    const chargeBar = this.add
+      .rectangle(-27, -61, 54, 7, 0x68e9ff, 1)
+      .setOrigin(0, 0.5)
+      .setVisible(false);
     const label = this.add
       .text(0, -44, player.name, {
         color: '#e8f4ed',
@@ -1045,6 +1055,8 @@ export class ArenaScene extends Phaser.Scene {
         shadow,
         dashRing,
         actor,
+        chargeBackground,
+        chargeBar,
         label,
         healthBg,
         healthBar,
@@ -1070,6 +1082,8 @@ export class ArenaScene extends Phaser.Scene {
       label,
       healthBar,
       shieldBar,
+      chargeBackground,
+      chargeBar,
       reviveBackground: reviveBg,
       reviveBar,
       reviveText,
@@ -1093,6 +1107,13 @@ export class ArenaScene extends Phaser.Scene {
     if (shielded) {
       view.shieldBar.setDisplaySize(48 * Math.min(1, player.shield / player.shieldMax), 3);
     }
+    const charge = Math.max(0, Math.min(1, player.weaponCharge ?? 0));
+    const charging = player.alive && charge > 0;
+    view.chargeBackground.setVisible(charging);
+    view.chargeBar
+      .setVisible(charging)
+      .setDisplaySize(54 * charge, 7)
+      .setFillStyle(charge >= 1 ? 0xffd166 : 0x68e9ff);
     view.root.setAlpha(player.alive ? 1 : 0.6);
 
     if (view.weaponKey !== player.weapon) {

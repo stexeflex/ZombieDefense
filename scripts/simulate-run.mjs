@@ -1227,12 +1227,13 @@ console.log('\n== Neue Fahrzeugmechaniken ==');
   room.systems.build.placeVehicle('p1', { type: 'jumper', x: 1260, y: 800, rotation: 0 });
   const car = [...room.state.vehicles.values()][0];
   room.systems.vehicles.toggle('p1');
+  const beforeX = car.x;
   runtime.input = { ...IDLE, right: true, dash: true, aimX: 1600, aimY: 800 };
   room.update(50);
   check(
-    'Sprungfahrzeug gewinnt per Dash enorm viel Geschwindigkeit',
-    car.boost > 0 && Math.hypot(car.vx, car.vy) > VEHICLES.jumper.speed,
-    `(${Math.hypot(car.vx, car.vy).toFixed(0)} Tempo)`,
+    'Sprungfahrzeug teleportiert mit einer Dash-Ladung nach vorn',
+    car.x > beforeX + 200 && car.boost === 0 && player.dashCharges === 1,
+    `(von ${beforeX.toFixed(0)} auf ${car.x.toFixed(0)})`,
   );
 }
 

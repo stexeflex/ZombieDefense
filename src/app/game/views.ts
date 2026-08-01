@@ -30,6 +30,9 @@ export interface PlayerView extends BaseView {
   healthBar: Phaser.GameObjects.Rectangle;
   /** Thin blue bar under the health, only up while a shield is charged. */
   shieldBar: Phaser.GameObjects.Rectangle;
+  /** Charge meter above the character for held-fire melee specials. */
+  chargeBackground: Phaser.GameObjects.Rectangle;
+  chargeBar: Phaser.GameObjects.Rectangle;
   reviveBackground: Phaser.GameObjects.Rectangle;
   reviveBar: Phaser.GameObjects.Rectangle;
   reviveText: Phaser.GameObjects.Text;
