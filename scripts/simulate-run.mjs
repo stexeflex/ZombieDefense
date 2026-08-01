@@ -22,6 +22,10 @@ const {
   DEFENSES,
   MAPS,
   MINI_BOSSES,
+  NULL_CORE_BASE_DPS,
+  NULL_CORE_BASE_RADIUS,
+  NULL_FIELD_BASE_DPS,
+  NULL_FIELD_BASE_RADIUS,
   PLACE_RANGE,
   REPAIR_COST_PER_HP,
   STARTER_BARRICADE_COUNT,
@@ -2503,6 +2507,65 @@ console.log('\n== Sonderzombies ==');
     'Splitter-Upgrade zündet danach eine Mini-Granate pro Stufe',
     minis.length === 4,
     `(${minis.length}/4)`,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1', {
+    ability: 'nullCore',
+    upgrades: {
+      nullCoreDamage: 10,
+      nullCoreCooldown: 10,
+      nullCoreDuration: 10,
+      nullCoreRadius: 10,
+      nullFieldRadius: 10,
+    },
+    perks: { nullCoreGravity: true },
+  });
+  startCombat(room);
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  const target = { x: 1500, y: 900 };
+  const coreVictim = room.systems.world.spawnZombie('normal', { x: target.x + 20, y: target.y });
+  const fieldVictim = room.systems.world.spawnZombie('normal', { x: target.x + 120, y: target.y });
+  for (const victim of [coreVictim, fieldVictim]) {
+    victim.maxHealth = 10000;
+    victim.health = victim.maxHealth;
+    victim.baseSpeed = 0;
+    victim.speed = 0;
+  }
+  room.systems.players.useAbility('p1', target);
+  const core = [...room.state.hazards.values()].find((hazard) => hazard.kind === 'nullCore');
+  const field = [...room.state.hazards.values()].find((hazard) => hazard.kind === 'nullField');
+  check(
+    'Nullpunktkern bleibt sechs Sekunden als stehendes Projektil bestehen',
+    Boolean(core && field && core.life === 6 && field.life === 6),
+  );
+  check(
+    'Beide Reichweiten-Upgrades vergrößern Kern und Feld getrennt',
+    core?.r === Math.round(NULL_CORE_BASE_RADIUS * 1.15) &&
+      field?.r === Math.round(NULL_FIELD_BASE_RADIUS * 1.15),
+    `(${core?.r} / ${field?.r})`,
+  );
+  const coreHealth = coreVictim.health;
+  const fieldHealth = fieldVictim.health;
+  const fieldX = fieldVictim.x;
+  room.systems.abilities.updateHazards(0.25);
+  const coreDamage = coreHealth - coreVictim.health;
+  const fieldDamage = fieldHealth - fieldVictim.health;
+  check(
+    'Der innere Kern verursacht massiven Zusatzschaden',
+    coreDamage > fieldDamage * 4 &&
+      coreDamage >= (NULL_CORE_BASE_DPS + NULL_FIELD_BASE_DPS) * 1.3 * 0.25,
+    `(${coreDamage} / ${fieldDamage})`,
+  );
+  check(
+    'Gravitationsanker bremst und zieht Gegner in den Kern',
+    fieldVictim.x < fieldX && fieldVictim.chilled > 0,
+  );
+  check(
+    'Nullpunktkern verbraucht seine Ladung und lädt danach neu',
+    player.abilityCharges === 0 && player.abilityCooldown > 30,
   );
 }
 {

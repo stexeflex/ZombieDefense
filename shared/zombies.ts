@@ -50,7 +50,8 @@ export const SUMMON_CYCLES = 5;
  * Ground effects. `lava` and `poison` belong to the enemy and eat the squad,
  * `acid` and `napalm` belong to the squad and only hurt zombies.
  */
-export type HazardKind = 'warning' | 'lava' | 'poison' | 'pull' | 'acid' | 'napalm';
+export type HazardKind =
+  'warning' | 'lava' | 'poison' | 'pull' | 'acid' | 'napalm' | 'nullField' | 'nullCore';
 
 /**
  * Everything a boss can do, as plain data. Each entry gets its own timer, so a

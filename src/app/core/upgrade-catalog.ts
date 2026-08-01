@@ -12,6 +12,14 @@ import {
   MORTAR_BASE_RADIUS,
   MORTAR_BASE_SLOW_SECONDS,
   MORTAR_MIN_COOLDOWN,
+  NULL_CORE_BASE_COOLDOWN,
+  NULL_CORE_BASE_DPS,
+  NULL_CORE_BASE_RADIUS,
+  NULL_CORE_BASE_SECONDS,
+  NULL_CORE_MIN_COOLDOWN,
+  NULL_CORE_SECONDS_PER_LEVEL,
+  NULL_FIELD_BASE_DPS,
+  NULL_FIELD_BASE_RADIUS,
   PLAYER_BASE_HEALTH,
   PRECISION_BASE_COOLDOWN,
   PRECISION_BASE_DAMAGE,
@@ -38,6 +46,7 @@ export type UpgradeCategory =
   | 'grenades'
   | 'mortar'
   | 'precision'
+  | 'nullCore'
   | 'barricades'
   | 'turrets'
   | 'vehicles'
@@ -100,6 +109,12 @@ export const UPGRADE_GROUPS: UpgradeGroupDefinition[] = [
     label: 'Vernichtungsschuss',
     description: 'Ein sichtbares Projektil für maximalen Schaden an genau einem Ziel',
     icon: '➤',
+  },
+  {
+    key: 'nullCore',
+    label: 'Nullpunktkern',
+    description: 'Stationärer Schadenskern mit getrennt ausbaubarem Kern- und Feldradius',
+    icon: '✦',
   },
   {
     key: 'barricades',
@@ -172,6 +187,11 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     label: 'Zielanalyse',
     icon: '%',
   },
+  { key: 'nullCoreDamage', category: 'nullCore', label: 'Kernenergie', icon: '✦' },
+  { key: 'nullCoreCooldown', category: 'nullCore', label: 'Neukalibrierung', icon: '◷' },
+  { key: 'nullCoreDuration', category: 'nullCore', label: 'Stabilität', icon: '◌' },
+  { key: 'nullCoreRadius', category: 'nullCore', label: 'Kernreichweite', icon: '◎' },
+  { key: 'nullFieldRadius', category: 'nullCore', label: 'Feldreichweite', icon: '◉' },
   { key: 'barricadeHealth', category: 'barricades', label: 'Barrikadenleben', icon: '▰' },
   { key: 'turretDamage', category: 'turrets', label: 'Turmschaden', icon: '⌖' },
   { key: 'turretRange', category: 'turrets', label: 'Turmreichweite', icon: '◈' },
@@ -259,6 +279,16 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
       return `Bis zu +${number(safeLevel * 3)} % Schaden gegen verwundete Ziele (+3 % pro Stufe)`;
     case 'precisionHealthDamage':
       return `${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * 100)} % maximales Gegnerleben als Bonusschaden · Mini-Bosse ${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * PRECISION_MINI_HEALTH_DAMAGE_FACTOR * 100)} % · Bosse ${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * PRECISION_BOSS_HEALTH_DAMAGE_FACTOR * 100)} % (+1 % pro Stufe)`;
+    case 'nullCoreDamage':
+      return `${number(NULL_CORE_BASE_DPS * (1 + safeLevel * 0.03))} Kernschaden/s · ${number(NULL_FIELD_BASE_DPS * (1 + safeLevel * 0.03))} Feldschaden/s (+3 % pro Stufe)`;
+    case 'nullCoreCooldown':
+      return `${number(Math.max(NULL_CORE_MIN_COOLDOWN, NULL_CORE_BASE_COOLDOWN / (1 + safeLevel * 0.02)))} s Cooldown (+2 % Tempo pro Stufe, min. ${number(NULL_CORE_MIN_COOLDOWN)} s)`;
+    case 'nullCoreDuration':
+      return `${number(NULL_CORE_BASE_SECONDS + safeLevel * NULL_CORE_SECONDS_PER_LEVEL)} s Standzeit (+${number(NULL_CORE_SECONDS_PER_LEVEL)} s pro Stufe)`;
+    case 'nullCoreRadius':
+      return `${number(NULL_CORE_BASE_RADIUS * (1 + safeLevel * 0.015))} Kernreichweite (+1,5 % pro Stufe)`;
+    case 'nullFieldRadius':
+      return `${number(NULL_FIELD_BASE_RADIUS * (1 + safeLevel * 0.015))} Feldreichweite (+1,5 % pro Stufe)`;
     case 'barricadeHealth':
       return percentMultiplier(safeLevel, 'Barrikadenleben');
     case 'turretDamage':
@@ -371,6 +401,13 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     label: 'Doppelmagazin',
     description: 'Du kannst eine zweite Ladung Vernichtungsschuss bereithalten.',
     icon: '2×',
+  },
+  {
+    key: 'nullCoreGravity',
+    label: 'Gravitationsanker',
+    description:
+      'Das äußere Feld verlangsamt Gegner um 40 % und zieht sie fortlaufend in den tödlichen Kern.',
+    icon: '⊙',
   },
   {
     key: 'lastStand',

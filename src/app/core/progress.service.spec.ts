@@ -60,6 +60,7 @@ describe('ProgressService upgrade shop', () => {
       'Granaten',
       'Mörserschlag',
       'Vernichtungsschuss',
+      'Nullpunktkern',
       'Barrikaden',
       'Türme',
       'Fahrzeuge',
@@ -81,17 +82,20 @@ describe('ProgressService upgrade shop', () => {
     expect(upgradeCurrentValue('mortarSlow', 4)).toContain('1,5 s Verlangsamung');
     expect(upgradeCurrentValue('precisionExecute', 10)).toContain('+30 %');
     expect(upgradeCurrentValue('precisionHealthDamage', 5)).toContain('5 % maximales Gegnerleben');
+    expect(upgradeCurrentValue('nullCoreRadius', 10)).toContain('Kernreichweite');
+    expect(upgradeCurrentValue('nullFieldRadius', 10)).toContain('Feldreichweite');
     expect(upgradeCurrentValue('armor', 35)).not.toContain('max.');
     expect(upgradeCurrentValue('vehicleArmor', 10)).toContain('10 % weniger Schaden');
   });
 
-  it('starts with grenades and charges the same price for either unlockable ability', () => {
+  it('starts with grenades and keeps advanced abilities locked until they are bought', () => {
     const progress = new ProgressService();
     expect(progress.ability()).toBe('grenade');
     expect(progress.abilityUnlocked('grenade')).toBe(true);
     expect(progress.abilityUnlocked('mortarStrike')).toBe(false);
     expect(progress.selectAbility('mortarStrike')).toBe(false);
     expect(PLAYER_ABILITY_COST.mortarStrike).toBe(PLAYER_ABILITY_COST.precisionShot);
+    expect(PLAYER_ABILITY_COST.nullCore).toBeGreaterThan(PLAYER_ABILITY_COST.precisionShot);
 
     progress.addRunReward(PLAYER_ABILITY_COST.mortarStrike, 'ability-unlock');
     expect(progress.buyAbility('mortarStrike')).toBe(true);

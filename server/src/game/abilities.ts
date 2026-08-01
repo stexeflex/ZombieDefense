@@ -237,8 +237,13 @@ export class AbilitySystem {
     const finished: string[] = [];
     this.world.state.hazards.forEach((hazard, id) => {
       hazard.life -= delta;
-      // Acid and napalm belong to the squad: they eat zombies and leave everyone else be.
-      if (hazard.kind === 'acid' || hazard.kind === 'napalm') {
+      // Friendly pools eat zombies and leave the squad and its structures alone.
+      if (
+        hazard.kind === 'acid' ||
+        hazard.kind === 'napalm' ||
+        hazard.kind === 'nullField' ||
+        hazard.kind === 'nullCore'
+      ) {
         hazard.tick -= delta;
         if (hazard.tick <= 0) {
           hazard.tick = POOL_TICK;
@@ -247,6 +252,17 @@ export class AbilitySystem {
               Math.hypot(zombie.x - hazard.x, zombie.y - hazard.y) <= hazard.r + zombie.radius,
           );
           for (const [zombieId, zombie] of victims) {
+            if (hazard.slow > 0) {
+              this.world.chillZombie(zombie, hazard.slow, POOL_TICK + 0.1);
+            }
+            if (hazard.pull > 0) {
+              const dx = hazard.x - zombie.x;
+              const dy = hazard.y - zombie.y;
+              const distance = Math.max(1, Math.hypot(dx, dy));
+              const travel = Math.min(distance, hazard.pull * POOL_TICK);
+              zombie.x = this.world.clamp(zombie.x + (dx / distance) * travel, 0, ARENA.width);
+              zombie.y = this.world.clamp(zombie.y + (dy / distance) * travel, 0, ARENA.height);
+            }
             this.world.damageZombie(zombieId, zombie, hazard.damage * POOL_TICK, hazard.ownerId);
           }
           this.world.pushFx({ k: 'burn', x: hazard.x, y: hazard.y, r: hazard.r, s: hazard.kind });

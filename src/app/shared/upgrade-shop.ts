@@ -30,10 +30,10 @@ export class UpgradeShop {
     upgrades: UPGRADE_DEFINITIONS.filter((upgrade) => upgrade.category === group.key),
   }));
   readonly groups = this.allGroups.filter(
-    (group) => !['grenades', 'mortar', 'precision'].includes(group.key),
+    (group) => !['grenades', 'mortar', 'precision', 'nullCore'].includes(group.key),
   );
   readonly abilityGroups = this.allGroups.filter((group) =>
-    ['grenades', 'mortar', 'precision'].includes(group.key),
+    ['grenades', 'mortar', 'precision', 'nullCore'].includes(group.key),
   );
   private readonly abilityPerkKeys = new Set<PerkKey>([
     'extraGrenade',
@@ -41,6 +41,7 @@ export class UpgradeShop {
     'extraMortar',
     'precisionReload',
     'extraPrecision',
+    'nullCoreGravity',
   ]);
   readonly perkDefinitions = PERK_DEFINITIONS.filter((perk) => !this.abilityPerkKeys.has(perk.key));
   readonly abilities = PLAYER_ABILITY_ORDER.map((type) => ({ type, ...PLAYER_ABILITIES[type] }));
@@ -50,7 +51,9 @@ export class UpgradeShop {
         ? 'grenades'
         : this.progress.ability() === 'mortarStrike'
           ? 'mortar'
-          : 'precision';
+          : this.progress.ability() === 'precisionShot'
+            ? 'precision'
+            : 'nullCore';
     return this.abilityGroups.find((group) => group.key === groupKey)!;
   });
   readonly selectedAbilityPerks = computed(() => {
@@ -59,7 +62,9 @@ export class UpgradeShop {
         ? ['extraGrenade']
         : this.progress.ability() === 'mortarStrike'
           ? ['mortarNapalm', 'extraMortar']
-          : ['precisionReload', 'extraPrecision'];
+          : this.progress.ability() === 'precisionShot'
+            ? ['precisionReload', 'extraPrecision']
+            : ['nullCoreGravity'];
     return PERK_DEFINITIONS.filter((perk) => perkKeys.includes(perk.key));
   });
   buyUpgrade(key: UpgradeKey) {

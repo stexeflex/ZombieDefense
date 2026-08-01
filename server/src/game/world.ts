@@ -226,10 +226,16 @@ export class GameWorld {
     life: number;
     damage: number;
     ownerId?: string;
+    slow?: number;
+    pull?: number;
   }) {
     if (this.state.hazards.size >= MAX_HAZARDS) {
       const spare = [...this.state.hazards.values()].find(
-        (entry) => entry.kind === 'acid' || entry.kind === 'napalm',
+        (entry) =>
+          entry.kind === 'acid' ||
+          entry.kind === 'napalm' ||
+          entry.kind === 'nullField' ||
+          entry.kind === 'nullCore',
       );
       if (!spare) return undefined;
       this.state.hazards.delete(spare.id);
@@ -244,6 +250,8 @@ export class GameWorld {
     hazard.maxLife = options.life;
     hazard.damage = options.damage;
     hazard.ownerId = options.ownerId ?? '';
+    hazard.slow = options.slow ?? 0;
+    hazard.pull = options.pull ?? 0;
     this.state.hazards.set(hazard.id, hazard);
     return hazard;
   }

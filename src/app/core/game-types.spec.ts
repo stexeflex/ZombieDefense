@@ -22,6 +22,10 @@ import {
   HEALTH_REGEN_PER_LEVEL,
   MAPS,
   MINI_BOSSES,
+  NULL_CORE_BASE_DPS,
+  NULL_CORE_BASE_RADIUS,
+  NULL_FIELD_BASE_DPS,
+  NULL_FIELD_BASE_RADIUS,
   PERK_COST,
   PLAYER_ABILITIES,
   PLAYER_ABILITY_COST,
@@ -119,6 +123,11 @@ describe('map campaign', () => {
         expect(MAPS[index].waves.length).toBeGreaterThanOrEqual(MAPS[index - 1].waves.length);
       }
     }
+  });
+
+  it('caps every campaign plan at thirty waves', () => {
+    expect(Math.max(...MAPS.map((map) => map.waves.length))).toBe(30);
+    expect(MAPS.find((map) => map.id === 'eclipse')?.waves).toHaveLength(30);
   });
 
   it('pays enough boss gold to fund several upgrade paths across the campaign', () => {
@@ -1057,14 +1066,17 @@ describe('arsenal and ammunition', () => {
 });
 
 describe('permanent upgrades', () => {
-  it('offers three mutually exclusive G abilities with their own recharge rules', () => {
-    expect(PLAYER_ABILITY_ORDER).toEqual(['grenade', 'mortarStrike', 'precisionShot']);
+  it('offers four mutually exclusive G abilities with their own recharge rules', () => {
+    expect(PLAYER_ABILITY_ORDER).toEqual(['grenade', 'mortarStrike', 'precisionShot', 'nullCore']);
     expect(PLAYER_ABILITIES.mortarStrike.charges).toBe(1);
     expect(PLAYER_ABILITIES.precisionShot.charges).toBe(1);
+    expect(PLAYER_ABILITIES.nullCore.charges).toBe(1);
     expect(PLAYER_ABILITIES.precisionShot.description).toContain('ohne Durchschlag');
+    expect(PLAYER_ABILITIES.nullCore.description).toContain('stehendes Projektil');
     expect(PLAYER_ABILITY_COST.grenade).toBe(0);
     expect(PLAYER_ABILITY_COST.mortarStrike).toBe(PLAYER_ABILITY_COST.precisionShot);
     expect(PLAYER_ABILITY_COST.mortarStrike).toBeGreaterThan(0);
+    expect(PLAYER_ABILITY_COST.nullCore).toBeGreaterThan(PLAYER_ABILITY_COST.precisionShot);
     expect(PRECISION_KILL_COOLDOWN_REDUCTION).toBe(0.7);
     expect(precisionHealthDamageFraction(5, 'elite')).toBe(5 * PRECISION_HEALTH_DAMAGE_PER_LEVEL);
     expect(precisionHealthDamageFraction(5, 'mini')).toBeCloseTo(0.02);
@@ -1073,17 +1085,27 @@ describe('permanent upgrades', () => {
     expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraGrenade: true })).toBe(1);
     expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraMortar: true })).toBe(2);
     expect(abilityMaxCharges('precisionShot', { ...EMPTY_PERKS, extraPrecision: true })).toBe(2);
+    expect(abilityMaxCharges('nullCore', { ...EMPTY_PERKS, nullCoreGravity: true })).toBe(1);
     expect(EMPTY_PERKS.mortarNapalm).toBe(false);
     expect(EMPTY_PERKS.extraMortar).toBe(false);
     expect(EMPTY_PERKS.precisionReload).toBe(false);
     expect(EMPTY_PERKS.extraPrecision).toBe(false);
+    expect(EMPTY_PERKS.nullCoreGravity).toBe(false);
     expect(PERK_COST.mortarNapalm).toBeGreaterThan(PERK_COST.extraGrenade);
     expect(PERK_COST.precisionReload).toBeGreaterThan(PERK_COST.mortarNapalm);
     expect(PERK_COST.extraMortar).toBeGreaterThan(PERK_COST.precisionReload);
     expect(PERK_COST.extraPrecision).toBeGreaterThan(PERK_COST.extraMortar);
+    expect(PERK_COST.nullCoreGravity).toBeGreaterThan(PERK_COST.extraPrecision);
+    expect(NULL_CORE_BASE_DPS).toBeGreaterThan(NULL_FIELD_BASE_DPS);
+    expect(NULL_FIELD_BASE_RADIUS).toBeGreaterThan(NULL_CORE_BASE_RADIUS * 2);
+    expect(EMPTY_UPGRADES.nullCoreRadius).toBe(0);
+    expect(EMPTY_UPGRADES.nullFieldRadius).toBe(0);
     expect(
       abilityRechargeTime('precisionShot', { ...EMPTY_UPGRADES, precisionCooldown: 40 }),
     ).toBeGreaterThanOrEqual(PLAYER_ABILITIES.precisionShot.minCooldown);
+    expect(
+      abilityRechargeTime('nullCore', { ...EMPTY_UPGRADES, nullCoreCooldown: 40 }),
+    ).toBeGreaterThanOrEqual(PLAYER_ABILITIES.nullCore.minCooldown);
   });
 
   it('leaves room to specialise without runaway prices', () => {

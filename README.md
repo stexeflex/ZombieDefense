@@ -56,7 +56,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, getrennte Stufen-Upgrades, sechzehn besondere Vorteile und drei aktive Fähigkeiten
+- permanentes Gold, getrennte Stufen-Upgrades, siebzehn besondere Vorteile und vier aktive Fähigkeiten
   in einem verschlüsselten und gegen einfache Änderungen signierten `localStorage`-Save
 
 ### Karten
@@ -77,7 +77,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 | Relais Helios      | 28     | ×9,2  | Sirene Null     | Signalkern verteidigen        | 39545         |
 | Damm 13            | 29     | ×10   | Tiefenwurm      | West-/Ost-Frontwechsel        | 48993         |
 | Route Lazarus      | 30     | ×10,9 | Straßenkönig    | Konvoi eskortieren            | 60500         |
-| Eklipsen-Riss      | 32     | ×11,8 | EKLIPSE         | rotierende Angriffsseiten     | 77347         |
+| Eklipsen-Riss      | 30     | ×11,8 | EKLIPSE         | rotierende Angriffsseiten     | 77025         |
 | Todeszone Null     | 10     | ×12,8 | OMEGA           | acht Minuten Elite-Überleben  | 93971         |
 | Aegis-Bollwerk     | 20     | ×14,2 | AEGIS PRIME     | nur Frontschild-Gegner        | 124182        |
 
@@ -371,20 +371,23 @@ nicht und erhält in einem bereits laufenden Run weiterhin kein Startgeld.
   Motorleistung, Rammschaden, Bordwaffen, Dash-Ladungen, Dash-Aufladung,
   Dash-Schadensreduktion, Dash-Schaden, Dash-Schild und Zielanalyse für den
   Vernichtungsschuss. Zielanalyse verursacht anteiligen Maximallebensschaden,
-  abgeschwächt gegen Mini-Bosse und noch stärker abgeschwächt gegen Bosse.
+  abgeschwächt gegen Mini-Bosse und noch stärker abgeschwächt gegen Bosse. Der
+  Nullpunktkern besitzt Schaden, Standzeit, Cooldown sowie getrennte Leitern für
+  Kernreichweite und Feldreichweite.
 - **Besondere Vorteile** – günstigere erste Waffe, erste Barrikaden, erster
   Turm und erstes Fahrzeug eines Runs, ein Dash der Zombies wegschleudert, ein
   Dash der durch Gegner schneidet und Schild auflädt, doppelt so schnelles
   Wiederbeleben, günstigere Reparaturen und ein Aufbäumen, das einen tödlichen
   Treffer pro Welle überlebt. Der Notausstieg schützt nach einem Fahrzeugwrack
   eine Sekunde; der Stufenverstärker öffnet 50 % mehr kaufbare Upgrade-Stufen.
+  Der Gravitationsanker bremst Gegner im Nullpunktfeld und zieht sie zum Kern.
 - **Fähigkeiten** – genau eine Auswahl für `G`: Granaten, ein verzögerter großer
   Mörserschlag oder ein sichtbarer Vernichtungsschuss mit enormem Einzelschaden
-  ohne Durchschlag. Granaten-Upgrades samt zweitem Gürtel liegen vollständig in
-  diesem Reiter; Mörser und Vernichtungsschuss besitzen eigene Upgrade-Leitern
-  sowie je einen einmaligen Vorteil für eine zweite Ladung. Freischalten und
-  Ausrüsten sind getrennte Schritte; erst der eigene Ausrüsten-Button wechselt
-  die aktive Fähigkeit.
+  ohne Durchschlag sowie der stationäre Nullpunktkern mit einem massiven inneren
+  und einem größeren äußeren Schadensfeld. Alle vier Fähigkeiten besitzen eigene
+  Upgrade-Leitern und fähigkeitsspezifische Vorteile. Freischalten und Ausrüsten
+  sind getrennte Schritte; erst der eigene Ausrüsten-Button wechselt die aktive
+  Fähigkeit.
 
 Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als

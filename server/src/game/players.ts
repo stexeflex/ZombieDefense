@@ -21,6 +21,14 @@ import {
   MORTAR_NAPALM_RADIUS_SHARE,
   MORTAR_NAPALM_SECONDS,
   MORTAR_SLOW,
+  NULL_CORE_BASE_DPS,
+  NULL_CORE_BASE_RADIUS,
+  NULL_CORE_BASE_SECONDS,
+  NULL_CORE_PULL_SPEED,
+  NULL_CORE_SECONDS_PER_LEVEL,
+  NULL_CORE_SLOW,
+  NULL_FIELD_BASE_DPS,
+  NULL_FIELD_BASE_RADIUS,
   PRECISION_BASE_DAMAGE,
   PRECISION_PROJECTILE_LIFE,
   PRECISION_PROJECTILE_RADIUS,
@@ -876,7 +884,11 @@ export class PlayerSystem {
 
     if (runtime.ability === 'grenade') this.throwGrenade(player, runtime, x, y);
     else if (runtime.ability === 'mortarStrike') this.callMortar(player, runtime, x, y);
-    else this.firePrecisionShot(player, runtime, x, y);
+    else if (runtime.ability === 'precisionShot') {
+      this.firePrecisionShot(player, runtime, x, y);
+    } else {
+      this.placeNullCore(player, runtime, x, y);
+    }
 
     player.abilityCharges -= 1;
     const rechargeTime = abilityRechargeTime(runtime.ability, runtime.upgrades);
@@ -981,6 +993,36 @@ export class PlayerSystem {
       a: angle,
       s: 'ability_precision',
     });
+  }
+
+  private placeNullCore(player: PlayerState, runtime: RuntimePlayer, x: number, y: number) {
+    const upgrades = runtime.upgrades;
+    const damageScale = 1 + upgrades.nullCoreDamage * 0.03;
+    const duration =
+      NULL_CORE_BASE_SECONDS + upgrades.nullCoreDuration * NULL_CORE_SECONDS_PER_LEVEL;
+    const gravity = runtime.perks.nullCoreGravity;
+
+    this.world.spawnHazard({
+      kind: 'nullField',
+      x,
+      y,
+      r: NULL_FIELD_BASE_RADIUS * (1 + upgrades.nullFieldRadius * 0.015),
+      life: duration,
+      damage: NULL_FIELD_BASE_DPS * damageScale,
+      ownerId: player.id,
+      slow: gravity ? NULL_CORE_SLOW : 0,
+      pull: gravity ? NULL_CORE_PULL_SPEED : 0,
+    });
+    this.world.spawnHazard({
+      kind: 'nullCore',
+      x,
+      y,
+      r: NULL_CORE_BASE_RADIUS * (1 + upgrades.nullCoreRadius * 0.015),
+      life: duration,
+      damage: NULL_CORE_BASE_DPS * damageScale,
+      ownerId: player.id,
+    });
+    this.world.pushFx({ k: 'explosion', x, y, r: NULL_CORE_BASE_RADIUS, s: 'ability_null_core' });
   }
 
   private tickAbilityBlasts(delta: number) {

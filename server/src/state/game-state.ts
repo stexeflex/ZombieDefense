@@ -243,6 +243,9 @@ export class HazardState extends Schema {
   /** Burst damage for a warning, damage per second for a pool. */
   damage = 0;
   tick = 0;
+  /** Friendly fields may keep enemies inside their damaging centre. */
+  slow = 0;
+  pull = 0;
 }
 
 export class GameState extends Schema {

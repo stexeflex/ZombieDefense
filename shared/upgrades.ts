@@ -29,6 +29,11 @@ export interface PermanentUpgrades {
   precisionWidth: number;
   precisionExecute: number;
   precisionHealthDamage: number;
+  nullCoreDamage: number;
+  nullCoreCooldown: number;
+  nullCoreDuration: number;
+  nullCoreRadius: number;
+  nullFieldRadius: number;
   barricadeHealth: number;
   turretDamage: number;
   turretRange: number;
@@ -71,6 +76,11 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   precisionWidth: 0,
   precisionExecute: 0,
   precisionHealthDamage: 0,
+  nullCoreDamage: 0,
+  nullCoreCooldown: 0,
+  nullCoreDuration: 0,
+  nullCoreRadius: 0,
+  nullFieldRadius: 0,
   barricadeHealth: 0,
   turretDamage: 0,
   turretRange: 0,
@@ -186,6 +196,8 @@ export interface PermanentPerks {
   precisionReload: boolean;
   /** One more precision shot can be held ready. */
   extraPrecision: boolean;
+  /** The null core's outer field slows enemies and pulls them into its centre. */
+  nullCoreGravity: boolean;
   /** Once per wave a lethal hit leaves one hit point instead. */
   lastStand: boolean;
   /** A destroyed vehicle grants its crew one second of invulnerability. */
@@ -210,6 +222,7 @@ export const EMPTY_PERKS: PermanentPerks = {
   extraMortar: false,
   precisionReload: false,
   extraPrecision: false,
+  nullCoreGravity: false,
   lastStand: false,
   emergencyExit: false,
   upgradeAmplifier: false,
@@ -229,6 +242,7 @@ export const PERK_COST: Record<PerkKey, number> = {
   extraMortar: 2600,
   precisionReload: 2200,
   extraPrecision: 3000,
+  nullCoreGravity: 3200,
   lastStand: 2200,
   emergencyExit: 2000,
   upgradeAmplifier: 50000,

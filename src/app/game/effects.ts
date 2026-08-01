@@ -140,10 +140,16 @@ export class EffectLayer {
         // no smoke, and nobody mistakes it for a fire blast any more.
         const acidBurst = event.s === 'acid' || event.s === 'turret_acid';
         const gravityBurst = event.s === 'gravity' || event.s === 'turret_gravity_well';
+        const nullCoreBurst = event.s === 'ability_null_core';
         const chronoBurst = event.s === 'turret_chrono';
         const waveBurst = event.s === 'turret_shockwave';
         const energyBlast =
-          gravityBurst || chronoBurst || waveBurst || event.s === 'nova' || acidBurst;
+          gravityBurst ||
+          nullCoreBurst ||
+          chronoBurst ||
+          waveBurst ||
+          event.s === 'nova' ||
+          acidBurst;
         this.burst(
           energyBlast ? 'energy' : 'flame',
           Math.min(26, 10 + radius / 8),
@@ -156,15 +162,17 @@ export class EffectLayer {
           ? 0x2eeaff
           : gravityBurst
             ? 0xa67cff
-            : chronoBurst
-              ? 0x6cecff
-              : waveBurst
-                ? 0x63ffd2
-                : event.s === 'nova'
-                  ? 0xff9ee0
-                  : event.s === 'mortar' || event.s === 'ability_mortar'
-                    ? 0xff4f6b
-                    : 0xffb347;
+            : nullCoreBurst
+              ? 0x7dfff2
+              : chronoBurst
+                ? 0x6cecff
+                : waveBurst
+                  ? 0x63ffd2
+                  : event.s === 'nova'
+                    ? 0xff9ee0
+                    : event.s === 'mortar' || event.s === 'ability_mortar'
+                      ? 0xff4f6b
+                      : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
         this.audio.play(
           acidBurst ? 'shot-flame' : 'explosion',
@@ -176,7 +184,14 @@ export class EffectLayer {
         this.mortarWarning(event);
         break;
       case 'burn':
-        this.burst(event.s === 'acid' ? 'energy' : 'flame', 4, event.x, event.y);
+        this.burst(
+          event.s === 'acid' || event.s === 'nullField' || event.s === 'nullCore'
+            ? 'energy'
+            : 'flame',
+          4,
+          event.x,
+          event.y,
+        );
         break;
       case 'chain':
         this.bolts.push({

@@ -2,7 +2,7 @@ import type { PermanentPerks, PermanentUpgrades } from './upgrades.js';
 import type { ZombieRank } from './zombies.js';
 
 /** The one active tool a survivor may fire with G. */
-export type PlayerAbilityType = 'grenade' | 'mortarStrike' | 'precisionShot';
+export type PlayerAbilityType = 'grenade' | 'mortarStrike' | 'precisionShot' | 'nullCore';
 
 export interface PlayerAbilityConfig {
   label: string;
@@ -45,6 +45,19 @@ export const PRECISION_BOSS_HEALTH_DAMAGE_FACTOR = 0.15;
 /** Todesurteil removes most of a running reload, but never grants a free shot. */
 export const PRECISION_KILL_COOLDOWN_REDUCTION = 0.7;
 
+/** A stationary projectile with a lethal core and a wider damaging field. */
+export const NULL_CORE_BASE_DPS = 720;
+export const NULL_CORE_BASE_RADIUS = 58;
+export const NULL_FIELD_BASE_DPS = 180;
+export const NULL_FIELD_BASE_RADIUS = 155;
+export const NULL_CORE_BASE_SECONDS = 5;
+export const NULL_CORE_SECONDS_PER_LEVEL = 0.1;
+export const NULL_CORE_BASE_COOLDOWN = 40;
+export const NULL_CORE_MIN_COOLDOWN = 18;
+/** The Gravitationsanker perk drags targets into the lethal core. */
+export const NULL_CORE_PULL_SPEED = 80;
+export const NULL_CORE_SLOW = 0.4;
+
 export function precisionHealthDamageFraction(level: number, rank: ZombieRank) {
   const rankFactor =
     rank === 'boss'
@@ -80,19 +93,30 @@ export const PLAYER_ABILITIES: Record<PlayerAbilityType, PlayerAbilityConfig> = 
     cooldown: PRECISION_BASE_COOLDOWN,
     minCooldown: PRECISION_MIN_COOLDOWN,
   },
+  nullCore: {
+    label: 'Nullpunktkern',
+    short: '✦',
+    description:
+      'Setzt für einige Sekunden ein stehendes Projektil mit massivem Kernschaden und äußerem Schadensfeld.',
+    charges: 1,
+    cooldown: NULL_CORE_BASE_COOLDOWN,
+    minCooldown: NULL_CORE_MIN_COOLDOWN,
+  },
 };
 
 export const PLAYER_ABILITY_ORDER: PlayerAbilityType[] = [
   'grenade',
   'mortarStrike',
   'precisionShot',
+  'nullCore',
 ];
 
-/** Grenades are the starter ability; both alternatives deliberately cost the same. */
+/** Grenades are the starter ability; advanced abilities must be unlocked once. */
 export const PLAYER_ABILITY_COST: Record<PlayerAbilityType, number> = {
   grenade: 0,
   mortarStrike: 1800,
   precisionShot: 1800,
+  nullCore: 2800,
 };
 
 export function isPlayerAbility(value: unknown): value is PlayerAbilityType {
@@ -105,7 +129,9 @@ export function abilityMaxCharges(type: PlayerAbilityType, perks: PermanentPerks
       ? perks.extraGrenade
       : type === 'mortarStrike'
         ? perks.extraMortar
-        : perks.extraPrecision;
+        : type === 'precisionShot'
+          ? perks.extraPrecision
+          : false;
   return PLAYER_ABILITIES[type].charges + (extra ? 1 : 0);
 }
 
@@ -116,6 +142,8 @@ export function abilityRechargeTime(type: PlayerAbilityType, upgrades: Permanent
       ? upgrades.grenadeCooldown
       : type === 'mortarStrike'
         ? upgrades.mortarCooldown
-        : upgrades.precisionCooldown;
+        : type === 'precisionShot'
+          ? upgrades.precisionCooldown
+          : upgrades.nullCoreCooldown;
   return Math.max(config.minCooldown, config.cooldown / (1 + level * 0.02));
 }

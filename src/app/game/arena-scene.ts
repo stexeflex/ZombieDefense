@@ -1624,7 +1624,12 @@ export class ArenaScene extends Phaser.Scene {
   private createHazard(hazard: HazardSnapshot): HazardView {
     const style = HAZARD_STYLE[hazard.kind] ?? HAZARD_STYLE['warning'];
     const warning = hazard.kind === 'warning';
-    const friendlyPool = hazard.kind === 'acid' || hazard.kind === 'napalm';
+    const nullProjectile = hazard.kind === 'nullCore';
+    const friendlyPool =
+      hazard.kind === 'acid' ||
+      hazard.kind === 'napalm' ||
+      hazard.kind === 'nullField' ||
+      nullProjectile;
     const hostilePoison = hazard.kind === 'poison';
     const pool = this.add
       .image(0, 0, 'fx-pool')
@@ -1641,16 +1646,16 @@ export class ArenaScene extends Phaser.Scene {
         warning ? 0.95 : 0.72,
       );
     const marker = this.add
-      .text(0, 0, '☠', {
-        color: '#fff0b0',
+      .text(0, 0, nullProjectile ? '✦' : '☠', {
+        color: nullProjectile ? '#eaffff' : '#fff0b0',
         fontFamily: 'Arial, sans-serif',
         fontStyle: 'bold',
         fontSize: `${Math.max(18, Math.min(34, hazard.r * 0.42))}px`,
-        stroke: '#5c100c',
+        stroke: nullProjectile ? '#32157a' : '#5c100c',
         strokeThickness: 5,
       })
       .setOrigin(0.5)
-      .setVisible(hostilePoison);
+      .setVisible(hostilePoison || nullProjectile);
 
     const root = this.add
       .container(hazard.x, hazard.y, [pool, fill, ring, marker])
@@ -1703,6 +1708,11 @@ export class ArenaScene extends Phaser.Scene {
         view.ring.setStrokeStyle(4, 0x8ff5ff, 0.55 + Math.sin(view.pulse * 7) * 0.3);
       } else if (view.kind === 'napalm') {
         view.ring.setStrokeStyle(4, 0xffb347, 0.58 + Math.sin(view.pulse * 9) * 0.3);
+      } else if (view.kind === 'nullField') {
+        view.ring.setStrokeStyle(3, 0xb99cff, 0.42 + Math.sin(view.pulse * 6) * 0.24);
+      } else if (view.kind === 'nullCore') {
+        view.ring.setStrokeStyle(4, 0xc8fff9, 0.65 + Math.sin(view.pulse * 12) * 0.28);
+        view.marker.setScale(1.05 + Math.sin(view.pulse * 10) * 0.18).setRotation(view.pulse * 1.8);
       } else if (view.kind === 'poison') {
         view.ring.setStrokeStyle(4, 0xff704d, 0.58 + Math.sin(view.pulse * 8) * 0.3);
         view.marker
