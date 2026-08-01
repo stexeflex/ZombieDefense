@@ -306,17 +306,19 @@ export const VEHICLE_ORDER: VehicleType[] = [
 export const VEHICLE_REACH = 104;
 /** Every armour level keeps this share of incoming damage off the hull. */
 export const VEHICLE_ARMOR_STEP = 0.01;
-/** Hüllenschutz stays capped so even an upgraded vehicle still wears down. */
-export const VEHICLE_MAX_ARMOR_REDUCTION = 0.35;
+/** The regular ladder reaches 35 %; its amplified ceiling reaches 53 %. */
+export const VEHICLE_MAX_ARMOR_REDUCTION = 0.53;
 /** Motor upgrades help positioning without turning a protected hull into an escape tool again. */
 export const VEHICLE_SPEED_STEP = 0.01;
-export const VEHICLE_MAX_SPEED_BONUS = 0.4;
+export const VEHICLE_MAX_SPEED_BONUS = 0.6;
 /** Seconds before the same zombie can be run over again. */
 export const VEHICLE_RAM_COOLDOWN = 0.45;
 /** Share of the ram damage the hull takes itself — driving through wears it out. */
 export const VEHICLE_RAM_SELF = 0.14;
 /** Damage everyone inside takes when the hull goes up. */
 export const VEHICLE_WRECK_DAMAGE = 45;
+/** Grace period granted by the permanent Notausstieg perk after a wreck. */
+export const VEHICLE_ESCAPE_INVULNERABILITY = 1;
 /** Below this share of the top speed a ram is just a nudge. */
 export const VEHICLE_RAM_MIN_SPEED = 0.35;
 /** How long one nitro burst lasts — it costs a dash charge. */

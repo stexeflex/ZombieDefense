@@ -87,7 +87,7 @@ export class ProgressService {
   }
 
   maxLevel(key: UpgradeKey) {
-    return upgradeMaxLevel(key);
+    return upgradeMaxLevel(key, this.progress().perks);
   }
 
   cost(key: UpgradeKey) {
@@ -111,7 +111,7 @@ export class ProgressService {
     const current = this.progress();
     const cost = this.cost(key);
     if (!this.unlocked(key)) return false;
-    if (current.gold < cost || current.upgrades[key] >= upgradeMaxLevel(key)) return false;
+    if (current.gold < cost || current.upgrades[key] >= this.maxLevel(key)) return false;
     this.save({
       ...current,
       gold: current.gold - cost,
@@ -147,7 +147,7 @@ export class ProgressService {
     return this.progress().unlockedAbilities.includes(ability);
   }
 
-  /** Buying an ability equips it immediately, so its upgrades become visible. */
+  /** Buying only unlocks an ability; equipping is a separate, deliberate action. */
   buyAbility(ability: PlayerAbilityType) {
     const current = this.progress();
     const cost = PLAYER_ABILITY_COST[ability];
@@ -161,7 +161,6 @@ export class ProgressService {
     this.save({
       ...current,
       gold: current.gold - cost,
-      ability,
       unlockedAbilities: [...current.unlockedAbilities, ability],
     });
     return true;
@@ -258,6 +257,9 @@ export class ProgressService {
       this.loadedLegacy = Boolean(raw && !isSealedProgressStorage(raw));
       const savedUpgrades = (stored.upgrades ?? {}) as Record<string, unknown>;
       const savedPerks = (stored.perks ?? {}) as Record<string, unknown>;
+      const perks = Object.fromEntries(
+        Object.keys(EMPTY_PERKS).map((key) => [key, Boolean(savedPerks[key])]),
+      ) as unknown as PermanentPerks;
       const rewardedRuns = Array.isArray(stored.rewardedRuns)
         ? stored.rewardedRuns.filter((id): id is string => typeof id === 'string').slice(-20)
         : [];
@@ -286,14 +288,12 @@ export class ProgressService {
           Object.keys(EMPTY_UPGRADES).map((key) => [
             key,
             Math.min(
-              upgradeMaxLevel(key as UpgradeKey),
+              upgradeMaxLevel(key as UpgradeKey, perks),
               Math.max(0, Math.floor(Number(savedUpgrades[key]) || 0)),
             ),
           ]),
         ) as unknown as PermanentUpgrades,
-        perks: Object.fromEntries(
-          Object.keys(EMPTY_PERKS).map((key) => [key, Boolean(savedPerks[key])]),
-        ) as unknown as PermanentPerks,
+        perks,
         rewardedRuns,
         rewardedRunPayouts: Object.fromEntries(
           rewardedRuns.flatMap((id) => {

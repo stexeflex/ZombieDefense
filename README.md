@@ -56,7 +56,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, getrennte Stufen-Upgrades, vierzehn besondere Vorteile und drei aktive Fähigkeiten
+- permanentes Gold, getrennte Stufen-Upgrades, sechzehn besondere Vorteile und drei aktive Fähigkeiten
   in einem verschlüsselten und gegen einfache Änderungen signierten `localStorage`-Save
 
 ### Karten
@@ -375,12 +375,15 @@ nicht und erhält in einem bereits laufenden Run weiterhin kein Startgeld.
   Turm und erstes Fahrzeug eines Runs, ein Dash der Zombies wegschleudert, ein
   Dash der durch Gegner schneidet und Schild auflädt, doppelt so schnelles
   Wiederbeleben, günstigere Reparaturen und ein Aufbäumen, das einen tödlichen
-  Treffer pro Welle überlebt
+  Treffer pro Welle überlebt. Der Notausstieg schützt nach einem Fahrzeugwrack
+  eine Sekunde; der Stufenverstärker öffnet 50 % mehr kaufbare Upgrade-Stufen.
 - **Fähigkeiten** – genau eine Auswahl für `G`: Granaten, ein verzögerter großer
   Mörserschlag oder ein sichtbarer Vernichtungsschuss mit enormem Einzelschaden
   ohne Durchschlag. Granaten-Upgrades samt zweitem Gürtel liegen vollständig in
   diesem Reiter; Mörser und Vernichtungsschuss besitzen eigene Upgrade-Leitern
-  sowie je einen einmaligen Vorteil für eine zweite Ladung.
+  sowie je einen einmaligen Vorteil für eine zweite Ladung. Freischalten und
+  Ausrüsten sind getrennte Schritte; erst der eigene Ausrüsten-Button wechselt
+  die aktive Fähigkeit.
 
 Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als

@@ -140,9 +140,16 @@
   line-height: 1.45;
 }
 
-.ability-card b {
-  color: var(--muted);
+.ability-action {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(105, 240, 174, 0.35);
+  background: rgba(105, 240, 174, 0.08);
+  color: var(--acid);
   font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .ability-card.selected {
@@ -150,19 +157,22 @@
   box-shadow: inset 0 0 0 1px var(--acid);
 }
 
-.ability-card.selected b {
-  color: var(--acid);
+.ability-card.selected .ability-action {
+  border-color: rgba(105, 240, 174, 0.22);
+  background: transparent;
 }
 
-.ability-card.locked:not(:disabled) {
+.ability-card.locked {
   background: rgba(255, 190, 75, 0.035);
 }
 
-.ability-card.locked b {
+.ability-card.locked .ability-action {
+  border-color: rgba(255, 190, 75, 0.4);
+  background: rgba(255, 190, 75, 0.07);
   color: var(--gold);
 }
 
-.ability-card:disabled {
+.ability-action:disabled {
   cursor: not-allowed;
   opacity: 0.52;
 }

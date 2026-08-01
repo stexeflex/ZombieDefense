@@ -147,6 +147,7 @@ export class PlayerSystem {
     player.shield = Math.max(0, Math.min(player.shieldMax, player.shield - SHIELD_DECAY * delta));
 
     runtime.abilityUseLock = Math.max(0, runtime.abilityUseLock - delta);
+    runtime.vehicleWreckInvulnerability = Math.max(0, runtime.vehicleWreckInvulnerability - delta);
     runtime.abilityRecharge = runtime.abilityRecharge
       .map((timer) => timer - delta)
       .sort((a, b) => a - b);

@@ -189,6 +189,7 @@ export class WaveSystem {
         runtime.pushX = 0;
         runtime.pushY = 0;
         runtime.lastStandReady = true;
+        runtime.vehicleWreckInvulnerability = 0;
       }
       this.build.resetDiscounts(id);
     });
@@ -414,6 +415,7 @@ export class WaveSystem {
       const runtime = this.world.runtime.get(player.id);
       if (runtime) {
         runtime.lastStandReady = true;
+        runtime.vehicleWreckInvulnerability = 0;
         runtime.relocatingDefenseId = '';
       }
     });
@@ -527,6 +529,7 @@ export class WaveSystem {
         runtime.pushX = 0;
         runtime.pushY = 0;
         runtime.lastStandReady = true;
+        runtime.vehicleWreckInvulnerability = 0;
       }
     });
     this.onClearField();

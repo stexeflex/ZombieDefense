@@ -62,19 +62,6 @@ export class UpgradeShop {
           : ['precisionReload', 'extraPrecision'];
     return PERK_DEFINITIONS.filter((perk) => perkKeys.includes(perk.key));
   });
-  /**
-   * A short ladder gets one pip per level, so a pip always means a level. Long
-   * ladders would need forty of them, there a filled bar is far easier to read.
-   */
-  private readonly pipSteps = new Map<UpgradeKey, number[]>(
-    UPGRADE_DEFINITIONS.filter((upgrade) => this.progress.maxLevel(upgrade.key) <= 10).map(
-      (upgrade) => [
-        upgrade.key,
-        Array.from({ length: this.progress.maxLevel(upgrade.key) }, (_, index) => index + 1),
-      ],
-    ),
-  );
-
   buyUpgrade(key: UpgradeKey) {
     if (this.progress.buy(key)) this.bought.emit();
   }
@@ -83,7 +70,7 @@ export class UpgradeShop {
     if (this.progress.buyPerk(key)) this.bought.emit();
   }
 
-  chooseAbility(ability: PlayerAbilityType) {
+  useAbilityAction(ability: PlayerAbilityType) {
     const changed = this.progress.abilityUnlocked(ability)
       ? this.progress.selectAbility(ability)
       : this.progress.buyAbility(ability);
@@ -113,7 +100,8 @@ export class UpgradeShop {
 
   /** The pips of a short ladder, or nothing when the bar is used instead. */
   pips(key: UpgradeKey) {
-    return this.pipSteps.get(key);
+    const maximum = this.progress.maxLevel(key);
+    return maximum <= 10 ? Array.from({ length: maximum }, (_, index) => index + 1) : undefined;
   }
 
   fillPercent(key: UpgradeKey) {

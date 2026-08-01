@@ -887,9 +887,13 @@ describe('vehicles', () => {
     expect(VEHICLES.tank.cost).toBeGreaterThanOrEqual(8000);
     expect(VEHICLES.tank.health).toBeGreaterThanOrEqual(7000);
     expect(VEHICLE_SPEED_STEP).toBe(0.01);
-    expect(vehicleTopSpeed('car', UPGRADE_MAX_LEVEL)).toBeCloseTo(
-      VEHICLES.car.speed * (1 + VEHICLE_MAX_SPEED_BONUS),
-    );
+    expect(vehicleTopSpeed('car', UPGRADE_MAX_LEVEL)).toBeCloseTo(VEHICLES.car.speed * 1.4);
+    expect(
+      vehicleTopSpeed(
+        'car',
+        upgradeMaxLevel('vehicleSpeed', { ...EMPTY_PERKS, upgradeAmplifier: true }),
+      ),
+    ).toBeCloseTo(VEHICLES.car.speed * (1 + VEHICLE_MAX_SPEED_BONUS));
   });
 
   it('gives every vehicle one thing the others do not have', () => {
@@ -918,7 +922,12 @@ describe('vehicles', () => {
 
   it('lets armour strengthen the hull while vehicles still wear down', () => {
     expect(vehicleArmorReduction(0)).toBe(0);
-    expect(vehicleArmorReduction(40)).toBe(VEHICLE_MAX_ARMOR_REDUCTION);
+    expect(vehicleArmorReduction(upgradeMaxLevel('vehicleArmor'))).toBeCloseTo(0.35);
+    expect(
+      vehicleArmorReduction(
+        upgradeMaxLevel('vehicleArmor', { ...EMPTY_PERKS, upgradeAmplifier: true }),
+      ),
+    ).toBe(VEHICLE_MAX_ARMOR_REDUCTION);
     expect(vehicleArmorReduction(UPGRADE_MAX_LEVEL * 10)).toBe(VEHICLE_MAX_ARMOR_REDUCTION);
     expect(VEHICLE_MAX_ARMOR_REDUCTION).toBeLessThan(1);
     // Ramming and wrecks keep a vehicle from replacing a wall of turrets.
@@ -1125,10 +1134,14 @@ describe('permanent upgrades', () => {
   it('offers the expensive global level amplifier', () => {
     expect(PERK_COST.upgradeAmplifier).toBe(50000);
     const perks = { ...EMPTY_PERKS, upgradeAmplifier: true };
-    expect(effectiveUpgradeLevel(1, perks)).toBe(2);
-    expect(effectiveUpgradeLevel(2, perks)).toBe(3);
+    expect(effectiveUpgradeLevel(1, perks)).toBe(1);
+    expect(effectiveUpgradeLevel(2, perks)).toBe(2);
     expect(effectiveUpgradeLevel(0, perks)).toBe(0);
-    expect(effectiveUpgrades({ ...EMPTY_UPGRADES, weaponDamage: 7 }, perks).weaponDamage).toBe(11);
+    expect(effectiveUpgrades({ ...EMPTY_UPGRADES, weaponDamage: 7 }, perks).weaponDamage).toBe(7);
+    expect(upgradeMaxLevel('weaponDamage', perks)).toBe(60);
+    expect(upgradeMaxLevel('armor', perks)).toBe(53);
+    expect(upgradeMaxLevel('dashCharges', perks)).toBe(5);
+    expect(upgradeMaxLevel('dashResist', perks)).toBe(upgradeMaxLevel('dashResist'));
   });
 
   it('locks the dash upgrades that need a perk first', () => {
@@ -1166,7 +1179,11 @@ describe('permanent upgrades', () => {
   it('caps armour so no build becomes untouchable', () => {
     expect(armorReduction(0)).toBe(0);
     expect(armorReduction(10)).toBeCloseTo(0.1);
-    expect(armorReduction(UPGRADE_MAX_LEVEL)).toBeLessThanOrEqual(0.35);
+    expect(armorReduction(upgradeMaxLevel('armor'))).toBeCloseTo(0.35);
+    expect(
+      armorReduction(upgradeMaxLevel('armor', { ...EMPTY_PERKS, upgradeAmplifier: true })),
+    ).toBeCloseTo(0.53);
+    expect(armorReduction(UPGRADE_MAX_LEVEL * 10)).toBeLessThan(1);
   });
 
   it('adds start money through a levelled upgrade', () => {

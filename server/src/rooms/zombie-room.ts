@@ -7,7 +7,6 @@ import {
   EMPTY_UPGRADES,
   PLAYER_BASE_HEALTH,
   SHIELD_SHARE,
-  effectiveUpgrades,
   findMap,
   isPlayerAbility,
   reserveCapacity,
@@ -240,7 +239,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
 
   onJoin(client: Client, options: JoinOptions) {
     const perks = this.cleanPerks(options.perks);
-    const upgrades = effectiveUpgrades(this.cleanUpgrades(options.upgrades), perks);
+    const upgrades = this.cleanUpgrades(options.upgrades, perks);
     const ability = this.cleanAbility(options.ability);
     const player = new PlayerState();
     player.id = client.sessionId;
@@ -292,6 +291,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       vehicleDiscounts: 0,
       relocatingDefenseId: '',
       lastStandReady: true,
+      vehicleWreckInvulnerability: 0,
       pushX: 0,
       pushY: 0,
     });
@@ -382,7 +382,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const runtime = this.world.runtime.get(sessionId);
     if (!player || !runtime) return;
     runtime.perks = this.cleanPerks(options.perks);
-    runtime.upgrades = effectiveUpgrades(this.cleanUpgrades(options.upgrades), runtime.perks);
+    runtime.upgrades = this.cleanUpgrades(options.upgrades, runtime.perks);
     runtime.ability = this.cleanAbility(options.ability);
     player.maxHealth = Math.round(PLAYER_BASE_HEALTH * (1 + runtime.upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
@@ -399,6 +399,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     player.abilityCooldown = 0;
     runtime.abilityRecharge = [];
     runtime.abilityUseLock = 0;
+    runtime.vehicleWreckInvulnerability = 0;
     this.build.resetDiscounts(sessionId);
     this.broadcastSnapshot();
   }
@@ -538,14 +539,17 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     };
   }
 
-  private cleanUpgrades(upgrades?: Partial<PermanentUpgrades>): PermanentUpgrades {
+  private cleanUpgrades(
+    upgrades?: Partial<PermanentUpgrades>,
+    perks: PermanentPerks = EMPTY_PERKS,
+  ): PermanentUpgrades {
     return Object.fromEntries(
       Object.keys(EMPTY_UPGRADES).map((key) => [
         key,
         this.clamp(
           Math.floor(Number(upgrades?.[key as UpgradeKey]) || 0),
           0,
-          upgradeMaxLevel(key as UpgradeKey),
+          upgradeMaxLevel(key as UpgradeKey, perks),
         ),
       ]),
     ) as unknown as PermanentUpgrades;

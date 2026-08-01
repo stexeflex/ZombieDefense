@@ -7,6 +7,7 @@ import {
   PLAYER_RADIUS,
   SUMMON_CYCLES,
   VEHICLES,
+  VEHICLE_ESCAPE_INVULNERABILITY,
   VEHICLE_WRECK_DAMAGE,
   ZOMBIES,
   armorReduction,
@@ -76,6 +77,8 @@ export interface RuntimePlayer {
   /** Defense selected nearby and allowed to follow the player across the build map. */
   relocatingDefenseId: string;
   lastStandReady: boolean;
+  /** Seconds left of the Notausstieg protection after a destroyed vehicle. */
+  vehicleWreckInvulnerability: number;
   /** Knock-back or pull a boss applied, decays on its own. */
   pushX: number;
   pushY: number;
@@ -459,6 +462,10 @@ export class GameWorld {
     if (this.vehicleOf(player.id)) return false;
     if (player.weaponDashing > 0) return false;
     const runtime = this.runtime.get(player.id);
+    if ((runtime?.vehicleWreckInvulnerability ?? 0) > 0) {
+      this.pushFx({ k: 'deflect', x: player.x, y: player.y, r: 34, s: 'emergencyExit' });
+      return false;
+    }
     const upgrades = runtime?.upgrades ?? EMPTY_UPGRADES;
     let reduction = 1 - armorReduction(upgrades.armor);
     // A dash swallows a good part of every blow, and the levelled upgrade pushes
@@ -653,6 +660,11 @@ export class GameWorld {
       if (!passenger) continue;
       passenger.vehicleId = '';
       this.dropOffPlayer(passenger, vehicle);
+      const runtime = this.runtime.get(id);
+      if (runtime?.perks.emergencyExit) {
+        runtime.vehicleWreckInvulnerability = VEHICLE_ESCAPE_INVULNERABILITY;
+        this.pushFx({ k: 'shield', x: passenger.x, y: passenger.y, r: 42, s: 'emergencyExit' });
+      }
       this.damagePlayer(passenger, VEHICLE_WRECK_DAMAGE * this.endlessDamageMultiplier());
     }
   }

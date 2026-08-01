@@ -95,11 +95,25 @@ describe('ProgressService upgrade shop', () => {
 
     progress.addRunReward(PLAYER_ABILITY_COST.mortarStrike, 'ability-unlock');
     expect(progress.buyAbility('mortarStrike')).toBe(true);
-    expect(progress.ability()).toBe('mortarStrike');
+    expect(progress.ability()).toBe('grenade');
     expect(progress.gold()).toBe(0);
     expect(progress.abilityUnlocked('mortarStrike')).toBe(true);
+    expect(progress.selectAbility('mortarStrike')).toBe(true);
+    expect(progress.ability()).toBe('mortarStrike');
     expect(new ProgressService().ability()).toBe('mortarStrike');
     expect(new ProgressService().abilityUnlocked('mortarStrike')).toBe(true);
+  });
+
+  it('makes amplifier levels available for purchase instead of granting them for free', () => {
+    const progress = new ProgressService();
+    progress.addRunReward(100000, 'amplifier-budget');
+
+    expect(progress.buyPerk('upgradeAmplifier')).toBe(true);
+    expect(progress.maxLevel('weaponDamage')).toBe(60);
+    expect(progress.effectiveUpgrades().weaponDamage).toBe(0);
+    for (let level = 0; level < 41; level += 1) expect(progress.buy('weaponDamage')).toBe(true);
+    expect(progress.upgrades().weaponDamage).toBe(41);
+    expect(progress.effectiveUpgrades().weaponDamage).toBe(41);
   });
 
   it('falls back to grenades when an old save selected a now-locked ability', () => {

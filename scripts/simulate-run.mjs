@@ -1127,6 +1127,35 @@ console.log('\n== Fahrzeuge ==');
 console.log('\n== Neue Fahrzeugmechaniken ==');
 {
   const room = makeRoom('outpost');
+  const player = join(room, 'p1', { perks: { emergencyExit: true } });
+  const runtime = room.systems.world.runtime.get('p1');
+  startCombat(room);
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'car', x: 1260, y: 800, rotation: 0 });
+  const car = [...room.state.vehicles.values()][0];
+  room.systems.vehicles.toggle('p1');
+  const health = player.health;
+  room.systems.world.damageVehicle(car, 1e9);
+  const protectedHit = room.systems.world.damagePlayer(player, 30);
+  check(
+    'Notausstieg schützt nach einem zerstörten Fahrzeug eine Sekunde lang',
+    player.vehicleId === '' &&
+      player.health === health &&
+      protectedHit === false &&
+      runtime.vehicleWreckInvulnerability > 0,
+  );
+  step(room, 21);
+  const laterHit = room.systems.world.damagePlayer(player, 30);
+  check(
+    'Notausstieg endet nach einer Sekunde',
+    runtime.vehicleWreckInvulnerability === 0 && laterHit === true && player.health < health,
+  );
+}
+{
+  const room = makeRoom('outpost');
   const player = join(room, 'p1');
   startCombat(room);
   room.systems.waves.finishWave();
@@ -1471,6 +1500,21 @@ console.log('\n== Freie Ecken und sichere Zombie-Einstiege ==');
 }
 
 console.log('\n== Besondere Vorteile ==');
+{
+  const room = makeRoom('outpost');
+  join(room, 'normal', { upgrades: { weaponDamage: 999 } });
+  join(room, 'amplified', {
+    upgrades: { weaponDamage: 999 },
+    perks: { upgradeAmplifier: true },
+  });
+  check(
+    'Stufenverstärker erhöht nur das kaufbare Server-Maximum',
+    room.systems.world.runtime.get('normal').upgrades.weaponDamage ===
+      upgradeMaxLevel('weaponDamage') &&
+      room.systems.world.runtime.get('amplified').upgrades.weaponDamage ===
+        upgradeMaxLevel('weaponDamage', { upgradeAmplifier: true }),
+  );
+}
 {
   const room = makeRoom('outpost');
   const player = join(room, 'p1', {

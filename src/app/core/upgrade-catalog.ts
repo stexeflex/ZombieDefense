@@ -21,7 +21,6 @@ import {
   PRECISION_MINI_HEALTH_DAMAGE_FACTOR,
   PRECISION_PROJECTILE_RADIUS,
   START_MONEY_PER_LEVEL,
-  VEHICLE_MAX_SPEED_BONUS,
   VEHICLE_SPEED_STEP,
   armorReduction,
   dashReduction,
@@ -271,12 +270,7 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
     case 'vehicleArmor':
       return `${number(vehicleArmorReduction(safeLevel) * 100)} % weniger Schaden (+1 % pro Stufe)`;
     case 'vehicleSpeed':
-      return percentMultiplier(
-        safeLevel,
-        'Fahrzeugtempo',
-        VEHICLE_SPEED_STEP * 100,
-        VEHICLE_MAX_SPEED_BONUS * 100,
-      );
+      return percentMultiplier(safeLevel, 'Fahrzeugtempo', VEHICLE_SPEED_STEP * 100);
     case 'vehicleRam':
       return percentMultiplier(safeLevel, 'Rammschaden');
     case 'vehicleGun':
@@ -385,10 +379,17 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     icon: '⛨',
   },
   {
+    key: 'emergencyExit',
+    label: 'Notausstieg',
+    description:
+      'Wird dein Fahrzeug zerstört, bist du nach dem Herausspringen 1 Sekunde lang unverwundbar.',
+    icon: '⬡',
+  },
+  {
     key: 'upgradeAmplifier',
     label: 'Stufenverstärker',
     description:
-      'Alle gekauften Stufen-Upgrades wirken 50 % stärker. Der wirksame Wert wird immer auf die nächste volle Stufe aufgerundet.',
+      'Erhöht die kaufbaren Maximalstufen aller weiter steigerbaren Stufen-Upgrades um 50 % (aufgerundet). Jede zusätzliche Stufe muss weiterhin mit Gold gekauft werden.',
     icon: '1,5×',
   },
 ];

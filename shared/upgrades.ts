@@ -112,8 +112,15 @@ export const UPGRADE_LIMITS: Partial<Record<UpgradeKey, number>> = {
   dashResist: 6,
 };
 
-export function upgradeMaxLevel(key: UpgradeKey) {
-  return UPGRADE_LIMITS[key] ?? UPGRADE_MAX_LEVEL;
+/** Extra room the Stufenverstärker opens on every ladder that can still improve. */
+export const UPGRADE_AMPLIFIER_FACTOR = 1.5;
+
+export function upgradeMaxLevel(key: UpgradeKey, perks?: Pick<PermanentPerks, 'upgradeAmplifier'>) {
+  const base = UPGRADE_LIMITS[key] ?? UPGRADE_MAX_LEVEL;
+  // Dash resistance is already absolute immunity at its regular maximum.
+  // Selling three more levels with no possible effect would be a trap.
+  if (!perks?.upgradeAmplifier || key === 'dashResist') return base;
+  return Math.ceil(base * UPGRADE_AMPLIFIER_FACTOR);
 }
 
 export function upgradeLevelCost(key: UpgradeKey, level: number) {
@@ -137,9 +144,9 @@ export function healthRegenPerSecond(level: number) {
   return Math.max(0, Math.floor(level)) * HEALTH_REGEN_PER_LEVEL;
 }
 
-/** Damage reduction from armour, capped so no build becomes untouchable. */
+/** The regular ladder reaches 35 %; its amplified ceiling reaches 53 %. */
 export function armorReduction(level: number) {
-  return Math.min(0.35, level * 0.01);
+  return Math.min(0.53, level * 0.01);
 }
 
 /**
@@ -181,7 +188,9 @@ export interface PermanentPerks {
   extraPrecision: boolean;
   /** Once per wave a lethal hit leaves one hit point instead. */
   lastStand: boolean;
-  /** Every bought level counts as one and a half levels, rounded up. */
+  /** A destroyed vehicle grants its crew one second of invulnerability. */
+  emergencyExit: boolean;
+  /** Upgrade ladders can be bought fifty percent further. */
   upgradeAmplifier: boolean;
 }
 
@@ -202,6 +211,7 @@ export const EMPTY_PERKS: PermanentPerks = {
   precisionReload: false,
   extraPrecision: false,
   lastStand: false,
+  emergencyExit: false,
   upgradeAmplifier: false,
 };
 
@@ -220,16 +230,16 @@ export const PERK_COST: Record<PerkKey, number> = {
   precisionReload: 2200,
   extraPrecision: 3000,
   lastStand: 2200,
+  emergencyExit: 2000,
   upgradeAmplifier: 50000,
 };
 
-/** Effective level after the extremely expensive global level amplifier. */
-export function effectiveUpgradeLevel(level: number, perks: PermanentPerks) {
-  const safe = Math.max(0, Math.floor(Number(level) || 0));
-  return perks.upgradeAmplifier ? Math.ceil(safe * 1.5) : safe;
+/** Bought levels always count exactly once; the amplifier only opens more purchases. */
+export function effectiveUpgradeLevel(level: number, _perks: PermanentPerks) {
+  return Math.max(0, Math.floor(Number(level) || 0));
 }
 
-/** Server-side stat bundle; purchase levels themselves remain unchanged. */
+/** Sanitised stat bundle shared by client previews and the server. */
 export function effectiveUpgrades(
   upgrades: PermanentUpgrades,
   perks: PermanentPerks,
