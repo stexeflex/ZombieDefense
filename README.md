@@ -64,27 +64,30 @@ Aufruf kann das Laden deshalb kurz dauern.
 | Karte              | Wellen | Härte | Endboss         | Besonderheit                  | Gold bei Sieg |
 | ------------------ | ------ | ----- | --------------- | ----------------------------- | ------------- |
 | Vorposten 07       | 10     | ×1    | Fleischkönig    | offener Einstieg              | 670           |
-| Industriehafen     | 12     | ×1,45 | Brutmutter      | Container-Gassen              | 1198          |
-| Militärbasis Nord  | 14     | ×2    | Feldmarschall   | lange Feuergassen             | 2049          |
-| Krater-Quarantäne  | 16     | ×2,8  | Artillerist     | offenes Feld                  | 3245          |
-| Metro Sektor 9     | 17     | ×3,6  | Sogfürst        | Tunnelkreuzung                | 4742          |
-| Stahlwerk Kessel 3 | 18     | ×4,4  | Schlackenherr   | enge Gießhalle                | 6355          |
-| Zitadelle Alpha    | 20     | ×5,2  | Zerreißer       | Festungsring                  | 8979          |
-| Nekropole          | 22     | ×6    | Schwarmkönigin  | kompakte Arena                | 12341         |
-| Reaktorblock 4     | 24     | ×6,8  | Seuchenfürst    | offenes Großfeld              | 16742         |
-| Abgrund-Kathedrale | 25     | ×7,6  | OMEGA           | alte Endlinie                 | 25146         |
-| Bunker K-11        | 25     | ×8,4  | Bastionsbrecher | Killbox, einseitige Kleinflut | 31930         |
-| Relais Helios      | 25     | ×9,2  | Sirene Null     | Signalkern verteidigen        | 39182         |
-| Damm 13            | 25     | ×10   | Tiefenwurm      | West-/Ost-Frontwechsel        | 48465         |
-| Route Lazarus      | 25     | ×10,9 | Straßenkönig    | Konvoi eskortieren            | 59780         |
-| Eklipsen-Riss      | 25     | ×11,8 | EKLIPSE         | rotierende Angriffsseiten     | 76221         |
+| Industriehafen     | 11     | ×1,45 | Brutmutter      | Container-Gassen              | 1168          |
+| Militärbasis Nord  | 12     | ×2    | Feldmarschall   | lange Feuergassen             | 1977          |
+| Krater-Quarantäne  | 13     | ×2,8  | Artillerist     | offenes Feld                  | 3116          |
+| Metro Sektor 9     | 14     | ×3,6  | Sogfürst        | Tunnelkreuzung                | 4587          |
+| Stahlwerk Kessel 3 | 15     | ×4,4  | Schlackenherr   | enge Gießhalle                | 6175          |
+| Zitadelle Alpha    | 16     | ×5,2  | Zerreißer       | Festungsring                  | 8701          |
+| Nekropole          | 17     | ×6    | Schwarmkönigin  | kompakte Arena                | 11945         |
+| Reaktorblock 4     | 18     | ×6,8  | Seuchenfürst    | offenes Großfeld              | 16209         |
+| Abgrund-Kathedrale | 19     | ×7,6  | OMEGA           | alte Endlinie                 | 24541         |
+| Bunker K-11        | 20     | ×8,4  | Bastionsbrecher | Killbox, einseitige Kleinflut | 31372         |
+| Relais Helios      | 20     | ×9,2  | Sirene Null     | Signalkern verteidigen        | 38576         |
+| Damm 13            | 20     | ×10   | Tiefenwurm      | West-/Ost-Frontwechsel        | 47805         |
+| Route Lazarus      | 20     | ×10,9 | Straßenkönig    | Konvoi eskortieren            | 59060         |
+| Eklipsen-Riss      | 20     | ×11,8 | EKLIPSE         | rotierende Angriffsseiten     | 75417         |
 | Todeszone Null     | 10     | ×12,8 | OMEGA           | acht Minuten Elite-Überleben  | 93971         |
 | Aegis-Bollwerk     | 20     | ×14,2 | AEGIS PRIME     | nur Frontschild-Gegner        | 124182        |
-| Schleierbezirk     | 25     | ×15,4 | NACHTFÜRST      | viele unsichtbare Gegner      | 149544        |
-| Triarch-Relais     | 25     | ×16,4 | TRIARCH-BRECHER | drei Signalkerne verteidigen  | 175985        |
+| Schleierbezirk     | 20     | ×15,4 | NACHTFÜRST      | viele unsichtbare Gegner      | 148488        |
+| Triarch-Relais     | 20     | ×16,4 | TRIARCH-BRECHER | drei Signalkerne verteidigen  | 174845        |
 
-Keine Kampagnenkarte dauert länger als 25 Wellen; auf den späten Karten sind
-Mini-Bosse und Spezialangriffe entsprechend dichter bis zur finalen Bosswelle verteilt.
+Reguläre Kampagnenkarten starten bei zehn Wellen, gewinnen pro Level genau eine
+Welle dazu und enden spätestens bei 20. Mini-Bosse und Spezialangriffe sind auf
+den kürzeren Läufen entsprechend dichter bis zur finalen Bosswelle verteilt.
+Die Todeszone Null bleibt als zeitgesteuerter Acht-Minuten-Sondermodus bei zehn
+Einsatzphasen.
 
 Beim Signalkern und beim Konvoi endet der Run auch dann, wenn das Missionsziel
 zerstört wird. Der Konvoi muss pro Welle einen Streckenabschnitt schaffen,

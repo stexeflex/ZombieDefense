@@ -127,9 +127,12 @@ describe('map campaign', () => {
     }
   });
 
-  it('caps every campaign plan at twenty-five waves', () => {
-    expect(Math.max(...MAPS.map((map) => map.waves.length))).toBe(25);
-    expect(MAPS.find((map) => map.id === 'eclipse')?.waves).toHaveLength(25);
+  it('adds one wave per regular level until the twenty-wave cap', () => {
+    expect(MAPS.map((map) => map.waves.length)).toEqual([
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 20, 20, 20, 20, 10, 20, 20, 20,
+    ]);
+    expect(Math.max(...MAPS.map((map) => map.waves.length))).toBe(20);
+    expect(MAPS.find((map) => map.id === 'eclipse')?.waves).toHaveLength(20);
   });
 
   it('pays enough boss gold to fund several upgrade paths across the campaign', () => {
