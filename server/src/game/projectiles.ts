@@ -19,6 +19,15 @@ export class ProjectileSystem {
       const fromY = projectile.y;
       projectile.x += projectile.vx * delta;
       projectile.y += projectile.vy * delta;
+      if (projectile.lightningEvery > 0) {
+        projectile.lightningTimer -= delta;
+        let pulses = 0;
+        while (projectile.lightningTimer <= 0 && pulses < 2) {
+          projectile.lightningTimer += projectile.lightningEvery;
+          this.pulseLightning(projectile);
+          pulses += 1;
+        }
+      }
 
       // A wall stops the shot — but only what is behind it. Anything the
       // bullet passes on the way still gets hit, otherwise a fast weapon could
@@ -221,6 +230,30 @@ export class ProjectileSystem {
       fromX = best.x;
       fromY = best.y;
       this.world.damageZombie(bestId, best, damage, projectile.ownerId);
+    }
+  }
+
+  /** A Kugelblitz or thrown hammer keeps discharging while the body flies on. */
+  private pulseLightning(projectile: ProjectileState) {
+    const targets = [...this.world.state.zombies.entries()]
+      .map(([id, zombie]) => ({
+        id,
+        zombie,
+        distance: Math.hypot(zombie.x - projectile.x, zombie.y - projectile.y),
+      }))
+      .filter(({ zombie, distance }) => distance <= projectile.lightningRange + zombie.radius)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, projectile.lightningTargets);
+    for (const { id, zombie } of targets) {
+      this.world.pushFx({
+        k: 'chain',
+        x: projectile.x,
+        y: projectile.y,
+        x2: zombie.x,
+        y2: zombie.y,
+        s: projectile.kind,
+      });
+      this.world.damageZombie(id, zombie, projectile.lightningDamage, projectile.ownerId);
     }
   }
 }

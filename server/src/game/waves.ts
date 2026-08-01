@@ -13,6 +13,7 @@ import {
 import type { BuildSystem } from './build.js';
 import type { PlayerSystem } from './players.js';
 import type { GameWorld } from './world.js';
+import { ObjectiveCoreState } from '../state/game-state.js';
 
 export interface RunReward {
   gold: number;
@@ -165,6 +166,8 @@ export class WaveSystem {
       player.reviveProgress = 0;
       player.reloading = 0;
       player.firing = 0;
+      player.weaponCharge = 0;
+      player.weaponDashing = 0;
       player.hurt = 0;
       player.vehicleId = '';
       if (runtime) {
@@ -176,6 +179,12 @@ export class WaveSystem {
         runtime.dashHits.clear();
         runtime.stowed.clear();
         runtime.wasFiring = false;
+        runtime.weaponChargeSeconds = 0;
+        runtime.chargedWeapon = '';
+        runtime.weaponDashSpeed = 0;
+        runtime.weaponDashDamage = 0;
+        runtime.weaponDashArmorPierce = 0;
+        runtime.weaponDashHits.clear();
         runtime.relocatingDefenseId = '';
         runtime.pushX = 0;
         runtime.pushY = 0;
@@ -213,6 +222,26 @@ export class WaveSystem {
       state.objectiveY = mission.y;
       return;
     }
+    if (mission.kind === 'multiholdout') {
+      state.objectiveMaxHealth = mission.maxHealth * mission.cores.length;
+      state.objectiveHealth = state.objectiveMaxHealth;
+      state.objectiveX =
+        mission.cores.reduce((sum, core) => sum + core.x, 0) / Math.max(1, mission.cores.length);
+      state.objectiveY =
+        mission.cores.reduce((sum, core) => sum + core.y, 0) / Math.max(1, mission.cores.length);
+      for (const definition of mission.cores) {
+        const core = new ObjectiveCoreState();
+        core.id = definition.id;
+        core.label = definition.label;
+        core.x = definition.x;
+        core.y = definition.y;
+        core.radius = mission.radius;
+        core.health = mission.maxHealth;
+        core.maxHealth = mission.maxHealth;
+        state.objectiveCores.set(core.id, core);
+      }
+      return;
+    }
     state.objectiveX = mission.path[0]?.x ?? 0;
     state.objectiveY = mission.path[0]?.y ?? 0;
   }
@@ -230,6 +259,7 @@ export class WaveSystem {
     state.objectiveProgress = 0;
     state.objectiveTimeRemaining = 0;
     state.objectiveDuration = 0;
+    state.objectiveCores.clear();
   }
 
   /**
@@ -433,7 +463,9 @@ export class WaveSystem {
     // The kind of the wave just cleared is what the state still holds, so no
     // generated wave has to be built a second time just to price it.
     const multiplier = state.waveKind === 'mini' ? 2.1 : state.waveKind === 'swarm' ? 1.5 : 1;
-    const reward = Math.round((90 + state.wave * 42) * map.moneyScale * multiplier);
+    const reward = Math.round(
+      (90 + state.wave * 42) * map.moneyScale * (map.ingameMoneyScale ?? 1) * multiplier,
+    );
     state.phase = 'build';
     state.statusText = `Welle geschafft · +${reward} $ für alle`;
     state.projectiles.clear();
@@ -441,7 +473,17 @@ export class WaveSystem {
     state.bossName = '';
     state.bossHealth = 0;
     state.bossMaxHealth = 0;
-    if (state.objectiveActive && state.objectiveHealth < state.objectiveMaxHealth) {
+    if (state.objectiveActive && state.objectiveCores.size > 0) {
+      state.objectiveCores.forEach((core) => {
+        if (core.health >= core.maxHealth) return;
+        core.health = Math.min(core.maxHealth, core.health + core.maxHealth * 0.1);
+        this.world.pushFx({ k: 'heal', x: core.x, y: core.y, r: core.radius, s: 'objective' });
+      });
+      state.objectiveHealth = [...state.objectiveCores.values()].reduce(
+        (sum, core) => sum + core.health,
+        0,
+      );
+    } else if (state.objectiveActive && state.objectiveHealth < state.objectiveMaxHealth) {
       state.objectiveHealth = Math.min(
         state.objectiveMaxHealth,
         state.objectiveHealth + state.objectiveMaxHealth * 0.1,
@@ -473,6 +515,8 @@ export class WaveSystem {
       player.dashCharges = player.dashMax;
       player.dashCooldown = 0;
       player.dashing = 0;
+      player.weaponCharge = 0;
+      player.weaponDashing = 0;
       player.ready = false;
       const runtime = this.world.runtime.get(player.id);
       if (runtime) {

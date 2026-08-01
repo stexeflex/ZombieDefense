@@ -3,7 +3,18 @@ import { boxesOverlap, defenseBox, type PlacedDefense } from './defenses.js';
 import type { MapObstacle } from './maps.js';
 
 export type VehicleType =
-  'quad' | 'car' | 'van' | 'pickup' | 'workshop' | 'steamroller' | 'bulldozer' | 'apc' | 'tank';
+  | 'quad'
+  | 'car'
+  | 'van'
+  | 'pickup'
+  | 'explosive'
+  | 'workshop'
+  | 'steamroller'
+  | 'bulldozer'
+  | 'apc'
+  | 'jumper'
+  | 'ricochet'
+  | 'tank';
 
 /** Mounted weapon that aims and fires on its own while somebody is on board. */
 export interface VehicleGun {
@@ -52,6 +63,12 @@ export interface VehicleConfig {
   resupply?: number;
   /** Extra top speed while the dash key is held. */
   boost?: number;
+  /** Remaining momentum after reflecting from a boundary, prop, building or hull. */
+  bounce?: number;
+  /** Steering rotates the velocity gradually instead of instantly choosing a new direction. */
+  directionalDrive?: boolean;
+  /** Friendly blast released when this hull is destroyed. */
+  wreckExplosion?: { radius: number; damage: number };
   /** The one thing this vehicle does that no other one does. */
   perk: string;
   description: string;
@@ -126,6 +143,22 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     perk: 'MG auf der Ladefläche feuert selbst',
     description: 'Fährt mit einem Maschinengewehr, das von allein auf die Horde hält',
   },
+  explosive: {
+    label: 'Sprengwagen',
+    short: '💥',
+    cost: 3400,
+    health: 1500,
+    width: 84,
+    height: 42,
+    seats: 2,
+    speed: 178,
+    grip: 4.6,
+    turn: 4.1,
+    ram: 62,
+    wreckExplosion: { radius: 520, damage: 2600 },
+    perk: 'Der Totalschaden löst eine massive Explosion aus',
+    description: 'Relativ günstig — sein zerstörter Reaktorkern vernichtet die Horde im Umkreis',
+  },
   workshop: {
     label: 'Werkstattwagen',
     short: '🚚',
@@ -195,6 +228,39 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     perk: 'Schwere Panzerung für vier',
     description: 'Rollende Festung mit Bordkanone — langsam, aber kaum kleinzukriegen',
   },
+  jumper: {
+    label: 'Sprungfahrzeug',
+    short: 'SF',
+    cost: 5800,
+    health: 2050,
+    width: 80,
+    height: 40,
+    seats: 1,
+    speed: 78,
+    grip: 3,
+    turn: 3.6,
+    ram: 115,
+    boost: 690,
+    perk: 'Dash-Taste entfesselt einen gewaltigen Geschwindigkeitssprung',
+    description: 'Langsam im Normalbetrieb, schießt mit einer Dash-Ladung explosiv nach vorn',
+  },
+  ricochet: {
+    label: 'Turbo-Abpraller',
+    short: 'TA',
+    cost: 6800,
+    health: 2350,
+    width: 92,
+    height: 43,
+    seats: 1,
+    speed: 365,
+    grip: 8.4,
+    turn: 0.72,
+    ram: 138,
+    bounce: 0.93,
+    directionalDrive: true,
+    perk: 'Prallt mit fast voller Geschwindigkeit von Grenzen und Hindernissen ab',
+    description: 'Extrem schnell bei Maximaltempo, beschleunigt rasch und lenkt dafür sehr träge',
+  },
   tank: {
     label: 'Kampfpanzer',
     short: '🛡',
@@ -226,10 +292,13 @@ export const VEHICLE_ORDER: VehicleType[] = [
   'car',
   'van',
   'pickup',
+  'explosive',
   'workshop',
   'steamroller',
   'bulldozer',
   'apc',
+  'jumper',
+  'ricochet',
   'tank',
 ];
 
@@ -442,6 +511,27 @@ export function driveVehicle(
   topSpeed: number,
 ) {
   const length = Math.hypot(dirX, dirY);
+  if (config.directionalDrive) {
+    const currentSpeed = Math.hypot(motion.vx, motion.vy);
+    let angle = currentSpeed > 8 ? Math.atan2(motion.vy, motion.vx) : motion.rotation;
+    if (length > 0) {
+      const desired = Math.atan2(dirY, dirX);
+      let difference = desired - angle;
+      while (difference > Math.PI) difference -= Math.PI * 2;
+      while (difference < -Math.PI) difference += Math.PI * 2;
+      const turnStep = config.turn * delta;
+      angle += Math.max(-turnStep, Math.min(turnStep, difference));
+    }
+    const grip = 1 - Math.exp(-config.grip * delta);
+    let speed = currentSpeed + ((length > 0 ? topSpeed : 0) - currentSpeed) * grip;
+    if (length === 0 && speed < 6) speed = 0;
+    motion.vx = Math.cos(angle) * speed;
+    motion.vy = Math.sin(angle) * speed;
+    motion.x += motion.vx * delta;
+    motion.y += motion.vy * delta;
+    if (speed > 8) motion.rotation = angle;
+    return speed;
+  }
   const targetX = length > 0 ? (dirX / length) * topSpeed : 0;
   const targetY = length > 0 ? (dirY / length) * topSpeed : 0;
   const grip = 1 - Math.exp(-config.grip * delta);

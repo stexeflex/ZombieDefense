@@ -28,21 +28,28 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   nailgun: 48,
   magnum: 40,
   sniper: 58,
+  knife: 48,
   acid: 44,
   lmg: 52,
   elephant: 60,
   flamer: 40,
   chainsaw: 54,
+  spear: 70,
   cryo: 44,
   rocket: 50,
   firerocket: 54,
   tesla: 42,
   laser: 48,
+  throwshield: 52,
   railgun: 62,
   phaselance: 68,
   gravity: 50,
+  thunderhammer: 66,
   nova: 52,
+  stormorb: 56,
+  dashknife: 60,
   ionstorm: 54,
+  colossus: 64,
   worldbreaker: 64,
   sun: 60,
 };
@@ -522,6 +529,64 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     }
     fillRounded(ctx, 9, 23, 10, 9, 2, '#352212');
   },
+  knife: (ctx) => {
+    fillRounded(ctx, 2, 13, 24, 7, 3, '#5a3825', '#1d1009', 1.5);
+    ctx.fillStyle = '#dce6e1';
+    ctx.strokeStyle = '#53615b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(24, 10);
+    ctx.lineTo(67, 15);
+    ctx.lineTo(24, 21);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  },
+  spear: (ctx) => {
+    fillRounded(ctx, 2, 14, 58, 5, 2, '#74502e', '#211308', 1.5);
+    ctx.fillStyle = '#d7e0dc';
+    ctx.beginPath();
+    ctx.moveTo(58, 7);
+    ctx.lineTo(71, 16.5);
+    ctx.lineTo(58, 26);
+    ctx.closePath();
+    ctx.fill();
+  },
+  throwshield: (ctx) => {
+    fillRounded(ctx, 1, 13, 30, 7, 3, '#3b4b52', '#10181b', 1.5);
+    circle(ctx, 52, 16.5, 15, '#445a69', '#9fdcff', 3);
+    circle(ctx, 52, 16.5, 6, '#172630', '#d8fbff', 2);
+  },
+  thunderhammer: (ctx) => {
+    fillRounded(ctx, 0, 14, 45, 6, 3, '#6e4b29', '#211307', 2);
+    fillRounded(ctx, 39, 5, 29, 24, 6, '#354b59', '#0f1c23', 2);
+    circle(ctx, 54, 17, 7, '#4a7890', '#9fdcff', 2);
+  },
+  stormorb: (ctx) => {
+    fillRounded(ctx, 1, 8, 42, 17, 7, '#19364d', '#07131e', 2);
+    circle(ctx, 50, 16.5, 12, '#245a79', '#62d9ff', 2);
+    circle(ctx, 50, 16.5, 5, '#d9f8ff');
+    fillRounded(ctx, 12, 23, 9, 9, 2, '#10283a');
+  },
+  dashknife: (ctx) => {
+    fillRounded(ctx, 1, 12, 28, 9, 4, '#241938', '#0d0815', 2);
+    ctx.fillStyle = '#b58cff';
+    ctx.shadowColor = '#b58cff';
+    ctx.shadowBlur = 7;
+    ctx.beginPath();
+    ctx.moveTo(27, 8);
+    ctx.lineTo(70, 16.5);
+    ctx.lineTo(27, 25);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  },
+  colossus: (ctx) => {
+    fillRounded(ctx, 0, 5, 53, 23, 10, '#4a4036', '#17120e', 2.5);
+    fillRounded(ctx, 48, 8, 22, 17, 7, '#777068', '#211d19', 2);
+    circle(ctx, 67, 16.5, 7, '#ffbd59', '#fff0b0', 2);
+    fillRounded(ctx, 13, 25, 12, 7, 2, '#2d2722');
+  },
 };
 
 // ------------------------------------------------------------------ zombies
@@ -544,6 +609,8 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   phaseguard: { skin: '#608f91', cloth: '#243d42', accent: '#73f7e5', eye: '#d8fffb' },
   evasive: { skin: '#a7bb56', cloth: '#26372a', accent: '#d7ff63', eye: '#f5ffb8' },
   phantom: { skin: '#4b8f86', cloth: '#172f31', accent: '#70f5df', eye: '#d6fffa' },
+  jammer: { skin: '#7d5b93', cloth: '#2b1f39', accent: '#dd76ff', eye: '#f7dcff' },
+  blink: { skin: '#9bbd54', cloth: '#233529', accent: '#72ffb1', eye: '#ecffd6' },
   spitter: { skin: '#6fae7a', cloth: '#2c4433', accent: '#9dff8a', eye: '#c6ff5a' },
   screamer: { skin: '#b98fa8', cloth: '#4a2e3f', accent: '#ff9ed8', eye: '#ffe08a' },
   brute: { skin: '#8a5f7a', cloth: '#3a2635', accent: '#c05f8f', eye: '#ff5f9e' },
@@ -567,6 +634,8 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   roadking: { skin: '#8f3d2f', cloth: '#331713', accent: '#ff6f45', eye: '#ffe078' },
   eclipse: { skin: '#29264d', cloth: '#0d0b20', accent: '#ff477e', eye: '#7cf7ff' },
   bulwark: { skin: '#66727a', cloth: '#202b35', accent: '#ffd166', eye: '#fff3b0' },
+  nightlord: { skin: '#396f69', cloth: '#102829', accent: '#70f5df', eye: '#e5fffb' },
+  signalbreaker: { skin: '#53617a', cloth: '#182236', accent: '#72a7ff', eye: '#e0ebff' },
 };
 
 function paintZombieBody(type: ZombieType, radius: number): Painter {
@@ -1408,6 +1477,47 @@ const VEHICLE_PAINTERS: Record<VehicleType, Painter> = {
     circle(ctx, w * 0.44, h / 2, 14, '#46533c', '#8b9a78', 2.5);
     circle(ctx, w * 0.44, h / 2, 5, '#2a3324');
     noise(ctx, w, h, 80, ['rgba(0,0,0,0.3)', 'rgba(255,255,255,0.06)'], 1, 3, 43);
+  },
+  explosive: (ctx, w, h) => {
+    wheels(ctx, w, h, 9, 17);
+    fillRounded(ctx, 3, 5, w - 6, h - 10, 8, '#6f2e2e', '#240d0d', 2.5);
+    fillRounded(ctx, w * 0.54, 8, w * 0.27, h - 16, 5, '#17242a', '#080f12', 1.5);
+    circle(ctx, w * 0.3, h / 2, 11, '#8f342c', '#ff755f', 2.5);
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(w * 0.27, h / 2 - 8, 5, 16);
+    ctx.fillRect(w * 0.22, h / 2 - 2.5, 15, 5);
+  },
+  jumper: (ctx, w, h) => {
+    wheels(ctx, w, h, 8, 16);
+    fillRounded(ctx, 3, 6, w - 6, h - 12, 9, '#355f75', '#10212b', 2.5);
+    fillRounded(ctx, w * 0.46, 8, w * 0.31, h - 16, 5, '#142733', '#071218', 1.5);
+    ctx.strokeStyle = '#72d9ff';
+    ctx.lineWidth = 3;
+    for (const y of [h * 0.3, h * 0.7]) {
+      ctx.beginPath();
+      ctx.moveTo(8, y);
+      ctx.lineTo(25, y);
+      ctx.stroke();
+    }
+  },
+  ricochet: (ctx, w, h) => {
+    wheels(ctx, w, h, 7, 15);
+    ctx.beginPath();
+    ctx.moveTo(3, h / 2);
+    ctx.lineTo(18, 4);
+    ctx.lineTo(w - 18, 4);
+    ctx.lineTo(w - 2, h / 2);
+    ctx.lineTo(w - 18, h - 4);
+    ctx.lineTo(18, h - 4);
+    ctx.closePath();
+    ctx.fillStyle = '#775d22';
+    ctx.fill();
+    ctx.strokeStyle = '#ffd35c';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    fillRounded(ctx, w * 0.48, 8, w * 0.3, h - 16, 5, '#17242a', '#080f12', 1.5);
+    ctx.fillStyle = '#fff0a8';
+    ctx.fillRect(8, h / 2 - 2, 18, 4);
   },
 };
 

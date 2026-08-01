@@ -52,10 +52,14 @@ export class PlayerState extends Schema {
   @type('number') reviveProgress = 0;
   @type('number') reloading = 0;
   @type('number') firing = 0;
+  /** Visible charge of the Blitzhammer or Dashmesser, from zero to one. */
+  @type('number') weaponCharge = 0;
   @type('number') hurt = 0;
   fireCooldown = 0;
   dashDirX = 1;
   dashDirY = 0;
+  /** Full immunity is exclusive to the charged Dashmesser attack. */
+  weaponDashing = 0;
 }
 
 export class ZombieState extends Schema {
@@ -88,6 +92,8 @@ export class ZombieState extends Schema {
   avoidSide = 1;
   /** Individual offset for enemies that weave across their route. */
   dodgePhase = 0;
+  /** A hit-reactive Sprunghetzer may dodge again when this reaches zero. */
+  hitDodgeCooldown = 0;
   /** Temporary grid route around map geometry; authoritative but not networked. */
   path: Array<{ x: number; y: number }> = [];
   pathTargetX = 0;
@@ -137,7 +143,23 @@ export class ProjectileState extends Schema {
   /** The Todesurteil perk reduces this ability's cooldown after a killing blow. */
   reduceAbilityCooldownOnKill = false;
   pull = 0;
+  lightningEvery = 0;
+  lightningTimer = 0;
+  lightningRange = 0;
+  lightningDamage = 0;
+  lightningTargets = 0;
   hitIds = new Set<string>();
+}
+
+/** One independently destructible target of a multi-core defense mission. */
+export class ObjectiveCoreState extends Schema {
+  @type('string') id = '';
+  @type('string') label = '';
+  @type('number') x = 0;
+  @type('number') y = 0;
+  @type('number') radius = 0;
+  @type('number') health = 0;
+  @type('number') maxHealth = 0;
 }
 
 export class DefenseState extends Schema {
@@ -175,8 +197,8 @@ export class VehicleState extends Schema {
   @type('number') refund = 0;
   /** Session ids on board, the first one is driving. */
   @type(['string']) crew = new ArraySchema<string>();
-  vx = 0;
-  vy = 0;
+  @type('number') vx = 0;
+  @type('number') vy = 0;
   cooldown = 0;
   /** Seconds of nitro left; the browser predicts the same burst locally. */
   boost = 0;
@@ -254,6 +276,7 @@ export class GameState extends Schema {
   /** Timed-survival countdown; zero on every regular mission. */
   @type('number') objectiveTimeRemaining = 0;
   @type('number') objectiveDuration = 0;
+  @type({ map: ObjectiveCoreState }) objectiveCores = new MapSchema<ObjectiveCoreState>();
   @type('string') bossName = '';
   @type('number') bossHealth = 0;
   @type('number') bossMaxHealth = 0;

@@ -181,6 +181,8 @@ export interface PermanentPerks {
   extraPrecision: boolean;
   /** Once per wave a lethal hit leaves one hit point instead. */
   lastStand: boolean;
+  /** Every bought level counts as one and a half levels, rounded up. */
+  upgradeAmplifier: boolean;
 }
 
 export type PerkKey = keyof PermanentPerks;
@@ -200,6 +202,7 @@ export const EMPTY_PERKS: PermanentPerks = {
   precisionReload: false,
   extraPrecision: false,
   lastStand: false,
+  upgradeAmplifier: false,
 };
 
 export const PERK_COST: Record<PerkKey, number> = {
@@ -217,7 +220,27 @@ export const PERK_COST: Record<PerkKey, number> = {
   precisionReload: 2200,
   extraPrecision: 3000,
   lastStand: 2200,
+  upgradeAmplifier: 50000,
 };
+
+/** Effective level after the extremely expensive global level amplifier. */
+export function effectiveUpgradeLevel(level: number, perks: PermanentPerks) {
+  const safe = Math.max(0, Math.floor(Number(level) || 0));
+  return perks.upgradeAmplifier ? Math.ceil(safe * 1.5) : safe;
+}
+
+/** Server-side stat bundle; purchase levels themselves remain unchanged. */
+export function effectiveUpgrades(
+  upgrades: PermanentUpgrades,
+  perks: PermanentPerks,
+): PermanentUpgrades {
+  return Object.fromEntries(
+    (Object.keys(upgrades) as UpgradeKey[]).map((key) => [
+      key,
+      effectiveUpgradeLevel(upgrades[key], perks),
+    ]),
+  ) as unknown as PermanentUpgrades;
+}
 
 /**
  * Levelled upgrades that scale a rule a perk brings in. Without that perk the

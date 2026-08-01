@@ -130,12 +130,16 @@ export class PlayerSystem {
     // rate. A fresh trigger press must not cash that in, or the first shot of
     // a quick weapon would come out twice at once.
     const firingNow = runtime.input.shoot && player.reloading === 0 && combat;
+    const wasFiring = runtime.wasFiring;
     player.fireCooldown = Math.max(-0.1, player.fireCooldown - delta);
     if (!firingNow || !runtime.wasFiring) player.fireCooldown = Math.max(0, player.fireCooldown);
+    this.tickWeaponCharge(player, runtime, delta, firingNow, wasFiring, combat);
     runtime.wasFiring = firingNow;
     player.firing = Math.max(0, player.firing - delta);
     player.hurt = Math.max(0, player.hurt - delta);
     player.dashing = Math.max(0, player.dashing - delta);
+    player.weaponDashing = Math.max(0, player.weaponDashing - delta);
+    if (player.weaponDashing <= 0) runtime.weaponDashHits.clear();
 
     // A shield is momentum, not a second health bar: it melts away on its own,
     // so it only pays off while the player keeps dashing into the horde.
@@ -329,6 +333,157 @@ export class PlayerSystem {
     }
   }
 
+  // ------------------------------------------------------- charged weapons
+
+  private tickWeaponCharge(
+    player: PlayerState,
+    runtime: RuntimePlayer,
+    delta: number,
+    firingNow: boolean,
+    wasFiring: boolean,
+    combat: boolean,
+  ) {
+    const config = WEAPONS[player.weapon];
+    const charge = config.charge;
+    if (!charge || !combat || !player.alive || player.vehicleId) {
+      runtime.weaponChargeSeconds = 0;
+      runtime.chargedWeapon = '';
+      player.weaponCharge = 0;
+      return;
+    }
+
+    if (firingNow) {
+      if (player.fireCooldown > 0 && runtime.weaponChargeSeconds <= 0) return;
+      if (runtime.chargedWeapon !== player.weapon) {
+        runtime.chargedWeapon = player.weapon;
+        runtime.weaponChargeSeconds = 0;
+      }
+      runtime.weaponChargeSeconds = Math.min(
+        charge.maxSeconds,
+        runtime.weaponChargeSeconds + delta,
+      );
+      player.weaponCharge = runtime.weaponChargeSeconds / charge.maxSeconds;
+      return;
+    }
+
+    if (wasFiring && runtime.chargedWeapon === player.weapon && runtime.weaponChargeSeconds > 0) {
+      this.releaseChargedWeapon(player, runtime);
+      return;
+    }
+    player.weaponCharge = 0;
+  }
+
+  private releaseChargedWeapon(player: PlayerState, runtime: RuntimePlayer) {
+    const weapon = runtime.chargedWeapon;
+    const config = weapon ? WEAPONS[weapon] : undefined;
+    const charge = config?.charge;
+    const held = runtime.weaponChargeSeconds;
+    runtime.weaponChargeSeconds = 0;
+    runtime.chargedWeapon = '';
+    player.weaponCharge = 0;
+    if (!config || !charge || player.fireCooldown > 0) return;
+
+    const ratio = this.world.clamp(
+      Math.max(charge.minSeconds, held) / Math.max(charge.maxSeconds, 0.01),
+      0,
+      1,
+    );
+    const multiplier = 1 + (charge.maxMultiplier - 1) * ratio;
+    const damage = config.damage * (1 + runtime.upgrades.weaponDamage * 0.02) * multiplier;
+    const aimAngle = Math.atan2(runtime.input.aimY - player.y, runtime.input.aimX - player.x);
+    player.rotation = aimAngle;
+    player.fireCooldown = config.fireDelay / 1000 / (1 + runtime.upgrades.meleeSpeed * 0.02);
+    player.firing = Math.min(0.35, player.fireCooldown);
+
+    if (charge.kind === 'dash') {
+      const distance = 230 + ((charge.dashDistance ?? 520) - 230) * ratio;
+      const duration = 0.3 + ratio * 0.34;
+      player.dashDirX = Math.cos(aimAngle);
+      player.dashDirY = Math.sin(aimAngle);
+      player.weaponDashing = duration;
+      player.dashing = Math.max(player.dashing, duration);
+      runtime.weaponDashSpeed = distance / duration;
+      runtime.weaponDashDamage = damage;
+      runtime.weaponDashArmorPierce = config.armorPierce ?? 0;
+      runtime.weaponDashHits.clear();
+      this.world.pushFx({
+        k: 'dash',
+        x: player.x,
+        y: player.y,
+        a: aimAngle,
+        d: duration,
+        r: distance,
+        s: weapon,
+      });
+      return;
+    }
+
+    const speed = config.speed * (0.82 + ratio * 0.18);
+    const muzzleX = player.x + Math.cos(aimAngle) * 30;
+    const muzzleY = player.y + Math.sin(aimAngle) * 30;
+    const projectile = this.world.createProjectile(
+      player.id,
+      muzzleX,
+      muzzleY,
+      aimAngle,
+      damage,
+      speed,
+      weapon,
+    );
+    projectile.pierce = config.pierce;
+    projectile.life = config.range / speed;
+    projectile.radius = config.projectileRadius ?? 12;
+    projectile.lightningEvery = config.lightningPulse?.every ?? 0;
+    projectile.lightningTimer = 0;
+    projectile.lightningRange = config.lightningPulse?.range ?? 0;
+    projectile.lightningDamage =
+      (config.lightningPulse?.damage ?? 0) *
+      (1 + runtime.upgrades.weaponDamage * 0.02) *
+      multiplier;
+    projectile.lightningTargets = config.lightningPulse?.targets ?? 0;
+    this.world.pushFx({
+      k: 'melee',
+      x: player.x,
+      y: player.y,
+      a: aimAngle,
+      r: 120,
+      s: weapon,
+    });
+  }
+
+  private hitZombiesAlongWeaponDash(
+    player: PlayerState,
+    runtime: RuntimePlayer,
+    fromX: number,
+    fromY: number,
+  ) {
+    const victims: Array<[string, ZombieState]> = [];
+    this.world.state.zombies.forEach((zombie, id) => {
+      if (runtime.weaponDashHits.has(id)) return;
+      const at = this.world.segmentCircleAt(
+        fromX,
+        fromY,
+        player.x,
+        player.y,
+        zombie.x,
+        zombie.y,
+        zombie.radius + PLAYER_RADIUS + 8,
+      );
+      if (at !== undefined) victims.push([id, zombie]);
+    });
+    for (const [id, zombie] of victims) {
+      runtime.weaponDashHits.add(id);
+      this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: 'dashknife' });
+      this.world.damageZombie(
+        id,
+        zombie,
+        runtime.weaponDashDamage,
+        player.id,
+        runtime.weaponDashArmorPierce,
+      );
+    }
+  }
+
   // ---------------------------------------------------------------- movement
 
   private move(player: PlayerState, runtime: RuntimePlayer, delta: number) {
@@ -345,8 +500,15 @@ export class PlayerSystem {
     dy /= length;
 
     let speed = PLAYER_BASE_SPEED * (1 + runtime.upgrades.moveSpeed * 0.02);
-    const dashing = player.dashing > 0;
-    if (dashing) {
+    const charged = WEAPONS[player.weapon].charge;
+    if (charged && player.weaponCharge > 0) speed *= charged.moveFactor;
+    const weaponDashing = player.weaponDashing > 0;
+    const dashing = player.dashing > 0 && !weaponDashing;
+    if (weaponDashing) {
+      dx = player.dashDirX;
+      dy = player.dashDirY;
+      speed = runtime.weaponDashSpeed;
+    } else if (dashing) {
       dx = player.dashDirX;
       dy = player.dashDirY;
       speed *= DASH_SPEED;
@@ -380,6 +542,7 @@ export class PlayerSystem {
     this.resolveObstacles(player);
     this.resolveDefenses(player);
     this.resolveVehicles(player);
+    if (weaponDashing) this.hitZombiesAlongWeaponDash(player, runtime, fromX, fromY);
     if (dashing && (runtime.perks.dashShock || runtime.perks.dashBlades)) {
       this.hitZombiesAlongDash(player, runtime, fromX, fromY);
     }
@@ -473,6 +636,11 @@ export class PlayerSystem {
 
   private shoot(player: PlayerState, upgrades: PermanentUpgrades) {
     const config = WEAPONS[player.weapon];
+    if (config.charge) return;
+    if (config.throwBounces) {
+      this.throwShield(player, upgrades);
+      return;
+    }
     if (isMeleeWeapon(player.weapon)) {
       this.swingMelee(player, upgrades);
       return;
@@ -499,7 +667,7 @@ export class PlayerSystem {
         );
         projectile.pierce = config.pierce;
         projectile.life = weaponLife(config);
-        projectile.radius = PROJECTILE_RADIUS[player.weapon] ?? 4;
+        projectile.radius = config.projectileRadius ?? PROJECTILE_RADIUS[player.weapon] ?? 4;
         projectile.splashRadius = config.splashRadius ?? 0;
         projectile.splashDamage = (config.splashDamage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
         projectile.chain = config.chain ?? 0;
@@ -512,6 +680,12 @@ export class PlayerSystem {
         projectile.slow = config.slow ?? 0;
         projectile.slowSeconds = config.slowSeconds ?? 0;
         projectile.pull = config.pull ?? 0;
+        projectile.lightningEvery = config.lightningPulse?.every ?? 0;
+        projectile.lightningTimer = 0;
+        projectile.lightningRange = config.lightningPulse?.range ?? 0;
+        projectile.lightningDamage =
+          (config.lightningPulse?.damage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
+        projectile.lightningTargets = config.lightningPulse?.targets ?? 0;
       }
       this.world.pushFx({
         k: 'muzzle',
@@ -521,6 +695,37 @@ export class PlayerSystem {
         s: player.weapon,
       });
     }
+  }
+
+  /** Ammo-free shield throw; the projectile system resolves its eight instant ricochets. */
+  private throwShield(player: PlayerState, upgrades: PermanentUpgrades) {
+    const config = WEAPONS[player.weapon];
+    if (player.fireCooldown > 0) return;
+    player.fireCooldown = config.fireDelay / 1000 / (1 + upgrades.meleeSpeed * 0.02);
+    player.firing = Math.min(0.26, player.fireCooldown);
+    const muzzleX = player.x + Math.cos(player.rotation) * 28;
+    const muzzleY = player.y + Math.sin(player.rotation) * 28;
+    const projectile = this.world.createProjectile(
+      player.id,
+      muzzleX,
+      muzzleY,
+      player.rotation,
+      config.damage * (1 + upgrades.weaponDamage * 0.02),
+      config.speed,
+      player.weapon,
+    );
+    projectile.life = weaponLife(config);
+    projectile.radius = config.projectileRadius ?? 12;
+    projectile.chain = Math.max(0, (config.throwBounces ?? 1) - 1);
+    projectile.chainRange = config.chainRange ?? 300;
+    this.world.pushFx({
+      k: 'melee',
+      x: player.x,
+      y: player.y,
+      a: player.rotation,
+      r: 100,
+      s: player.weapon,
+    });
   }
 
   /** Instant server-authoritative arc attack; melee never creates ammo or projectiles. */
@@ -602,6 +807,9 @@ export class PlayerSystem {
    */
   equipWeapon(player: PlayerState, runtime: RuntimePlayer, weapon: WeaponType) {
     if (player.weapon === weapon) return;
+    runtime.weaponChargeSeconds = 0;
+    runtime.chargedWeapon = '';
+    player.weaponCharge = 0;
     runtime.stowed.set(player.weapon, {
       ammo: player.ammo,
       reserveAmmo: player.reserveAmmo,

@@ -542,7 +542,7 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     health: 900,
     width: 62,
     height: 62,
-    damage: 240,
+    damage: 285,
     fireDelay: 4.8,
     range: 720,
     speed: 1050,

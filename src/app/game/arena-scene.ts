@@ -9,6 +9,7 @@ import {
   PLACE_RANGE,
   PLAYER_RADIUS,
   VEHICLES,
+  WEAPONS,
   VEHICLE_BOOST_SECONDS,
   VEHICLE_REACH,
   ZOMBIES,
@@ -28,6 +29,7 @@ import {
   type GameMap,
   type GameSnapshot,
   type HazardSnapshot,
+  type ObjectiveCoreSnapshot,
   type PlacedDefense,
   type PlayerInput,
   type PlayerSnapshot,
@@ -67,6 +69,14 @@ export class ArenaScene extends Phaser.Scene {
   private objectiveGraphics?: Phaser.GameObjects.Graphics;
   private objectiveLabel?: Phaser.GameObjects.Text;
   private objectiveKind = '';
+  private readonly objectiveCores = new Map<
+    string,
+    {
+      root: Phaser.GameObjects.Container;
+      graphics: Phaser.GameObjects.Graphics;
+      label: Phaser.GameObjects.Text;
+    }
+  >();
   private readonly subscriptions = new Subscription();
   /** Set once Phaser tore the scene down, see `detach()`. */
   private detached = false;
@@ -516,6 +526,10 @@ export class ArenaScene extends Phaser.Scene {
   private objectiveClear(x: number, y: number, radius: number) {
     const snapshot = this.snapshot;
     if (!snapshot?.objectiveActive) return true;
+    const cores = Object.values(snapshot.objectiveCores ?? {});
+    if (cores.length > 0) {
+      return cores.every((core) => Math.hypot(core.x - x, core.y - y) > core.radius + radius + 24);
+    }
     return (
       Math.hypot((snapshot.objectiveX ?? 0) - x, (snapshot.objectiveY ?? 0) - y) >
       (snapshot.objectiveRadius ?? 0) + radius + 24
@@ -805,8 +819,26 @@ export class ArenaScene extends Phaser.Scene {
       this.objectiveGraphics = undefined;
       this.objectiveLabel = undefined;
       this.objectiveKind = '';
+      this.clearObjectiveCoreViews();
       return;
     }
+
+    const cores = snapshot.objectiveCores ?? {};
+    if (Object.keys(cores).length > 0) {
+      this.objectiveRoot?.destroy(true);
+      this.objectiveRoot = undefined;
+      this.objectiveGraphics = undefined;
+      this.objectiveLabel = undefined;
+      this.objectiveKind = 'multiholdout';
+      for (const [id, view] of this.objectiveCores) {
+        if (id in cores) continue;
+        view.root.destroy(true);
+        this.objectiveCores.delete(id);
+      }
+      for (const core of Object.values(cores)) this.syncObjectiveCore(core);
+      return;
+    }
+    this.clearObjectiveCoreViews();
 
     const kind = snapshot.objectiveKind ?? '';
     if (!this.objectiveRoot || this.objectiveKind !== kind) {
@@ -879,6 +911,56 @@ export class ArenaScene extends Phaser.Scene {
       `${snapshot.objectiveTitle ?? 'Missionsziel'} · ${Math.round(health)} / ${Math.round(maxHealth)}`,
     );
     this.objectiveRoot!.setPosition(snapshot.objectiveX ?? 0, snapshot.objectiveY ?? 0);
+  }
+
+  private syncObjectiveCore(core: ObjectiveCoreSnapshot) {
+    let view = this.objectiveCores.get(core.id);
+    if (!view) {
+      const graphics = this.add.graphics();
+      const label = this.add
+        .text(0, 0, '', {
+          align: 'center',
+          color: '#eaffff',
+          fontFamily: 'Inter, Arial, sans-serif',
+          fontStyle: 'bold',
+          fontSize: '11px',
+          stroke: '#040b10',
+          strokeThickness: 4,
+        })
+        .setOrigin(0.5, 1);
+      view = {
+        graphics,
+        label,
+        root: this.add.container(core.x, core.y, [graphics, label]).setDepth(7),
+      };
+      this.objectiveCores.set(core.id, view);
+    }
+    const ratio = Math.max(0, Math.min(1, core.health / Math.max(1, core.maxHealth)));
+    const color = ratio > 0.35 ? 0x72a7ff : 0xff5f71;
+    view.graphics.clear();
+    view.graphics.fillStyle(0x72a7ff, 0.055);
+    view.graphics.fillCircle(0, 0, core.radius + 38);
+    view.graphics.lineStyle(2, 0x72a7ff, 0.42);
+    view.graphics.strokeCircle(0, 0, core.radius + 38);
+    view.graphics.fillStyle(0x111d31, 1);
+    view.graphics.fillCircle(0, 0, 39);
+    view.graphics.lineStyle(5, color, 0.92);
+    view.graphics.strokeCircle(0, 0, 39);
+    view.graphics.fillStyle(color, 0.75);
+    view.graphics.fillCircle(0, 0, 15);
+    view.graphics.fillStyle(0x261016, 0.96);
+    view.graphics.fillRect(-52, -core.radius - 32, 104, 7);
+    view.graphics.fillStyle(color, 1);
+    view.graphics.fillRect(-52, -core.radius - 32, 104 * ratio, 7);
+    view.label
+      .setPosition(0, -core.radius - 37)
+      .setText(`${core.label} · ${Math.round(core.health)} / ${Math.round(core.maxHealth)}`);
+    view.root.setPosition(core.x, core.y);
+  }
+
+  private clearObjectiveCoreViews() {
+    for (const view of this.objectiveCores.values()) view.root.destroy(true);
+    this.objectiveCores.clear();
   }
 
   private syncEntities<T extends { id: string; x: number; y: number }, V extends BaseView>(
@@ -1095,6 +1177,12 @@ export class ArenaScene extends Phaser.Scene {
     if (zombie.type === 'exploder') {
       aura = this.add.circle(0, 0, radius + 9).setStrokeStyle(3, 0xff5a36, 0.82);
       children.unshift(aura);
+    } else if (config.turretSlow) {
+      aura = this.add
+        .circle(0, 0, config.turretSlow.radius)
+        .setFillStyle(0xb45cff, 0.025)
+        .setStrokeStyle(2, 0xdd76ff, 0.3);
+      children.unshift(aura);
     } else if (config.rank === 'mini' || config.rank === 'boss') {
       aura = this.add
         .circle(0, 0, radius + 12)
@@ -1108,7 +1196,7 @@ export class ArenaScene extends Phaser.Scene {
     const root = this.add
       .container(zombie.x, zombie.y, children)
       .setDepth(config.rank === 'boss' ? 16 : config.rank === 'mini' ? 15 : 12)
-      .setAlpha(zombie.type === 'phantom' ? 0.3 : 1);
+      .setAlpha(config.hiddenFromTurrets ? (config.rank === 'boss' ? 0.52 : 0.3) : 1);
 
     return {
       root,
@@ -1162,6 +1250,12 @@ export class ArenaScene extends Phaser.Scene {
       const rank = ZOMBIES[zombie.type].rank;
       if (zombie.type === 'exploder') {
         view.aura.setStrokeStyle(3, damaged ? 0xfff1a8 : 0xff5a36, 0.82);
+        return;
+      }
+      if (ZOMBIES[zombie.type].turretSlow) {
+        view.aura
+          .setStrokeStyle(2, damaged ? 0xffd7ff : 0xdd76ff, 0.28)
+          .setScale(1 + Math.sin(this.time.now * 0.004) * 0.018);
         return;
       }
       view.aura.setScale(zombie.charging > 0 || casting ? 1.18 : 1);
@@ -1359,6 +1453,10 @@ export class ArenaScene extends Phaser.Scene {
   private updateVehicle(view: VehicleView, vehicle: VehicleSnapshot) {
     const config = VEHICLES[vehicle.type];
     view.targetRotation = vehicle.rotation;
+    if (config.bounce && vehicle.vx !== undefined && vehicle.vy !== undefined) {
+      view.vx = vehicle.vx;
+      view.vy = vehicle.vy;
+    }
     view.driverId = vehicle.crew[0] ?? '';
     const ratio = Math.max(0, vehicle.health / vehicle.maxHealth);
     view.healthBar.setDisplaySize(config.width * 0.8 * ratio, 5);
@@ -1414,6 +1512,10 @@ export class ArenaScene extends Phaser.Scene {
         view.rotation = motion.rotation;
         view.root.x = Phaser.Math.Clamp(motion.x, 40, ARENA.width - 40);
         view.root.y = Phaser.Math.Clamp(motion.y, 40, ARENA.height - 40);
+        if (config.bounce) {
+          if (view.root.x !== motion.x) view.vx = -view.vx * config.bounce;
+          if (view.root.y !== motion.y) view.vy = -view.vy * config.bounce;
+        }
 
         // Walls and buildings are only resolved by the server, so a big gap is
         // pulled straight back instead of drifting through them.
@@ -1738,6 +1840,8 @@ export class ArenaScene extends Phaser.Scene {
         dx /= length;
         dy /= length;
         let speed = this.gameService.localMoveSpeed();
+        const charge = WEAPONS[player.weapon].charge;
+        if (charge && (player.weaponCharge ?? 0) > 0) speed *= charge.moveFactor;
         if (dashing) {
           dx = this.localDashX;
           dy = this.localDashY;

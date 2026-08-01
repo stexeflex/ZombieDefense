@@ -95,7 +95,7 @@ export class UpgradeShop {
   }
 
   currentValue(key: UpgradeKey) {
-    return upgradeCurrentValue(key, this.level(key));
+    return upgradeCurrentValue(key, this.progress.effectiveUpgrades()[key]);
   }
 
   /** An upgrade whose perk is missing stays visible, but cannot be bought. */

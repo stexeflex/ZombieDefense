@@ -256,7 +256,8 @@ console.log('\n== Alle Waffen treffen ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   startCombat(room);
-  room.systems.waves.spawnQueue = [];
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
   makeInvincible(player);
 
   for (const weapon of WEAPON_ORDER) {
@@ -293,12 +294,48 @@ console.log('\n== Alle Waffen treffen ==');
       runtime.input = { ...IDLE, shoot: true, aimX: firstX, aimY: 800 };
       room.update(50);
     }
+    if (WEAPONS[weapon].charge) {
+      runtime.input = { ...IDLE, shoot: false, aimX: firstX, aimY: 800 };
+      for (let tick = 0; tick < 30; tick += 1) {
+        pack.forEach((zombie, index) => {
+          zombie.x = firstX + index * 26;
+          zombie.y = 800;
+        });
+        room.update(50);
+      }
+    }
     const after = pack.reduce((sum, zombie) => sum + Math.max(0, zombie.health), 0);
     check(
       `${WEAPONS[weapon].label} trifft (~${Math.round((before - after) / 2)} Schaden/s)`,
       after < before,
     );
   }
+}
+
+console.log('\n== Aufladewaffen ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  startCombat(room);
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  player.weapon = 'dashknife';
+  player.health = player.maxHealth = 1000;
+  player.x = 600;
+  player.y = 800;
+  for (let tick = 0; tick < 20; tick += 1) {
+    runtime.input = { ...IDLE, shoot: true, aimX: 1000, aimY: 800 };
+    room.update(50);
+  }
+  runtime.input = { ...IDLE, shoot: false, aimX: 1000, aimY: 800 };
+  room.update(50);
+  const landed = room.systems.world.damagePlayer(player, 250);
+  check(
+    'Dashmesser macht während des geladenen Angriffs unverwundbar',
+    player.weaponDashing > 0 && !landed && player.health === 1000,
+  );
 }
 
 console.log('\n== Verteidigungen ==');
@@ -474,6 +511,64 @@ console.log('\n== Endgame-Türme haben eigene Mechaniken ==');
     secondHit > firstHit * 1.3,
     `(${firstHit}/${secondHit})`,
   );
+}
+
+console.log('\n== Neue Störgegner ==');
+{
+  const { room } = roomWithTurret('mg');
+  const turret = [...room.state.defenses.values()][0];
+  turret.cooldown = 1;
+  const jammer = room.systems.world.spawnZombie('jammer', { x: turret.x, y: turret.y + 120 });
+  jammer.health = jammer.maxHealth = 100000;
+  room.systems.turrets.update(0.2);
+  const slowedCooldown = turret.cooldown;
+  room.state.zombies.clear();
+  turret.cooldown = 1;
+  room.systems.turrets.update(0.2);
+  check(
+    'Störseucher verlangsamt nahe Geschütztürme',
+    slowedCooldown > turret.cooldown,
+    `(${slowedCooldown.toFixed(2)} statt ${turret.cooldown.toFixed(2)})`,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  player.alive = false;
+  const blink = room.systems.world.spawnZombie('blink', { x: 1200, y: 800 });
+  blink.health = blink.maxHealth = 100000;
+  blink.rotation = 0;
+  const start = { x: blink.x, y: blink.y };
+  room.systems.world.damageZombie(blink.id, blink, 1, 'p1');
+  const firstDash = Math.hypot(blink.x - start.x, blink.y - start.y);
+  const afterFirst = { x: blink.x, y: blink.y };
+  room.systems.world.damageZombie(blink.id, blink, 1, 'p1');
+  const prematureDash = Math.hypot(blink.x - afterFirst.x, blink.y - afterFirst.y);
+  room.systems.zombies.update(1.01);
+  room.systems.world.damageZombie(blink.id, blink, 1, 'p1');
+  const secondDash = Math.hypot(blink.x - afterFirst.x, blink.y - afterFirst.y);
+  check(
+    'Sprunghetzer weicht dem ersten Treffer aus',
+    firstDash > 100,
+    `(${firstDash.toFixed(0)} px)`,
+  );
+  check('Sprunghetzer weicht innerhalb einer Sekunde nicht erneut aus', prematureDash < 1);
+  check('Sprunghetzer kann nach einer Sekunde wieder ausweichen', secondDash > 100);
+}
+
+console.log('\n== Drei Signalkerne ==');
+{
+  const room = makeRoom('trinity');
+  join(room, 'p1');
+  room.systems.waves.startRun();
+  const nearest = room.systems.world.nearestObjective(250, 800);
+  check('Alle drei Signalkerne werden einzeln aufgebaut', room.state.objectiveCores.size === 3);
+  check('Die Horde wählt den nächsten Signalkern', nearest?.id === 'west', `(${nearest?.id})`);
+  room.systems.world.damageObjective(1e9, 'west');
+  check('Der Verlust eines einzelnen Kerns beendet den Run', room.state.phase === 'gameover');
 }
 
 console.log('\n== Säure, Feuer und Magnum ==');
@@ -707,12 +802,20 @@ console.log('\n== Fahrzeuge ==');
 
   // Jedes Fahrzeug muss sich abstellen lassen, mit genug Abstand zum nächsten.
   let parked = 0;
-  VEHICLE_ORDER.forEach((type, index) => {
-    const before = room.state.vehicles.size;
-    player.x = 400 + (index % 3) * 300;
-    player.y = 600 + Math.floor(index / 3) * 220;
-    room.systems.build.placeVehicle('p1', { type, x: player.x + 150, y: player.y, rotation: 0 });
-    if (room.state.vehicles.size > before) parked += 1;
+  VEHICLE_ORDER.forEach((type) => {
+    const targetCount = parked + 1;
+    for (let y = 220; y <= ARENA.height - 220 && parked < targetCount; y += 170) {
+      for (let x = 220; x <= ARENA.width - 220; x += 180) {
+        const before = room.state.vehicles.size;
+        player.x = x - 100;
+        player.y = y;
+        room.systems.build.placeVehicle('p1', { type, x, y, rotation: 0 });
+        if (room.state.vehicles.size > before) {
+          parked += 1;
+          break;
+        }
+      }
+    }
   });
   check(
     'Jedes Fahrzeug lässt sich kaufen und abstellen',
@@ -1018,6 +1121,66 @@ console.log('\n== Fahrzeuge ==');
     'Planierraupe ist an Seiten und Heck verwundbarer als vorne',
     rearDamage > frontDamage * 1.5,
     `(${Math.round(frontDamage)} vorne, ${Math.round(rearDamage)} hinten)`,
+  );
+}
+
+console.log('\n== Neue Fahrzeugmechaniken ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'explosive', x: 1260, y: 800, rotation: 0 });
+  const car = [...room.state.vehicles.values()][0];
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  const victim = room.systems.world.spawnZombie('normal', { x: car.x + 80, y: car.y });
+  victim.health = victim.maxHealth = 100000;
+  room.systems.world.damageVehicle(car, 1e9);
+  check(
+    'Sprengwagen vernichtet beim Totalschaden Gegner im Umkreis',
+    !room.state.vehicles.has(car.id) && victim.health < victim.maxHealth,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 220;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'ricochet', x: 280, y: 800, rotation: 0 });
+  const car = [...room.state.vehicles.values()][0];
+  room.systems.vehicles.toggle('p1');
+  car.x = 64;
+  car.vx = -300;
+  car.vy = 0;
+  room.systems.vehicles.update(0.05, false);
+  check('Turbo-Abpraller federt von der Kartengrenze zurück', car.vx > 0, `(${car.vx.toFixed(0)})`);
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  const runtime = room.systems.world.runtime.get('p1');
+  startCombat(room);
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'jumper', x: 1260, y: 800, rotation: 0 });
+  const car = [...room.state.vehicles.values()][0];
+  room.systems.vehicles.toggle('p1');
+  runtime.input = { ...IDLE, right: true, dash: true, aimX: 1600, aimY: 800 };
+  room.update(50);
+  check(
+    'Sprungfahrzeug gewinnt per Dash enorm viel Geschwindigkeit',
+    car.boost > 0 && Math.hypot(car.vx, car.vy) > VEHICLES.jumper.speed,
+    `(${Math.hypot(car.vx, car.vy).toFixed(0)} Tempo)`,
   );
 }
 
@@ -2449,7 +2612,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
 {
   const dedicatedMaps = MAPS.filter((map) => map.mission?.kind !== 'timed');
   const bosses = dedicatedMaps.map((map) => map.boss);
-  check('Siebzehn Karten', MAPS.length === 17, `(${MAPS.length})`);
+  check('Neunzehn Karten', MAPS.length === 19, `(${MAPS.length})`);
   check('Kein Boss doppelt', new Set(bosses).size === bosses.length);
   check(
     'Jeder Boss ist als Boss eingestuft',

@@ -346,18 +346,18 @@ export class Lobby implements OnInit, OnDestroy {
 
   /** Permanent armour keeps this share of incoming damage off every hull. */
   vehicleArmorPercent() {
-    return Math.round(vehicleArmorReduction(this.progress.upgrades().vehicleArmor) * 100);
+    return Math.round(vehicleArmorReduction(this.progress.effectiveUpgrades().vehicleArmor) * 100);
   }
 
   /** The hull this player actually gets, upgrades included. */
   vehicleHealth(type: VehicleType) {
-    return vehicleMaxHealth(type, this.progress.upgrades().vehicleHealth);
+    return vehicleMaxHealth(type, this.progress.effectiveUpgrades().vehicleHealth);
   }
 
   /** Exact weapon values after this player's permanent upgrades. */
   weaponStats(type: WeaponType) {
     const weapon = WEAPONS[type];
-    const upgrades = this.progress.upgrades();
+    const upgrades = this.progress.effectiveUpgrades();
     const damage = weapon.damage * (1 + upgrades.weaponDamage * 0.02);
     const damageLabel =
       (weapon.pellets ?? 1) > 1
@@ -390,7 +390,7 @@ export class Lobby implements OnInit, OnDestroy {
   /** Barricade and turret values after all relevant permanent upgrades. */
   defenseStats(type: DefenseType) {
     const defense = DEFENSES[type];
-    const upgrades = this.progress.upgrades();
+    const upgrades = this.progress.effectiveUpgrades();
     if (defense.kind === 'barricade') {
       const health = Math.round(defense.health * (1 + upgrades.barricadeHealth * 0.02));
       const effects: string[] = [`${health} Leben`, `${defense.width} × ${defense.height} Fläche`];
@@ -472,7 +472,7 @@ export class Lobby implements OnInit, OnDestroy {
   /** Upgraded hull values, including the slow turning that defines heavy machines. */
   vehicleStats(type: VehicleType) {
     const vehicle = VEHICLES[type];
-    const upgrades = this.progress.upgrades();
+    const upgrades = this.progress.effectiveUpgrades();
     const effects = [
       `${vehicleMaxHealth(type, upgrades.vehicleHealth)} Leben`,
       `${this.stat(vehicleTopSpeed(type, upgrades.vehicleSpeed))} Tempo`,
@@ -560,7 +560,7 @@ export class Lobby implements OnInit, OnDestroy {
 
   /** What the dash currently swallows, so the HUD never oversells the dodge. */
   dashHint() {
-    const percent = Math.round(dashReduction(this.progress.upgrades().dashResist) * 100);
+    const percent = Math.round(dashReduction(this.progress.effectiveUpgrades().dashResist) * 100);
     return percent >= 100 ? 'Dash (unverwundbar)' : `Dash (−${percent} % Schaden)`;
   }
 
@@ -583,7 +583,7 @@ export class Lobby implements OnInit, OnDestroy {
     return ammoRefillCost(
       player.weapon,
       player.reserveAmmo,
-      this.progress.upgrades().reserveAmmo,
+      this.progress.effectiveUpgrades().reserveAmmo,
       this.activeMap().moneyScale,
     );
   }
@@ -593,7 +593,8 @@ export class Lobby implements OnInit, OnDestroy {
     if (!player || player.weapon === 'pistol' || isMeleeWeapon(player.weapon)) return 0;
     return Math.max(
       0,
-      reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo) - player.reserveAmmo,
+      reserveCapacity(player.weapon, this.progress.effectiveUpgrades().reserveAmmo) -
+        player.reserveAmmo,
     );
   }
 

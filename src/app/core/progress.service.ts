@@ -7,6 +7,7 @@ import {
   PERK_COST,
   PLAYER_ABILITY_COST,
   UPGRADE_REQUIRES,
+  effectiveUpgrades as applyUpgradeAmplifier,
   upgradeLevelCost,
   upgradeMaxLevel,
   upgradeUnlocked,
@@ -71,6 +72,9 @@ export class ProgressService {
   readonly gold = computed(() => this.progress().gold);
   readonly upgrades = computed(() => this.progress().upgrades);
   readonly perks = computed(() => this.progress().perks);
+  readonly effectiveUpgrades = computed(() =>
+    applyUpgradeAmplifier(this.progress().upgrades, this.progress().perks),
+  );
   readonly ability = computed(() => this.progress().ability);
   readonly unlockedAbilities = computed(() => this.progress().unlockedAbilities);
   readonly clearedMaps = computed(() => this.progress().clearedMaps);

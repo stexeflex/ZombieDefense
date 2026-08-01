@@ -384,4 +384,11 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     description: 'Einmal pro Welle überlebst du einen tödlichen Treffer mit 1 Leben.',
     icon: '⛨',
   },
+  {
+    key: 'upgradeAmplifier',
+    label: 'Stufenverstärker',
+    description:
+      'Alle gekauften Stufen-Upgrades wirken 50 % stärker. Der wirksame Wert wird immer auf die nächste volle Stufe aufgerundet.',
+    icon: '1,5×',
+  },
 ];

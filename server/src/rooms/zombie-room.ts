@@ -7,6 +7,7 @@ import {
   EMPTY_UPGRADES,
   PLAYER_BASE_HEALTH,
   SHIELD_SHARE,
+  effectiveUpgrades,
   findMap,
   isPlayerAbility,
   reserveCapacity,
@@ -238,8 +239,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
   }
 
   onJoin(client: Client, options: JoinOptions) {
-    const upgrades = this.cleanUpgrades(options.upgrades);
     const perks = this.cleanPerks(options.perks);
+    const upgrades = effectiveUpgrades(this.cleanUpgrades(options.upgrades), perks);
     const ability = this.cleanAbility(options.ability);
     const player = new PlayerState();
     player.id = client.sessionId;
@@ -279,6 +280,12 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       dashHits: new Set(),
       stowed: new Map(),
       wasFiring: false,
+      weaponChargeSeconds: 0,
+      chargedWeapon: '',
+      weaponDashSpeed: 0,
+      weaponDashDamage: 0,
+      weaponDashArmorPierce: 0,
+      weaponDashHits: new Set(),
       weaponDiscounts: 0,
       barricadeDiscounts: 0,
       turretDiscounts: 0,
@@ -329,6 +336,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     if (runtime) {
       runtime.input = { ...EMPTY_INPUT };
       runtime.wasFiring = false;
+      runtime.weaponChargeSeconds = 0;
+      runtime.chargedWeapon = '';
     }
     void this.allowReconnection(client, RECONNECT_WINDOW_SECONDS);
   }
@@ -372,8 +381,8 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     const player = this.state.players.get(sessionId);
     const runtime = this.world.runtime.get(sessionId);
     if (!player || !runtime) return;
-    runtime.upgrades = this.cleanUpgrades(options.upgrades);
     runtime.perks = this.cleanPerks(options.perks);
+    runtime.upgrades = effectiveUpgrades(this.cleanUpgrades(options.upgrades), runtime.perks);
     runtime.ability = this.cleanAbility(options.ability);
     player.maxHealth = Math.round(PLAYER_BASE_HEALTH * (1 + runtime.upgrades.maxHealth * 0.02));
     player.health = player.maxHealth;
@@ -581,6 +590,7 @@ export class ZombieRoom extends Room<{ state: GameState }> {
       build: this.build,
       players: this.playerSystem,
       abilities: this.abilities,
+      zombies: this.zombieSystem,
       vehicles: this.vehicles,
       projectiles: this.projectiles,
       turrets: this.turrets,

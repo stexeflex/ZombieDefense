@@ -11,6 +11,8 @@ export type ZombieType =
   | 'phaseguard'
   | 'evasive'
   | 'phantom'
+  | 'jammer'
+  | 'blink'
   | 'spitter'
   | 'screamer'
   // mini bosses
@@ -35,7 +37,9 @@ export type ZombieType =
   | 'tunneler'
   | 'roadking'
   | 'eclipse'
-  | 'bulwark';
+  | 'bulwark'
+  | 'nightlord'
+  | 'signalbreaker';
 
 export type ZombieRank = 'trash' | 'elite' | 'mini' | 'boss';
 
@@ -132,6 +136,10 @@ export interface ZombieConfig {
   zigzag?: { angle: number; frequency: number };
   /** Automated defenses cannot acquire this target; direct and area damage still work. */
   hiddenFromTurrets?: boolean;
+  /** Nearby automated defenses recharge this slowly while the disruptor lives. */
+  turretSlow?: { radius: number; factor: number };
+  /** Once ready, the next damaging hit makes this enemy leap sideways. */
+  hitDodge?: { cooldown: number; distance: number };
   explode?: { radius: number; damage: number };
   abilities?: ZombieAbility[];
   /** Short line shown on the map card and the boss bar. */
@@ -237,6 +245,28 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
     reward: 46,
     rank: 'elite',
     hiddenFromTurrets: true,
+  },
+  jammer: {
+    label: 'Störseucher',
+    health: 285,
+    speed: 66,
+    damage: 18,
+    radius: 22,
+    reward: 66,
+    rank: 'elite',
+    turretSlow: { radius: 285, factor: 0.55 },
+    threat: 'verlangsamt Geschütztürme in seiner Nähe',
+  },
+  blink: {
+    label: 'Sprunghetzer',
+    health: 175,
+    speed: 112,
+    damage: 16,
+    radius: 17,
+    reward: 54,
+    rank: 'elite',
+    hitDodge: { cooldown: 1, distance: 135 },
+    threat: 'weicht dem nächsten Treffer jede Sekunde mit einem Dash aus',
   },
   spitter: {
     label: 'Speier',
@@ -701,6 +731,50 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
       { kind: 'summon', every: 8, count: 5, type: 'shieldbearer' },
     ],
   },
+  nightlord: {
+    label: 'NACHTFÜRST',
+    health: 21840,
+    speed: 72,
+    damage: 112,
+    radius: 76,
+    reward: 13800,
+    rank: 'boss',
+    hiddenFromTurrets: true,
+    threat: 'bleibt für Türme unsichtbar und hetzt Phantome durch den Schleier',
+    abilities: [
+      { kind: 'phaseShield', every: 7.5, duration: 1.5 },
+      { kind: 'charge', every: 6, speed: 350, duration: 1.4 },
+      { kind: 'summon', every: 7, count: 6, type: 'phantom' },
+      { kind: 'summon', every: 10, count: 3, type: 'blink' },
+      { kind: 'vortex', every: 11, radius: 760, force: 330, duration: 1.2, push: false },
+    ],
+  },
+  signalbreaker: {
+    label: 'TRIARCH-BRECHER',
+    health: 24780,
+    speed: 46,
+    damage: 128,
+    radius: 88,
+    reward: 16000,
+    rank: 'boss',
+    armor: 0.34,
+    threat: 'belagert die Signalkerne mit Störfeldern und schweren Schlägen',
+    abilities: [
+      { kind: 'slam', every: 7, radius: 510, damage: 142, telegraph: 1.45 },
+      {
+        kind: 'mortar',
+        every: 5.2,
+        shots: 8,
+        radius: 132,
+        damage: 92,
+        telegraph: 1.1,
+        range: 1850,
+      },
+      { kind: 'summon', every: 8, count: 4, type: 'jammer' },
+      { kind: 'summon', every: 10, count: 5, type: 'shieldbearer' },
+      { kind: 'vortex', every: 13, radius: 820, force: 780, duration: 0.5, push: true },
+    ],
+  },
 };
 
 export const ZOMBIE_TYPES = Object.keys(ZOMBIES) as ZombieType[];
@@ -724,6 +798,8 @@ export const BOSSES: ZombieType[] = [
   'roadking',
   'eclipse',
   'bulwark',
+  'nightlord',
+  'signalbreaker',
 ];
 
 export type AbilityOf<K extends ZombieAbility['kind']> = Extract<ZombieAbility, { kind: K }>;

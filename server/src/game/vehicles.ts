@@ -87,8 +87,12 @@ export class VehicleSystem {
     const clampedY = this.world.clamp(vehicle.y, extentY + 16, ARENA.height - extentY - 16);
     // Only the direction that ran into something loses its momentum, so a hull
     // slides along the edge instead of sticking to it.
-    if (clampedX !== vehicle.x) vehicle.vx = 0;
-    if (clampedY !== vehicle.y) vehicle.vy = 0;
+    if (clampedX !== vehicle.x) {
+      vehicle.vx = config.bounce ? -vehicle.vx * config.bounce : 0;
+    }
+    if (clampedY !== vehicle.y) {
+      vehicle.vy = config.bounce ? -vehicle.vy * config.bounce : 0;
+    }
     vehicle.x = clampedX;
     vehicle.y = clampedY;
 
@@ -113,8 +117,12 @@ export class VehicleSystem {
     const normalY = shiftY / push;
     const into = vehicle.vx * normalX + vehicle.vy * normalY;
     if (into < 0) {
-      vehicle.vx -= normalX * into;
-      vehicle.vy -= normalY * into;
+      const reflection = config.bounce ? 1 + config.bounce : 1;
+      vehicle.vx -= normalX * into * reflection;
+      vehicle.vy -= normalY * into * reflection;
+      if (config.bounce) {
+        this.world.pushFx({ k: 'engine', x: vehicle.x, y: vehicle.y, s: vehicle.type });
+      }
     }
   }
 

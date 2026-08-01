@@ -34,6 +34,7 @@ export class ZombieSystem {
     this.world.state.zombies.forEach((zombie, id) => {
       const config = ZOMBIES[zombie.type];
       zombie.attackCooldown = Math.max(0, zombie.attackCooldown - delta);
+      zombie.hitDodgeCooldown = Math.max(0, zombie.hitDodgeCooldown - delta);
       zombie.attacking = Math.max(0, zombie.attacking - delta);
 
       if (zombie.burning > 0) {
@@ -54,23 +55,23 @@ export class ZombieSystem {
       const playerDistance = target
         ? Math.hypot(target.x - zombie.x, target.y - zombie.y)
         : Infinity;
-      const objectiveDistance = state.objectiveActive
-        ? Math.hypot(state.objectiveX - zombie.x, state.objectiveY - zombie.y)
+      const objective = this.world.nearestObjective(zombie.x, zombie.y);
+      const objectiveDistance = objective
+        ? Math.hypot(objective.x - zombie.x, objective.y - zombie.y)
         : Infinity;
       // Mission objectives pull a meaningful part of the horde. Players can
       // still peel enemies away by meeting them before they reach the target.
       const attacksObjective =
-        state.objectiveActive && (!target || objectiveDistance <= playerDistance * 0.5);
+        Boolean(objective) && (!target || objectiveDistance <= playerDistance * 0.5);
       if (!target && !attacksObjective) return;
-      const targetX = attacksObjective ? state.objectiveX : target!.x;
-      const targetY = attacksObjective ? state.objectiveY : target!.y;
+      const targetX = attacksObjective ? objective!.x : target!.x;
+      const targetY = attacksObjective ? objective!.y : target!.y;
 
       const navigation = this.navigationTarget(zombie, targetX, targetY);
       const angle = Math.atan2(navigation.y - zombie.y, navigation.x - zombie.x);
       const navigationDistance = Math.hypot(navigation.x - zombie.x, navigation.y - zombie.y);
       const contact =
-        zombie.radius +
-        (attacksObjective ? Math.max(34, state.objectiveRadius * 0.72) : PLAYER_RADIUS);
+        zombie.radius + (attacksObjective ? Math.max(34, objective!.radius * 0.72) : PLAYER_RADIUS);
       const distance = Math.hypot(targetX - zombie.x, targetY - zombie.y);
       let movementAngle = angle;
       if (config.zigzag) {
@@ -163,7 +164,10 @@ export class ZombieSystem {
           zombie.attackCooldown = this.attackDelay(zombie.type, 1);
           zombie.attacking = 0.3;
           if (attacksObjective) {
-            this.world.damageObjective(zombie.damage * this.structureBonus(zombie));
+            this.world.damageObjective(
+              zombie.damage * this.structureBonus(zombie),
+              objective?.id ?? '',
+            );
             return;
           }
           const crewed = this.world.vehicleOf(target!.id);

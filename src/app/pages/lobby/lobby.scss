@@ -1669,6 +1669,13 @@ kbd {
   overflow: hidden;
 }
 
+.map-card:hover .map-description,
+.map-card:focus-visible .map-description {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
 .map-stats {
   margin-top: 8px;
   display: flex;

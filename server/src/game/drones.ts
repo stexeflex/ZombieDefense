@@ -1,4 +1,10 @@
-import { ARENA, DEFENSES, EMPTY_UPGRADES, type DefenseType } from '../../../shared/game-types.js';
+import {
+  ARENA,
+  DEFENSES,
+  EMPTY_UPGRADES,
+  ZOMBIES,
+  type DefenseType,
+} from '../../../shared/game-types.js';
 import { DroneState } from '../state/game-state.js';
 import type { GameWorld } from './world.js';
 
@@ -31,7 +37,14 @@ export class DroneSystem {
       const acquisitionRange = hangar.range || config.range || 600;
       const leash = acquisitionRange + LEASH_SLACK;
 
-      drone.cooldown = Math.max(0, drone.cooldown - delta);
+      let rechargeFactor = 1;
+      this.world.state.zombies.forEach((zombie) => {
+        const aura = ZOMBIES[zombie.type].turretSlow;
+        if (aura && Math.hypot(zombie.x - hangar.x, zombie.y - hangar.y) <= aura.radius) {
+          rechargeFactor = Math.min(rechargeFactor, aura.factor);
+        }
+      });
+      drone.cooldown = Math.max(0, drone.cooldown - delta * rechargeFactor);
       drone.phase += delta * 1.5;
       const angle = drone.phase + (Math.PI * 2 * drone.slot) / count;
 

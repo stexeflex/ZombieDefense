@@ -60,6 +60,14 @@ export interface RuntimePlayer {
   /** Magazine and spare rounds of every weapon that is not in hand. */
   stowed: Map<WeaponType, AmmoStore>;
   wasFiring: boolean;
+  /** Held-fire charge and the weapon it belongs to. */
+  weaponChargeSeconds: number;
+  chargedWeapon: WeaponType | '';
+  /** Runtime values for the damaging, fully invulnerable Dashmesser burst. */
+  weaponDashSpeed: number;
+  weaponDashDamage: number;
+  weaponDashArmorPierce: number;
+  weaponDashHits: Set<string>;
   /** Discounted purchases the starter perks still have left this run. */
   weaponDiscounts: number;
   barricadeDiscounts: number;
@@ -173,13 +181,20 @@ export class GameWorld {
     const endlessHealth = this.state.endless
       ? endlessHealthScale(this.state.wave, this.state.players.size)
       : 1;
-    zombie.maxHealth = Math.round(config.health * waveScale * this.map.difficulty * endlessHealth);
+    const missionStrength = this.map.enemyStrength ?? 1;
+    zombie.maxHealth = Math.round(
+      config.health * waveScale * this.map.difficulty * missionStrength * endlessHealth,
+    );
     zombie.health = zombie.maxHealth;
     const endlessSpeed = this.state.endless ? endlessSpeedScale(this.state.wave) : 1;
     zombie.baseSpeed = config.speed * (1 + Math.min(0.3, this.state.wave * 0.012)) * endlessSpeed;
     zombie.speed = zombie.baseSpeed;
     zombie.damage =
-      config.damage * this.damageScale() * this.waveDamageScale() * this.endlessDamageMultiplier();
+      config.damage *
+      this.damageScale() *
+      missionStrength *
+      this.waveDamageScale() *
+      this.endlessDamageMultiplier();
     zombie.radius = config.radius;
     zombie.reward = config.reward;
     zombie.armor = config.armor ?? 0;
@@ -358,7 +373,38 @@ export class GameWorld {
       zombie.damageBy.set(ownerId, (zombie.damageBy.get(ownerId) ?? 0) + dealt);
       zombie.lastAttacker = ownerId;
     }
-    if (zombie.health <= 0) this.killZombie(id, zombie);
+    if (zombie.health <= 0) {
+      this.killZombie(id, zombie);
+      return;
+    }
+    const dodge = ZOMBIES[zombie.type].hitDodge;
+    if (dealt > 0 && dodge && zombie.hitDodgeCooldown <= 0) {
+      zombie.hitDodgeCooldown = dodge.cooldown;
+      this.dodgeZombie(zombie, dodge.distance);
+    }
+  }
+
+  /** A hit-reactive enemy jumps sideways to the first unobstructed landing spot. */
+  private dodgeZombie(zombie: ZombieState, distance: number) {
+    const start = zombie.rotation + Math.PI / 2;
+    const directions = [
+      0,
+      Math.PI,
+      Math.PI / 4,
+      -Math.PI / 4,
+      (Math.PI * 3) / 4,
+      (-Math.PI * 3) / 4,
+    ];
+    for (const offset of directions) {
+      const angle = start + offset;
+      const x = this.clamp(zombie.x + Math.cos(angle) * distance, 12, ARENA.width - 12);
+      const y = this.clamp(zombie.y + Math.sin(angle) * distance, 12, ARENA.height - 12);
+      if (!this.canTravel(zombie.x, zombie.y, x, y, zombie.radius)) continue;
+      this.pushFx({ k: 'dash', x: zombie.x, y: zombie.y, x2: x, y2: y, a: angle, s: zombie.type });
+      zombie.x = x;
+      zombie.y = y;
+      return;
+    }
   }
 
   healZombie(zombie: ZombieState, amount: number) {
@@ -385,7 +431,9 @@ export class GameWorld {
   private payKill(zombie: ZombieState) {
     const players = [...this.state.players.values()];
     if (players.length === 0) return;
-    const share = Math.round((zombie.reward * this.map.moneyScale) / players.length);
+    const share = Math.round(
+      (zombie.reward * this.map.moneyScale * (this.map.ingameMoneyScale ?? 1)) / players.length,
+    );
 
     let bestId = '';
     let bestDamage = 0;
@@ -409,6 +457,7 @@ export class GameWorld {
     // instead of the passenger. Wreck damage is applied only after everyone
     // has been dropped out and their vehicleId has been cleared.
     if (this.vehicleOf(player.id)) return false;
+    if (player.weaponDashing > 0) return false;
     const runtime = this.runtime.get(player.id);
     const upgrades = runtime?.upgrades ?? EMPTY_UPGRADES;
     let reduction = 1 - armorReduction(upgrades.armor);
@@ -469,18 +518,69 @@ export class GameWorld {
 
     const state = this.state;
     if (state.objectiveActive) {
-      const distance = Math.hypot(state.objectiveX - x, state.objectiveY - y);
-      if (distance <= radius + state.objectiveRadius) {
-        this.damageObjective(damage * Math.max(0.3, 1 - distance / radius));
+      if (state.objectiveCores.size > 0) {
+        state.objectiveCores.forEach((core) => {
+          const distance = Math.hypot(core.x - x, core.y - y);
+          if (distance <= radius + core.radius) {
+            this.damageObjective(damage * Math.max(0.3, 1 - distance / radius), core.id);
+          }
+        });
+      } else {
+        const distance = Math.hypot(state.objectiveX - x, state.objectiveY - y);
+        if (distance <= radius + state.objectiveRadius) {
+          this.damageObjective(damage * Math.max(0.3, 1 - distance / radius));
+        }
       }
     }
   }
 
-  damageObjective(amount: number) {
+  /** Closest live mission target, including independently defended relay cores. */
+  nearestObjective(x: number, y: number) {
+    const state = this.state;
+    if (!state.objectiveActive) return undefined;
+    if (state.objectiveCores.size === 0) {
+      return {
+        id: '',
+        x: state.objectiveX,
+        y: state.objectiveY,
+        radius: state.objectiveRadius,
+      };
+    }
+    let best: { id: string; x: number; y: number; radius: number } | undefined;
+    let bestDistance = Infinity;
+    state.objectiveCores.forEach((core) => {
+      if (core.health <= 0) return;
+      const distance = Math.hypot(core.x - x, core.y - y);
+      if (distance >= bestDistance) return;
+      bestDistance = distance;
+      best = { id: core.id, x: core.x, y: core.y, radius: core.radius };
+    });
+    return best;
+  }
+
+  damageObjective(amount: number, coreId = '') {
     const state = this.state;
     if (!state.objectiveActive || amount <= 0 || state.objectiveHealth <= 0) return;
     // Mission structures are fortified targets, not oversized players. Their
     // armor keeps one leaked pack from deleting a long campaign in seconds.
+    if (state.objectiveCores.size > 0) {
+      const core = coreId ? state.objectiveCores.get(coreId) : undefined;
+      if (!core || core.health <= 0) return;
+      core.health = Math.max(0, core.health - amount * 0.0015);
+      state.objectiveHealth = [...state.objectiveCores.values()].reduce(
+        (sum, entry) => sum + entry.health,
+        0,
+      );
+      this.pushFx({
+        k: 'structure',
+        x: core.x,
+        y: core.y,
+        r: core.radius,
+        s: 'multiholdout',
+      });
+      if (core.health <= 0) this.onObjectiveDestroyed?.();
+      return;
+    }
     state.objectiveHealth = Math.max(0, state.objectiveHealth - amount * 0.0015);
     this.pushFx({
       k: 'structure',
@@ -496,6 +596,11 @@ export class GameWorld {
   objectiveClear(x: number, y: number, radius: number) {
     const state = this.state;
     if (!state.objectiveActive) return true;
+    if (state.objectiveCores.size > 0) {
+      return [...state.objectiveCores.values()].every(
+        (core) => Math.hypot(core.x - x, core.y - y) > core.radius + radius + 24,
+      );
+    }
     return (
       Math.hypot(state.objectiveX - x, state.objectiveY - y) > state.objectiveRadius + radius + 24
     );
@@ -525,8 +630,24 @@ export class GameWorld {
     // gun or handing out first aid for the rest of the tick.
     vehicle.crew.clear();
     this.state.vehicles.delete(vehicle.id);
-    this.pushFx({ k: 'explosion', x: vehicle.x, y: vehicle.y, r: 120, s: vehicle.type });
+    const wreckBlast = VEHICLES[vehicle.type].wreckExplosion;
+    this.pushFx({
+      k: 'explosion',
+      x: vehicle.x,
+      y: vehicle.y,
+      r: wreckBlast?.radius ?? 120,
+      s: vehicle.type,
+    });
     this.pushFx({ k: 'wreck', x: vehicle.x, y: vehicle.y, s: vehicle.type });
+    if (wreckBlast) {
+      const victims = [...this.state.zombies.entries()];
+      for (const [id, zombie] of victims) {
+        const distance = Math.hypot(zombie.x - vehicle.x, zombie.y - vehicle.y);
+        if (distance > wreckBlast.radius + zombie.radius) continue;
+        const falloff = Math.max(0.42, 1 - distance / (wreckBlast.radius + zombie.radius));
+        this.damageZombie(id, zombie, wreckBlast.damage * falloff, vehicle.ownerId);
+      }
+    }
     for (const id of crew) {
       const passenger = this.state.players.get(id);
       if (!passenger) continue;

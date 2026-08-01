@@ -1,6 +1,7 @@
 import {
   DEFENSES,
   EMPTY_UPGRADES,
+  ZOMBIES,
   canTurretTarget,
   type DefenseType,
 } from '../../../shared/game-types.js';
@@ -35,7 +36,7 @@ export class TurretSystem {
       if (config.kind !== 'turret') return;
       // A hangar carries no gun; its drones do the shooting, see DroneSystem.
       if (config.drones) return;
-      defense.cooldown = Math.max(0, defense.cooldown - delta);
+      defense.cooldown = Math.max(0, defense.cooldown - delta * this.rechargeFactor(defense));
 
       const upgrades = this.world.runtime.get(defense.ownerId)?.upgrades ?? EMPTY_UPGRADES;
       const range = defense.range || (config.range ?? 380) * (1 + upgrades.turretRange * 0.01);
@@ -189,6 +190,19 @@ export class TurretSystem {
       }
       defense.cooldown = config.fireDelay ?? 0.25;
     });
+  }
+
+  /** Störseucher slow only turrets inside their readable disruption aura. */
+  private rechargeFactor(defense: { x: number; y: number }) {
+    let factor = 1;
+    this.world.state.zombies.forEach((zombie) => {
+      const aura = ZOMBIES[zombie.type].turretSlow;
+      if (!aura) return;
+      if (Math.hypot(zombie.x - defense.x, zombie.y - defense.y) <= aura.radius) {
+        factor = Math.min(factor, aura.factor);
+      }
+    });
+    return factor;
   }
 
   /** Slow high-health enemies win; distance only breaks otherwise close ties. */

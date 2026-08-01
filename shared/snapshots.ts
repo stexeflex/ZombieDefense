@@ -93,7 +93,19 @@ export interface PlayerSnapshot {
   reviveProgress: number;
   reloading: number;
   firing: number;
+  /** Charge progress of a held-fire melee special, from zero to one. */
+  weaponCharge?: number;
   hurt: number;
+}
+
+export interface ObjectiveCoreSnapshot {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  radius: number;
+  health: number;
+  maxHealth: number;
 }
 
 export interface ZombieSnapshot {
@@ -147,6 +159,8 @@ export interface VehicleSnapshot {
   x: number;
   y: number;
   rotation: number;
+  vx?: number;
+  vy?: number;
   health: number;
   maxHealth: number;
   /** What selling pays right now, based on original price and current health. */
@@ -195,7 +209,7 @@ export interface GameSnapshot {
   statusText: string;
   /** Campaign-only structure that the squad must defend or escort. */
   objectiveActive?: boolean;
-  objectiveKind?: '' | 'holdout' | 'escort' | 'timed';
+  objectiveKind?: '' | 'holdout' | 'multiholdout' | 'escort' | 'timed';
   objectiveTitle?: string;
   objectiveX?: number;
   objectiveY?: number;
@@ -206,6 +220,7 @@ export interface GameSnapshot {
   /** Countdown for a continuous timed-survival mission. */
   objectiveTimeRemaining?: number;
   objectiveDuration?: number;
+  objectiveCores?: Record<string, ObjectiveCoreSnapshot>;
   bossName: string;
   bossHealth: number;
   bossMaxHealth: number;

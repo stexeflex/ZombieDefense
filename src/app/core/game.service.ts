@@ -191,7 +191,8 @@ export class GameService {
     if (!player) return false;
     if (player.weapon === 'pistol' || isMeleeWeapon(player.weapon)) return true;
     return (
-      player.reserveAmmo >= reserveCapacity(player.weapon, this.progress.upgrades().reserveAmmo)
+      player.reserveAmmo >=
+      reserveCapacity(player.weapon, this.progress.effectiveUpgrades().reserveAmmo)
     );
   });
 
@@ -533,12 +534,12 @@ export class GameService {
   }
 
   localMoveSpeed() {
-    return PLAYER_BASE_SPEED * (1 + this.progress.upgrades().moveSpeed * 0.02);
+    return PLAYER_BASE_SPEED * (1 + this.progress.effectiveUpgrades().moveSpeed * 0.02);
   }
 
   /** Steering is predicted locally, so the hull needs the same top speed. */
   localVehicleSpeed(type: VehicleType) {
-    return vehicleTopSpeed(type, this.progress.upgrades().vehicleSpeed);
+    return vehicleTopSpeed(type, this.progress.effectiveUpgrades().vehicleSpeed);
   }
 
   /** Called by the scene so panel and highlight always mean the same structure. */

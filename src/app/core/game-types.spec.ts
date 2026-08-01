@@ -72,6 +72,8 @@ import {
   endlessRunReward,
   endlessSpeedScale,
   endlessWave,
+  effectiveUpgradeLevel,
+  effectiveUpgrades,
   healthRegenPerSecond,
   isMeleeWeapon,
   magazineCapacity,
@@ -108,8 +110,8 @@ function dps(weapon: WeaponType) {
 }
 
 describe('map campaign', () => {
-  it('offers seventeen maps that get harder and pay out more', () => {
-    expect(MAPS).toHaveLength(17);
+  it('offers nineteen maps that get harder and pay out more', () => {
+    expect(MAPS).toHaveLength(19);
     for (let index = 1; index < MAPS.length; index += 1) {
       expect(MAPS[index].difficulty).toBeGreaterThan(MAPS[index - 1].difficulty);
       expect(MAPS[index].reward).toBeGreaterThan(MAPS[index - 1].reward);
@@ -234,10 +236,16 @@ describe('map campaign', () => {
   it('adds directed assaults, a holdout and a real escort objective', () => {
     const relay = MAPS.find((map) => map.id === 'relay');
     const convoy = MAPS.find((map) => map.id === 'convoy');
+    const trinity = MAPS.find((map) => map.id === 'trinity');
     const lateWaves = MAPS.slice(10).flatMap((map) => map.waves);
 
     expect(relay?.mission?.kind).toBe('holdout');
     expect(convoy?.mission?.kind).toBe('escort');
+    expect(trinity?.mission?.kind).toBe('multiholdout');
+    if (trinity?.mission?.kind === 'multiholdout') {
+      expect(trinity.mission.cores).toHaveLength(3);
+      expect(new Set(trinity.mission.cores.map((core) => core.id)).size).toBe(3);
+    }
     if (convoy?.mission?.kind === 'escort') {
       expect(convoy.mission.path.length).toBeGreaterThanOrEqual(5);
       expect(convoy.mission.maxHealth).toBeGreaterThan(5000);
@@ -312,7 +320,7 @@ describe('enemy roster', () => {
     expect(new Set(MAPS.map((map) => map.boss)).size).toBe(BOSSES.length);
   });
 
-  it('uses shield carriers as rare isolated threats outside the shieldfront challenge', () => {
+  it('keeps shields rare early and adds a small early contingent from level eleven onward', () => {
     for (const [mapIndex, map] of MAPS.entries()) {
       const carriers = map.waves
         .flatMap((wave) => wave.zombies)
@@ -322,9 +330,15 @@ describe('enemy roster', () => {
         expect(carriers.length).toBeGreaterThan(100);
         continue;
       }
-      expect(carriers.length).toBeLessThanOrEqual(
-        Math.ceil(map.waves.length / (mapIndex >= 7 ? 2 : 4)),
-      );
+      if (mapIndex >= 10) {
+        const roster = map.waves.flatMap((wave) => wave.zombies);
+        expect(carriers.length / roster.length).toBeLessThan(0.08);
+        expect(map.waves.slice(0, 2).flatMap((wave) => wave.zombies)).toContain('shieldbearer');
+      } else {
+        expect(carriers.length).toBeLessThanOrEqual(
+          Math.ceil(map.waves.length / (mapIndex >= 7 ? 2 : 4)),
+        );
+      }
     }
     expect(ZOMBIES.shieldbearer.frontShield!.turnSpeed).toBeLessThan(1);
     expect(ZOMBIES.shieldbearer.frontShield!.arc).toBeLessThan(Math.PI);
@@ -338,7 +352,9 @@ describe('enemy roster', () => {
         .filter((type) => type === 'phaseguard');
       expect(guards.length).toBeGreaterThan(0);
       expect(guards.length).toBeLessThanOrEqual(
-        Math.ceil(map.waves.length / (mapIndex >= 7 ? 3 : 5)),
+        mapIndex >= 10
+          ? map.waves.length * 2
+          : Math.ceil(map.waves.length / (mapIndex >= 7 ? 3 : 5)),
       );
     }
     const shield = timedAbilities('phaseguard').find((ability) => ability.kind === 'phaseShield');
@@ -356,14 +372,28 @@ describe('enemy roster', () => {
       expect(evasive.length).toBeGreaterThan(0);
       expect(phantoms.length).toBeGreaterThan(0);
       expect(evasive.length).toBeLessThanOrEqual(Math.ceil(map.waves.length / 3));
-      expect(phantoms.length).toBeLessThanOrEqual(
-        Math.ceil(map.waves.length / (mapIndex >= 7 ? 2 : 4)),
-      );
+      if (map.id === 'veil') {
+        expect(phantoms.length / roster.length).toBeGreaterThan(0.35);
+      } else {
+        expect(phantoms.length).toBeLessThanOrEqual(
+          Math.ceil(map.waves.length / (mapIndex >= 7 ? 2 : 4)),
+        );
+      }
     }
     expect(ZOMBIES.evasive.zigzag?.angle).toBeGreaterThan(0.5);
     expect(ZOMBIES.evasive.speed).toBeGreaterThan(ZOMBIES.normal.speed);
     expect(canTurretTarget('phantom')).toBe(false);
     expect(canTurretTarget('normal')).toBe(true);
+  });
+
+  it('introduces both level-eleven disruption elites with readable mechanics', () => {
+    const lateRoster = MAPS.slice(10).flatMap((map) => map.waves.flatMap((wave) => wave.zombies));
+    expect(lateRoster).toContain('jammer');
+    expect(lateRoster).toContain('blink');
+    expect(ZOMBIES.jammer.turretSlow?.factor).toBeLessThan(1);
+    expect(ZOMBIES.jammer.turretSlow?.radius).toBeGreaterThan(200);
+    expect(ZOMBIES.blink.hitDodge?.cooldown).toBe(1);
+    expect(ZOMBIES.blink.hitDodge?.distance).toBeGreaterThan(100);
   });
 
   it('fields small pairs of shield and stealth threats from map eight onward', () => {
@@ -453,8 +483,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists twenty-six weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(26);
+  it('lists thirty-three weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(33);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -487,19 +517,38 @@ describe('weapon balance', () => {
     expect(WEAPONS.sun.splashRadius).toBeGreaterThan(WEAPONS.rocket.splashRadius!);
     expect(WEAPONS.sun.burnSeconds).toBeGreaterThan(WEAPONS.firerocket.burnSeconds!);
     expect(WEAPONS.sun.cost).toBeGreaterThan(WEAPONS.ionstorm.cost);
+    expect(WEAPONS.stormorb.lightningPulse?.targets).toBeGreaterThan(0);
+    expect(WEAPONS.stormorb.speed).toBeLessThan(WEAPONS.rocket.speed);
+    expect(WEAPONS.colossus.projectileRadius).toBeGreaterThan(30);
+    expect(WEAPONS.colossus.speed).toBeLessThan(WEAPONS.stormorb.speed);
+    expect(WEAPONS.throwshield.throwBounces).toBe(8);
+    expect(WEAPONS.thunderhammer.charge?.kind).toBe('throw');
+    expect(WEAPONS.dashknife.charge?.kind).toBe('dash');
   });
 
-  it('offers five ammo-free melee weapons from cheap to endgame', () => {
+  it('offers ten ammo-free melee weapons from cheap to endgame', () => {
     const melee = WEAPON_ORDER.filter(isMeleeWeapon);
-    expect(melee).toEqual(['crowbar', 'fireaxe', 'chainsaw', 'phaselance', 'worldbreaker']);
+    expect(melee).toEqual([
+      'crowbar',
+      'fireaxe',
+      'knife',
+      'chainsaw',
+      'spear',
+      'throwshield',
+      'phaselance',
+      'thunderhammer',
+      'dashknife',
+      'worldbreaker',
+    ]);
     for (const weapon of melee) {
       const config = WEAPONS[weapon];
       expect(config.ammoCost).toBe(0);
       expect(config.meleeArc).toBeGreaterThan(0);
       expect(config.meleeTargets).toBeGreaterThan(0);
-      expect(config.range).toBeLessThan(160);
       expect(ammoRefillCost(weapon, 0)).toBe(0);
     }
+    expect(WEAPONS.knife.range).toBeLessThan(WEAPONS.crowbar.range);
+    expect(WEAPONS.spear.meleeArc).toBeLessThan(WEAPONS.fireaxe.meleeArc!);
     expect(WEAPONS.worldbreaker.damage).toBeGreaterThan(WEAPONS.phaselance.damage);
     expect(WEAPONS.phaselance.armorPierce).toBeGreaterThan(WEAPONS.fireaxe.armorPierce!);
   });
@@ -800,8 +849,8 @@ describe('building rules', () => {
 });
 
 describe('vehicles', () => {
-  it('offers nine hulls ordered by price, with room for a squad', () => {
-    expect(VEHICLE_ORDER).toHaveLength(9);
+  it('offers twelve hulls ordered by price, with room for a squad', () => {
+    expect(VEHICLE_ORDER).toHaveLength(12);
     for (let index = 1; index < VEHICLE_ORDER.length; index += 1) {
       expect(VEHICLES[VEHICLE_ORDER[index]].cost).toBeGreaterThan(
         VEHICLES[VEHICLE_ORDER[index - 1]].cost,
@@ -823,8 +872,10 @@ describe('vehicles', () => {
     for (const type of VEHICLE_ORDER) {
       // Nothing on wheels beats the burst of a dash …
       expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED * DASH_SPEED);
-      // Only the exposed one-seat quad outruns normal movement.
-      if (type !== 'quad') expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED);
+      // Only the exposed one-seat speed specialists outrun normal movement.
+      if (type !== 'quad' && type !== 'ricochet') {
+        expect(VEHICLES[type].speed).toBeLessThan(PLAYER_BASE_SPEED);
+      }
     }
     expect(VEHICLES.quad.speed).toBeGreaterThan(PLAYER_BASE_SPEED);
     expect(VEHICLES.quad.speed).toBeGreaterThan(VEHICLES.tank.speed);
@@ -856,6 +907,12 @@ describe('vehicles', () => {
     expect(VEHICLES.bulldozer.frontRamOnly).toBe(true);
     expect(VEHICLES.bulldozer.directionalArmor!.exposed).toBeGreaterThan(1);
     expect(VEHICLES.bulldozer.turn).toBeLessThan(VEHICLES.tank.turn);
+    expect(VEHICLES.ricochet.bounce).toBeGreaterThan(0.9);
+    expect(VEHICLES.ricochet.directionalDrive).toBe(true);
+    expect(VEHICLES.ricochet.turn).toBeLessThan(VEHICLES.bulldozer.turn);
+    expect(VEHICLES.jumper.boost).toBeGreaterThan(VEHICLES.quad.boost! * 4);
+    expect(VEHICLES.explosive.wreckExplosion?.radius).toBeGreaterThan(500);
+    expect(VEHICLES.explosive.wreckExplosion?.damage).toBeGreaterThan(2000);
     for (const type of VEHICLE_ORDER) expect(VEHICLES[type].perk.length).toBeGreaterThan(0);
   });
 
@@ -1059,7 +1116,19 @@ describe('permanent upgrades', () => {
       }
       ladder += upgradeLevelCost('dashResist', level);
     }
-    expect(ladder).toBeGreaterThan(Math.max(...Object.values(PERK_COST)));
+    const regularPerks = Object.entries(PERK_COST)
+      .filter(([key]) => key !== 'upgradeAmplifier')
+      .map(([, cost]) => cost);
+    expect(ladder).toBeGreaterThan(Math.max(...regularPerks));
+  });
+
+  it('offers the expensive global level amplifier', () => {
+    expect(PERK_COST.upgradeAmplifier).toBe(50000);
+    const perks = { ...EMPTY_PERKS, upgradeAmplifier: true };
+    expect(effectiveUpgradeLevel(1, perks)).toBe(2);
+    expect(effectiveUpgradeLevel(2, perks)).toBe(3);
+    expect(effectiveUpgradeLevel(0, perks)).toBe(0);
+    expect(effectiveUpgrades({ ...EMPTY_UPGRADES, weaponDamage: 7 }, perks).weaponDamage).toBe(11);
   });
 
   it('locks the dash upgrades that need a perk first', () => {

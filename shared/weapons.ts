@@ -8,21 +8,28 @@ export type WeaponType =
   | 'nailgun'
   | 'magnum'
   | 'sniper'
+  | 'knife'
   | 'acid'
   | 'lmg'
   | 'elephant'
   | 'flamer'
   | 'chainsaw'
+  | 'spear'
   | 'cryo'
   | 'rocket'
   | 'firerocket'
   | 'tesla'
   | 'laser'
+  | 'throwshield'
   | 'railgun'
   | 'phaselance'
   | 'gravity'
+  | 'thunderhammer'
   | 'nova'
+  | 'stormorb'
+  | 'dashknife'
   | 'ionstorm'
+  | 'colossus'
   | 'worldbreaker'
   | 'sun';
 
@@ -69,6 +76,21 @@ export interface WeaponConfig {
   slowSeconds?: number;
   /** Immediate pull towards a splash impact, measured in world units. */
   pull?: number;
+  /** A moving projectile may discharge lightning without being consumed. */
+  lightningPulse?: { every: number; range: number; damage: number; targets: number };
+  /** An ammunition-free thrown shield chains through this many total victims. */
+  throwBounces?: number;
+  /** Holding fire charges a throw or a damaging invulnerable dash. */
+  charge?: {
+    kind: 'throw' | 'dash';
+    minSeconds: number;
+    maxSeconds: number;
+    moveFactor: number;
+    maxMultiplier: number;
+    dashDistance?: number;
+  };
+  /** Visual and collision size of unusually large ammunition. */
+  projectileRadius?: number;
   description: string;
 }
 
@@ -235,6 +257,27 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     ammoCost: 130,
     description: 'Durchschlägt ganze Reihen',
   },
+  knife: {
+    label: 'Kampfmesser',
+    short: 'KM',
+    cost: 1800,
+    damage: 285,
+    fireDelay: 350,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 67,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 0.72,
+    meleeTargets: 2,
+    armorPierce: 0.28,
+    description: 'Extrem kurze Reichweite, dafür sehr hoher Schaden in schneller Folge',
+  },
   acid: {
     label: 'Säurewerfer',
     short: 'SW',
@@ -332,6 +375,28 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     armorPierce: 0.12,
     description: 'Dauerbiss auf kurze Distanz, zerlegt drei Ziele zugleich',
   },
+  spear: {
+    label: 'Sturmspeer',
+    short: 'SP',
+    cost: 3200,
+    damage: 510,
+    fireDelay: 690,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 168,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 0.42,
+    meleeTargets: 5,
+    knockback: 38,
+    armorPierce: 0.38,
+    description: 'Schmaler, langer Stich mit hohem Schaden durch eine ganze Reihe',
+  },
   cryo: {
     label: 'Frostkanone',
     short: 'FK',
@@ -427,6 +492,30 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     ammoCost: 310,
     description: 'Durchgehender Strahl, schmilzt alles',
   },
+  throwshield: {
+    label: 'Wurfschild',
+    short: 'WS',
+    cost: 5400,
+    damage: 310,
+    fireDelay: 1150,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 760,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 950,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 0.25,
+    meleeTargets: 1,
+    armorPierce: 0.25,
+    chainRange: 330,
+    throwBounces: 8,
+    projectileRadius: 14,
+    description: 'Prallt automatisch zwischen bis zu acht nahen Gegnern hin und her',
+  },
   railgun: {
     label: 'Railgun',
     short: 'RG',
@@ -488,6 +577,37 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     pull: 155,
     description: 'Singularität zieht Horden zusammen und bremst sie',
   },
+  thunderhammer: {
+    label: 'Blitzhammer',
+    short: 'BH',
+    cost: 7200,
+    damage: 560,
+    fireDelay: 1450,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 470,
+    pellets: 1,
+    spread: 0,
+    pierce: 12,
+    range: 920,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 1.05,
+    meleeTargets: 7,
+    armorPierce: 0.42,
+    projectileRadius: 18,
+    lightningPulse: { every: 0.3, range: 235, damage: 105, targets: 2 },
+    charge: {
+      kind: 'throw',
+      minSeconds: 0.22,
+      maxSeconds: 1.8,
+      moveFactor: 0.34,
+      maxMultiplier: 2.35,
+    },
+    description:
+      'Aufladen und werfen: der Hammer durchschlägt Gegner und schleudert unterwegs Blitze',
+  },
   nova: {
     label: 'Nova-Kanone',
     short: 'NK',
@@ -507,6 +627,55 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     splashDamage: 108,
     description: 'Fünf explosive Plasmalanzen in einer breiten Salve',
   },
+  stormorb: {
+    label: 'Kugelblitzwerfer',
+    short: 'KB',
+    cost: 8800,
+    damage: 190,
+    fireDelay: 1950,
+    magazine: 4,
+    reserve: 20,
+    reload: 3000,
+    speed: 245,
+    pellets: 1,
+    spread: 0.006,
+    pierce: 22,
+    range: 1180,
+    ammoCost: 680,
+    projectileRadius: 20,
+    lightningPulse: { every: 0.26, range: 280, damage: 125, targets: 3 },
+    description: 'Langsame Kugelblitze zucken während des Flugs auf Gegner in ihrer Nähe',
+  },
+  dashknife: {
+    label: 'Dashmesser',
+    short: 'DM',
+    cost: 9600,
+    damage: 920,
+    fireDelay: 1750,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 110,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: 0.62,
+    meleeTargets: 10,
+    armorPierce: 0.55,
+    charge: {
+      kind: 'dash',
+      minSeconds: 0.25,
+      maxSeconds: 1.65,
+      moveFactor: 0.3,
+      maxMultiplier: 2.2,
+      dashDistance: 620,
+    },
+    description:
+      'Aufladen und losbrechen: ein langer unverwundbarer Dash verletzt alles auf seinem Weg',
+  },
   ionstorm: {
     label: 'Ionensturm',
     short: 'IS',
@@ -525,6 +694,25 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     chain: 4,
     chainRange: 245,
     description: 'Drei Ionenblitze springen durch die ganze Horde',
+  },
+  colossus: {
+    label: 'Kolosswerfer',
+    short: 'KW',
+    cost: 12500,
+    damage: 1380,
+    fireDelay: 3300,
+    magazine: 2,
+    reserve: 8,
+    reload: 3800,
+    speed: 150,
+    pellets: 1,
+    spread: 0.002,
+    pierce: 45,
+    range: 1200,
+    ammoCost: 1050,
+    projectileRadius: 38,
+    description:
+      'Ein riesiges, extrem langsames Massivgeschoss verursacht bei jeder Berührung enormen Schaden',
   },
   worldbreaker: {
     label: 'Weltenbrecher',
@@ -581,21 +769,28 @@ export const WEAPON_ORDER: WeaponType[] = [
   'nailgun',
   'magnum',
   'sniper',
+  'knife',
   'acid',
   'lmg',
   'elephant',
   'flamer',
   'chainsaw',
   'cryo',
+  'spear',
   'rocket',
   'firerocket',
   'tesla',
   'laser',
+  'throwshield',
   'railgun',
   'phaselance',
   'gravity',
+  'thunderhammer',
   'nova',
+  'stormorb',
+  'dashknife',
   'ionstorm',
+  'colossus',
   'worldbreaker',
   'sun',
 ];

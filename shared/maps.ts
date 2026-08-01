@@ -52,6 +52,15 @@ export type MapMission =
       maxHealth: number;
     }
   | {
+      kind: 'multiholdout';
+      title: string;
+      briefing: string;
+      radius: number;
+      /** Every core has its own health pool; losing one loses the mission. */
+      maxHealth: number;
+      cores: Array<{ id: string; label: string; x: number; y: number }>;
+    }
+  | {
       kind: 'escort';
       title: string;
       briefing: string;
@@ -79,6 +88,10 @@ export interface GameMap {
   difficulty: number;
   /** scales kill and wave money */
   moneyScale: number;
+  /** Late missions trim only spendable run money, never permanent gold. */
+  ingameMoneyScale?: number;
+  /** Small extra health and damage multiplier used after level ten. */
+  enemyStrength?: number;
   /** permanent gold for beating the final boss */
   reward: number;
   /** The one boss this map ends with — every map has its own. */
@@ -520,6 +533,34 @@ const AEGIS_STRUCTURES: MapObstacle[] = [
   obstacle('pipe', 1200, 1320),
 ];
 
+/** Sparse sightline breaks leave room for the phantom-heavy hunt. */
+const VEIL_STRUCTURES: MapObstacle[] = [
+  obstacle('ruin', 470, 360),
+  obstacle('ruin', 1930, 1240),
+  obstacle('wall', 830, 510, Math.PI / 2),
+  obstacle('wall', 1570, 1090, Math.PI / 2),
+  obstacle('container', 620, 1110),
+  obstacle('container', 1780, 490),
+  obstacle('rock', 1190, 330, 0, 1.3),
+  obstacle('rock', 1210, 1270, 0, 1.3),
+];
+
+/** Three separated relay islands force the squad to spread its defenses. */
+const TRINITY_STRUCTURES: MapObstacle[] = [
+  obstacle('wall', 520, 620),
+  obstacle('wall', 520, 980),
+  obstacle('wall', 1200, 520),
+  obstacle('wall', 1200, 1080),
+  obstacle('wall', 1880, 620),
+  obstacle('wall', 1880, 980),
+  obstacle('sandbag', 720, 800, Math.PI / 2),
+  obstacle('sandbag', 1680, 800, Math.PI / 2),
+  obstacle('pipe', 950, 800, Math.PI / 2),
+  obstacle('pipe', 1450, 800, Math.PI / 2),
+  obstacle('ruin', 250, 300),
+  obstacle('ruin', 2150, 1300),
+];
+
 // ---------------------------------------------------------------- wave plans
 
 /** Which enemies a map sends and from which wave on they show up. */
@@ -574,6 +615,38 @@ const SIEGE_ROSTER: WavePlan['roster'] = [
   { type: 'armored', from: 1, share: 2.8 },
   { type: 'spitter', from: 1, share: 1.4 },
   { type: 'screamer', from: 1, share: 1.2 },
+];
+
+/** Level eleven onward starts with a few shields and the two disruption elites. */
+const POST_TEN_ROSTER: WavePlan['roster'] = [
+  ...LATE_ROSTER,
+  { type: 'shieldbearer', from: 1, share: 0.42 },
+  { type: 'jammer', from: 2, share: 0.34 },
+  { type: 'blink', from: 1, share: 0.42 },
+];
+
+const POST_TEN_SWARM_ROSTER: WavePlan['roster'] = [
+  ...SWARM_ROSTER,
+  { type: 'shieldbearer', from: 1, share: 0.24 },
+  { type: 'jammer', from: 3, share: 0.2 },
+  { type: 'blink', from: 1, share: 0.38 },
+];
+
+const POST_TEN_SIEGE_ROSTER: WavePlan['roster'] = [
+  ...SIEGE_ROSTER,
+  { type: 'shieldbearer', from: 1, share: 0.5 },
+  { type: 'jammer', from: 1, share: 0.38 },
+  { type: 'blink', from: 1, share: 0.42 },
+];
+
+/** The darkness mission deliberately fields many untargetable enemies. */
+const VEIL_ROSTER: WavePlan['roster'] = [
+  { type: 'phantom', from: 1, share: 6 },
+  { type: 'blink', from: 1, share: 2.1 },
+  { type: 'fast', from: 1, share: 1.8 },
+  { type: 'shieldbearer', from: 1, share: 0.45 },
+  { type: 'jammer', from: 2, share: 0.7 },
+  { type: 'stalker', from: 5, share: 0.14 },
 ];
 
 function patternedWaves(waves: number, patterns: SpawnPattern[]) {
@@ -953,6 +1026,8 @@ export const MAPS: GameMap[] = [
       'Eine winzige Kampfzone mit vier schmalen Einbrüchen. Ganze Kriecherteppiche kommen eng gepackt aus nur einer oder zwei Richtungen.',
     difficulty: 8.4,
     moneyScale: 4.65,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
     reward: 14500,
     boss: 'bastion',
     theme: {
@@ -971,12 +1046,13 @@ export const MAPS: GameMap[] = [
     waves: buildWaves({
       waves: 28,
       boss: 'bastion',
-      base: 58,
-      step: 5.7,
+      // Level 11 was noticeably too forgiving: the complete curve is about 20 % larger.
+      base: 70,
+      step: 6.84,
       minis: ['stalker', 'brute', 'mortar', 'warden'],
       miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27],
       swarmWaves: [4, 7, 10, 13, 16, 19, 22, 25],
-      roster: SWARM_ROSTER,
+      roster: POST_TEN_SWARM_ROSTER,
       seed: 8401,
       rareThreatCopies: 2,
       spawnPatterns: {
@@ -1018,6 +1094,8 @@ export const MAPS: GameMap[] = [
       'Haltet den Signalkern am Leben. Die Horde kreist von Welle zu Welle um die Stellung, während Sirene Null ihre Angreifer antreibt.',
     difficulty: 9.2,
     moneyScale: 5.05,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
     reward: 18000,
     boss: 'siren',
     theme: {
@@ -1046,7 +1124,7 @@ export const MAPS: GameMap[] = [
       minis: ['mortar', 'stalker', 'warden', 'brute'],
       miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27],
       swarmWaves: [5, 11, 17, 23, 26],
-      roster: LATE_ROSTER,
+      roster: POST_TEN_ROSTER,
       seed: 9201,
       rareThreatCopies: 2,
       spawnPatterns: patternedWaves(28, ['north', 'east', 'south', 'west']),
@@ -1064,6 +1142,8 @@ export const MAPS: GameMap[] = [
       'Eine langgezogene Feuerstraße. Angriffe wechseln fast immer zwischen West und Ost; nur Schwärme brechen überraschend über eine einzelne Flanke herein.',
     difficulty: 10,
     moneyScale: 5.5,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
     reward: 22500,
     boss: 'tunneler',
     theme: {
@@ -1088,7 +1168,7 @@ export const MAPS: GameMap[] = [
       minis: ['brute', 'stalker', 'mortar', 'warden'],
       miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27],
       swarmWaves: [5, 10, 16, 22, 26],
-      roster: SIEGE_ROSTER,
+      roster: POST_TEN_SIEGE_ROSTER,
       seed: 10001,
       rareThreatCopies: 2,
       spawnPatterns: {
@@ -1119,6 +1199,8 @@ export const MAPS: GameMap[] = [
       'Eskortiert den gepanzerten Wagen quer durch die Arena. Er fährt auch allein langsam weiter, mit Begleitschutz aber doppelt so schnell.',
     difficulty: 10.9,
     moneyScale: 6,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
     reward: 28000,
     boss: 'roadking',
     theme: {
@@ -1154,7 +1236,7 @@ export const MAPS: GameMap[] = [
       minis: ['mortar', 'stalker', 'brute', 'warden'],
       miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27, 29],
       swarmWaves: [5, 11, 17, 23, 28],
-      roster: SIEGE_ROSTER,
+      roster: POST_TEN_SIEGE_ROSTER,
       seed: 10901,
       rareThreatCopies: 2,
       spawnPatterns: patternedWaves(30, ['north-south', 'east-west', 'clockwise']),
@@ -1183,6 +1265,8 @@ export const MAPS: GameMap[] = [
       'Die finale Arena dreht ihre Einbruchsseite mit jeder Welle weiter. Feuer, Gift, Gravitation und Elitehorden gipfeln im Kampf gegen EKLIPSE.',
     difficulty: 11.8,
     moneyScale: 6.7,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
     reward: 36000,
     boss: 'eclipse',
     theme: {
@@ -1206,7 +1290,7 @@ export const MAPS: GameMap[] = [
       minis: ['warden', 'mortar', 'stalker', 'brute'],
       miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 31],
       swarmWaves: [4, 8, 13, 17, 22, 26, 29],
-      roster: SIEGE_ROSTER,
+      roster: POST_TEN_SIEGE_ROSTER,
       seed: 11801,
       rareThreatCopies: 2,
       spawnPatterns: patternedWaves(32, ['north', 'east', 'south', 'west']),
@@ -1240,6 +1324,8 @@ export const MAPS: GameMap[] = [
       'Ein riesiges, fast leeres Großfeld. Wenige Gegner, dafür fast nur Eliten und Mini-Bosse — in den letzten 45 Sekunden greifen drei Bosse gleichzeitig an.',
     difficulty: 12.8,
     moneyScale: 7.3,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
     reward: 46000,
     boss: 'omega',
     theme: {
@@ -1262,7 +1348,15 @@ export const MAPS: GameMap[] = [
       {
         kind: 'normal',
         label: 'ELITE-VORHUT',
-        zombies: pack({ big: 5, armored: 5, spitter: 3, exploder: 2 }),
+        zombies: pack({
+          big: 4,
+          armored: 4,
+          shieldbearer: 2,
+          jammer: 1,
+          blink: 1,
+          spitter: 3,
+          exploder: 2,
+        }),
         spawnPattern: 'clockwise',
         spawnDelayScale: 1.25,
       },
@@ -1348,6 +1442,8 @@ export const MAPS: GameMap[] = [
       'Jeder Gegner trägt einen Frontschild und blockiert Projektile aus seiner Blickrichtung. Flankiert die Formation oder setzt auf Flächenschaden, bevor AEGIS PRIME anrückt.',
     difficulty: 14.2,
     moneyScale: 8.2,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
     reward: 60000,
     boss: 'bulwark',
     enemyMode: 'shieldfront',
@@ -1368,6 +1464,113 @@ export const MAPS: GameMap[] = [
     waves: shieldfrontWaves(20),
     obstacles: scatter(AEGIS_STRUCTURES, ['wall', 'container', 'sandbag', 'crate'], 14, 181071),
     decor: decorate(17017, ['marking', 'crack', 'rubble', 'bones', 'blood'], 190),
+  },
+  {
+    id: 'veil',
+    name: 'Schleierbezirk',
+    subtitle: 'Unsichtbare Jagd',
+    description:
+      'Die meisten Angreifer sind Phantome und für Geschütztürme unsichtbar. Bewegliche Sprunghetzer und Störseucher halten den Trupp selbst hinter seinen Mauern unter Druck.',
+    difficulty: 15.4,
+    moneyScale: 8.8,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
+    reward: 72000,
+    boss: 'nightlord',
+    theme: {
+      ground: '#071817',
+      groundAlt: '#0d2422',
+      grid: '#173a37',
+      accent: '#70f5df',
+      edge: '#285a55',
+      fog: '#020908',
+    },
+    mission: {
+      kind: 'survival',
+      title: 'Im Schleier jagen',
+      briefing:
+        'Automatische Verteidigung sieht Phantome nicht. Bleibt beweglich und deckt die offenen Sichtlinien selbst ab.',
+    },
+    waves: buildWaves({
+      waves: 27,
+      boss: 'nightlord',
+      base: 48,
+      step: 4.8,
+      minis: ['stalker', 'mortar', 'brute', 'warden'],
+      miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 26],
+      swarmWaves: [5, 10, 16, 22, 25],
+      roster: VEIL_ROSTER,
+      seed: 15401,
+      rareThreatCopies: 4,
+      spawnPatterns: patternedWaves(27, ['clockwise', 'north-south', 'east-west']),
+      spawnDelayScales: { 5: 0.3, 10: 0.28, 16: 0.26, 22: 0.24, 25: 0.22 },
+      labels: {
+        5: 'SCHATTENSCHWARM',
+        10: 'KEIN SIGNAL',
+        16: 'PHANTOMFLUT',
+        22: 'BLINDER FLECK',
+        25: 'DER SCHLEIER FÄLLT',
+      },
+    }),
+    obstacles: scatter(VEIL_STRUCTURES, ['ruin', 'rock', 'crate', 'tree'], 8, 194081),
+    decor: decorate(18018, ['puddle', 'bones', 'crack', 'blood', 'grass'], 200),
+  },
+  {
+    id: 'trinity',
+    name: 'Triarch-Relais',
+    subtitle: 'Drei Signale, eine Front',
+    description:
+      'Verteidigt drei weit auseinanderliegende Signalkerne gleichzeitig. Fällt auch nur einer, bricht das gesamte Evakuierungsnetz zusammen.',
+    difficulty: 16.4,
+    moneyScale: 9.5,
+    ingameMoneyScale: 0.92,
+    enemyStrength: 1.06,
+    reward: 85000,
+    boss: 'signalbreaker',
+    theme: {
+      ground: '#10151d',
+      groundAlt: '#171f2b',
+      grid: '#253248',
+      accent: '#72a7ff',
+      edge: '#40577a',
+      fog: '#05070d',
+    },
+    mission: {
+      kind: 'multiholdout',
+      title: 'Drei Signalkerne verteidigen',
+      briefing:
+        'Die Horde sucht sich den nächsten Kern. Teilt den Trupp und die Verteidigung auf — jeder einzelne Kern muss überleben.',
+      radius: 54,
+      maxHealth: 14500,
+      cores: [
+        { id: 'west', label: 'Kern West', x: 430, y: CENTER_Y },
+        { id: 'center', label: 'Kern Mitte', x: CENTER_X, y: CENTER_Y },
+        { id: 'east', label: 'Kern Ost', x: ARENA.width - 430, y: CENTER_Y },
+      ],
+    },
+    waves: buildWaves({
+      waves: 30,
+      boss: 'signalbreaker',
+      base: 72,
+      step: 5.6,
+      minis: ['warden', 'mortar', 'brute', 'stalker'],
+      miniWaves: [3, 6, 9, 12, 15, 18, 21, 24, 27, 29],
+      swarmWaves: [5, 11, 17, 23, 28],
+      roster: POST_TEN_SIEGE_ROSTER,
+      seed: 16401,
+      rareThreatCopies: 3,
+      spawnPatterns: patternedWaves(30, ['west', 'east', 'north-south']),
+      spawnDelayScales: { 5: 0.32, 11: 0.3, 17: 0.28, 23: 0.26, 28: 0.22 },
+      labels: {
+        5: 'WESTKERN BEDRÄNGT',
+        11: 'OSTKERN BEDRÄNGT',
+        17: 'DREIFACHER ANGRIFF',
+        23: 'SIGNALABBRUCH',
+        28: 'LETZTE ÜBERTRAGUNG',
+      },
+    }),
+    obstacles: scatter(TRINITY_STRUCTURES, ['sandbag', 'crate', 'barrel', 'wall'], 10, 207091),
+    decor: decorate(19019, ['marking', 'crack', 'rubble', 'puddle', 'bones'], 205),
   },
 ];
 

@@ -222,7 +222,9 @@
                   }
                 </header>
                 <small>{{ map.subtitle }}</small>
-                <p>{{ map.description }}</p>
+                <p class="map-description" [attr.title]="map.description">
+                  {{ map.description }}
+                </p>
                 <div class="map-stats">
                   <span>{{ mapRunLength(map.id) }}</span>
                   <span>Härte ×{{ map.difficulty }}</span>
@@ -458,6 +460,11 @@
               }
               @if (!meleeEquipped() && game.player()?.reloading) {
                 <em>Nachladen …</em>
+              }
+              @if ((game.player()?.weaponCharge ?? 0) > 0) {
+                <em
+                  >Aufladen · {{ (game.player()?.weaponCharge ?? 0) * 100 | number: '1.0-0' }} %</em
+                >
               }
             </div>
             @if (game.arsenal().length > 1) {
