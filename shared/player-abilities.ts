@@ -22,7 +22,7 @@ export const GRENADE_MIN_COOLDOWN = 6;
 export const MORTAR_BASE_DAMAGE = 560;
 export const MORTAR_BASE_RADIUS = 205;
 export const MORTAR_BASE_COOLDOWN = 28;
-export const MORTAR_MIN_COOLDOWN = 12;
+export const MORTAR_MIN_COOLDOWN = 10;
 export const MORTAR_FUSE = 1.45;
 export const MORTAR_SLOW = 0.45;
 export const MORTAR_BASE_SLOW_SECONDS = 0.5;
@@ -34,7 +34,7 @@ export const MORTAR_NAPALM_RADIUS_SHARE = 0.72;
 /** Visible, non-piercing single-target shot with a very long reload. */
 export const PRECISION_BASE_DAMAGE = 1850;
 export const PRECISION_BASE_COOLDOWN = 34;
-export const PRECISION_MIN_COOLDOWN = 14;
+export const PRECISION_MIN_COOLDOWN = 12;
 export const PRECISION_PROJECTILE_SPEED = 2100;
 export const PRECISION_PROJECTILE_RADIUS = 9;
 export const PRECISION_PROJECTILE_LIFE = 1.35;
@@ -53,7 +53,7 @@ export const NULL_FIELD_BASE_RADIUS = 155;
 export const NULL_CORE_BASE_SECONDS = 5;
 export const NULL_CORE_SECONDS_PER_LEVEL = 0.1;
 export const NULL_CORE_BASE_COOLDOWN = 40;
-export const NULL_CORE_MIN_COOLDOWN = 18;
+export const NULL_CORE_MIN_COOLDOWN = 14;
 /** The Gravitationsanker perk drags targets into the lethal core. */
 export const NULL_CORE_PULL_SPEED = 80;
 export const NULL_CORE_SLOW = 0.4;
@@ -131,7 +131,7 @@ export function abilityMaxCharges(type: PlayerAbilityType, perks: PermanentPerks
         ? perks.extraMortar
         : type === 'precisionShot'
           ? perks.extraPrecision
-          : false;
+          : perks.extraNullCore;
   return PLAYER_ABILITIES[type].charges + (extra ? 1 : 0);
 }
 

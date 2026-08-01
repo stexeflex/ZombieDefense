@@ -309,11 +309,11 @@ export const VEHICLE_ORDER: VehicleType[] = [
 export const VEHICLE_REACH = 104;
 /** Every armour level keeps this share of incoming damage off the hull. */
 export const VEHICLE_ARMOR_STEP = 0.01;
-/** The regular ladder reaches 35 %; its amplified ceiling reaches 53 %. */
-export const VEHICLE_MAX_ARMOR_REDUCTION = 0.53;
+/** The regular ladder reaches 35 %; both amplifier tiers can extend it to 80 %. */
+export const VEHICLE_MAX_ARMOR_REDUCTION = 0.8;
 /** Motor upgrades help positioning without turning a protected hull into an escape tool again. */
 export const VEHICLE_SPEED_STEP = 0.01;
-export const VEHICLE_MAX_SPEED_BONUS = 0.6;
+export const VEHICLE_MAX_SPEED_BONUS = 0.9;
 /** Seconds before the same zombie can be run over again. */
 export const VEHICLE_RAM_COOLDOWN = 0.45;
 /** Share of the ram damage the hull takes itself — driving through wears it out. */

@@ -1496,12 +1496,36 @@ const VEHICLE_PAINTERS: Record<VehicleType, Painter> = {
   },
   explosive: (ctx, w, h) => {
     wheels(ctx, w, h, 9, 17);
-    fillRounded(ctx, 3, 5, w - 6, h - 10, 8, '#6f2e2e', '#240d0d', 2.5);
-    fillRounded(ctx, w * 0.54, 8, w * 0.27, h - 16, 5, '#17242a', '#080f12', 1.5);
-    circle(ctx, w * 0.3, h / 2, 11, '#8f342c', '#ff755f', 2.5);
-    ctx.fillStyle = '#ffd166';
-    ctx.fillRect(w * 0.27, h / 2 - 8, 5, 16);
-    ctx.fillRect(w * 0.22, h / 2 - 2.5, 15, 5);
+    fillRounded(ctx, 3, 5, w - 6, h - 10, 7, '#35393a', '#101313', 2.5);
+    // Two exposed explosive canisters make the silhouette unmistakably industrial.
+    for (const y of [8, h - 17]) {
+      fillRounded(ctx, 7, y, w * 0.45, 9, 4, '#9e3729', '#2d0c08', 1.5);
+      ctx.fillStyle = '#e47835';
+      ctx.fillRect(10, y + 2, 4, 5);
+      ctx.fillStyle = '#542019';
+      ctx.fillRect(w * 0.38, y + 1, 3, 7);
+    }
+    // Black/yellow blast-warning band between the volatile load and the cabin.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(w * 0.5, 7, 11, h - 14);
+    ctx.clip();
+    ctx.fillStyle = '#e7ad32';
+    ctx.fillRect(w * 0.5, 7, 11, h - 14);
+    ctx.strokeStyle = '#1a1b19';
+    ctx.lineWidth = 4;
+    for (let y = 4; y < h + 8; y += 9) {
+      ctx.beginPath();
+      ctx.moveTo(w * 0.49, y);
+      ctx.lineTo(w * 0.65, y + 8);
+      ctx.stroke();
+    }
+    ctx.restore();
+    fillRounded(ctx, w * 0.64, 8, w * 0.25, h - 16, 5, '#6f2b24', '#200b09', 1.5);
+    fillRounded(ctx, w * 0.69, 10, w * 0.14, h - 20, 3, '#17242a', '#080f12', 1.2);
+    circle(ctx, w - 7, h * 0.28, 3, '#ffb347');
+    circle(ctx, w - 7, h * 0.72, 3, '#ffb347');
+    noise(ctx, w, h, 55, ['rgba(0,0,0,0.3)', 'rgba(255,184,80,0.1)'], 1, 3, 79);
   },
   jumper: (ctx, w, h) => {
     wheels(ctx, w, h, 8, 16);

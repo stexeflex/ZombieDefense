@@ -410,6 +410,12 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     icon: '⊙',
   },
   {
+    key: 'extraNullCore',
+    label: 'Zwillingssingularität',
+    description: 'Du kannst eine zweite Ladung Nullpunktkern bereithalten.',
+    icon: '2×',
+  },
+  {
     key: 'lastStand',
     label: 'Letztes Aufbäumen',
     description: 'Einmal pro Welle überlebst du einen tödlichen Treffer mit 1 Leben.',
@@ -424,9 +430,30 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
   },
   {
     key: 'upgradeAmplifier',
-    label: 'Stufenverstärker',
+    label: 'Stufenverstärker · Stufen-Upgrades',
     description:
-      'Erhöht die kaufbaren Maximalstufen aller weiter steigerbaren Stufen-Upgrades um 50 % (aufgerundet). Jede zusätzliche Stufe muss weiterhin mit Gold gekauft werden.',
+      'Erhöht die kaufbaren Maximalstufen aller Stufen-Upgrades außer Fähigkeiten um 50 % (aufgerundet). Jede zusätzliche Stufe muss weiterhin mit Gold gekauft werden.',
     icon: '1,5×',
+  },
+  {
+    key: 'abilityUpgradeAmplifier',
+    label: 'Stufenverstärker · Fähigkeiten',
+    description:
+      'Erhöht die kaufbaren Maximalstufen aller Fähigkeits-Upgrades um 50 % (aufgerundet). Jede zusätzliche Stufe muss weiterhin mit Gold gekauft werden.',
+    icon: 'G 1,5×',
+  },
+  {
+    key: 'upgradeAmplifier2',
+    label: 'Stufenverstärker II · Stufen-Upgrades',
+    description:
+      'Erhöht die bereits verstärkten Maximalstufen der normalen Stufen-Upgrades erneut um 50 % (aufgerundet).',
+    icon: '2,25×',
+  },
+  {
+    key: 'abilityUpgradeAmplifier2',
+    label: 'Stufenverstärker II · Fähigkeiten',
+    description:
+      'Erhöht die bereits verstärkten Maximalstufen der Fähigkeits-Upgrades erneut um 50 % (aufgerundet).',
+    icon: 'G 2,25×',
   },
 ];

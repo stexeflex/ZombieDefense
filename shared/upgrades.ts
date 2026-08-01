@@ -122,15 +122,49 @@ export const UPGRADE_LIMITS: Partial<Record<UpgradeKey, number>> = {
   dashResist: 6,
 };
 
-/** Extra room the Stufenverstärker opens on every ladder that can still improve. */
+/** Level ladders shown under the active-ability shop tab. */
+export const ABILITY_UPGRADE_KEYS = new Set<UpgradeKey>([
+  'grenadeDamage',
+  'grenadeCooldown',
+  'grenadeRadius',
+  'grenadeSplit',
+  'mortarDamage',
+  'mortarCooldown',
+  'mortarRadius',
+  'mortarSlow',
+  'precisionDamage',
+  'precisionCooldown',
+  'precisionWidth',
+  'precisionExecute',
+  'precisionHealthDamage',
+  'nullCoreDamage',
+  'nullCoreCooldown',
+  'nullCoreDuration',
+  'nullCoreRadius',
+  'nullFieldRadius',
+]);
+
+/** Extra room each matching Stufenverstärker opens on an upgrade ladder. */
 export const UPGRADE_AMPLIFIER_FACTOR = 1.5;
 
-export function upgradeMaxLevel(key: UpgradeKey, perks?: Pick<PermanentPerks, 'upgradeAmplifier'>) {
+type UpgradeAmplifierPerks = Pick<
+  PermanentPerks,
+  'upgradeAmplifier' | 'abilityUpgradeAmplifier' | 'upgradeAmplifier2' | 'abilityUpgradeAmplifier2'
+>;
+
+export function upgradeMaxLevel(key: UpgradeKey, perks?: UpgradeAmplifierPerks) {
   const base = UPGRADE_LIMITS[key] ?? UPGRADE_MAX_LEVEL;
   // Dash resistance is already absolute immunity at its regular maximum.
-  // Selling three more levels with no possible effect would be a trap.
-  if (!perks?.upgradeAmplifier || key === 'dashResist') return base;
-  return Math.ceil(base * UPGRADE_AMPLIFIER_FACTOR);
+  // Selling more levels with no possible effect would be a trap.
+  if (key === 'dashResist') return base;
+  const abilityUpgrade = ABILITY_UPGRADE_KEYS.has(key);
+  const firstAmplifier = abilityUpgrade ? perks?.abilityUpgradeAmplifier : perks?.upgradeAmplifier;
+  const secondAmplifier = abilityUpgrade
+    ? perks?.abilityUpgradeAmplifier2
+    : perks?.upgradeAmplifier2;
+  if (!firstAmplifier) return base;
+  const firstMaximum = Math.ceil(base * UPGRADE_AMPLIFIER_FACTOR);
+  return secondAmplifier ? Math.ceil(firstMaximum * UPGRADE_AMPLIFIER_FACTOR) : firstMaximum;
 }
 
 export function upgradeLevelCost(key: UpgradeKey, level: number) {
@@ -154,9 +188,9 @@ export function healthRegenPerSecond(level: number) {
   return Math.max(0, Math.floor(level)) * HEALTH_REGEN_PER_LEVEL;
 }
 
-/** The regular ladder reaches 35 %; its amplified ceiling reaches 53 %. */
+/** The regular ladder reaches 35 %; both amplifier tiers can extend it to 80 %. */
 export function armorReduction(level: number) {
-  return Math.min(0.53, level * 0.01);
+  return Math.min(0.8, level * 0.01);
 }
 
 /**
@@ -198,12 +232,20 @@ export interface PermanentPerks {
   extraPrecision: boolean;
   /** The null core's outer field slows enemies and pulls them into its centre. */
   nullCoreGravity: boolean;
+  /** One more null core can be held ready. */
+  extraNullCore: boolean;
   /** Once per wave a lethal hit leaves one hit point instead. */
   lastStand: boolean;
   /** A destroyed vehicle grants its crew one second of invulnerability. */
   emergencyExit: boolean;
-  /** Upgrade ladders can be bought fifty percent further. */
+  /** Regular upgrade ladders can be bought fifty percent further. */
   upgradeAmplifier: boolean;
+  /** Ability upgrade ladders can be bought fifty percent further. */
+  abilityUpgradeAmplifier: boolean;
+  /** Regular upgrade ladders can be extended by another fifty percent. */
+  upgradeAmplifier2: boolean;
+  /** Ability upgrade ladders can be extended by another fifty percent. */
+  abilityUpgradeAmplifier2: boolean;
 }
 
 export type PerkKey = keyof PermanentPerks;
@@ -223,9 +265,13 @@ export const EMPTY_PERKS: PermanentPerks = {
   precisionReload: false,
   extraPrecision: false,
   nullCoreGravity: false,
+  extraNullCore: false,
   lastStand: false,
   emergencyExit: false,
   upgradeAmplifier: false,
+  abilityUpgradeAmplifier: false,
+  upgradeAmplifier2: false,
+  abilityUpgradeAmplifier2: false,
 };
 
 export const PERK_COST: Record<PerkKey, number> = {
@@ -243,10 +289,25 @@ export const PERK_COST: Record<PerkKey, number> = {
   precisionReload: 2200,
   extraPrecision: 3000,
   nullCoreGravity: 3200,
+  extraNullCore: 4000,
   lastStand: 2200,
   emergencyExit: 2000,
   upgradeAmplifier: 50000,
+  abilityUpgradeAmplifier: 50000,
+  upgradeAmplifier2: 100000,
+  abilityUpgradeAmplifier2: 100000,
 };
+
+/** Follow-up perks become buyable only after their matching first tier. */
+export const PERK_REQUIRES: Partial<Record<PerkKey, PerkKey>> = {
+  upgradeAmplifier2: 'upgradeAmplifier',
+  abilityUpgradeAmplifier2: 'abilityUpgradeAmplifier',
+};
+
+export function perkUnlocked(key: PerkKey, perks: PermanentPerks) {
+  const required = PERK_REQUIRES[key];
+  return !required || perks[required];
+}
 
 /** Bought levels always count exactly once; the amplifier only opens more purchases. */
 export function effectiveUpgradeLevel(level: number, _perks: PermanentPerks) {

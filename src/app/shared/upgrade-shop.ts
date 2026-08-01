@@ -42,6 +42,7 @@ export class UpgradeShop {
     'precisionReload',
     'extraPrecision',
     'nullCoreGravity',
+    'extraNullCore',
   ]);
   readonly perkDefinitions = PERK_DEFINITIONS.filter((perk) => !this.abilityPerkKeys.has(perk.key));
   readonly abilities = PLAYER_ABILITY_ORDER.map((type) => ({ type, ...PLAYER_ABILITIES[type] }));
@@ -64,7 +65,7 @@ export class UpgradeShop {
           ? ['mortarNapalm', 'extraMortar']
           : this.progress.ability() === 'precisionShot'
             ? ['precisionReload', 'extraPrecision']
-            : ['nullCoreGravity'];
+            : ['nullCoreGravity', 'extraNullCore'];
     return PERK_DEFINITIONS.filter((perk) => perkKeys.includes(perk.key));
   });
   buyUpgrade(key: UpgradeKey) {

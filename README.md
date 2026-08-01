@@ -56,7 +56,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, getrennte Stufen-Upgrades, siebzehn besondere Vorteile und vier aktive Fähigkeiten
+- permanentes Gold, getrennte Stufen-Upgrades, 21 besondere Vorteile und vier aktive Fähigkeiten
   in einem verschlüsselten und gegen einfache Änderungen signierten `localStorage`-Save
 
 ### Karten
@@ -395,8 +395,11 @@ nicht und erhält in einem bereits laufenden Run weiterhin kein Startgeld.
   Dash der durch Gegner schneidet und Schild auflädt, doppelt so schnelles
   Wiederbeleben, günstigere Reparaturen und ein Aufbäumen, das einen tödlichen
   Treffer pro Welle überlebt. Der Notausstieg schützt nach einem Fahrzeugwrack
-  eine Sekunde; der Stufenverstärker öffnet 50 % mehr kaufbare Upgrade-Stufen.
-  Der Gravitationsanker bremst Gegner im Nullpunktfeld und zieht sie zum Kern.
+  eine Sekunde. Getrennte Stufenverstärker öffnen für normale Stufen-Upgrades
+  und Fähigkeiten zunächst 50 % mehr kaufbare Maximalstufen; je eine zweite,
+  aufbauende Stufe erweitert das bereits verstärkte Limit erneut um 50 %.
+  Der Gravitationsanker bremst Gegner im Nullpunktfeld und zieht sie zum Kern;
+  die Zwillingssingularität hält eine zweite Nullpunktkern-Ladung bereit.
 - **Fähigkeiten** – genau eine Auswahl für `G`: Granaten, ein verzögerter großer
   Mörserschlag oder ein sichtbarer Vernichtungsschuss mit enormem Einzelschaden
   ohne Durchschlag sowie der stationäre Nullpunktkern mit einem massiven inneren

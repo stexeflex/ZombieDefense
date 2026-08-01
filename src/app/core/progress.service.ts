@@ -5,9 +5,11 @@ import {
   MAPS,
   isPlayerAbility,
   PERK_COST,
+  PERK_REQUIRES,
   PLAYER_ABILITY_COST,
   UPGRADE_REQUIRES,
   effectiveUpgrades as applyUpgradeAmplifier,
+  perkUnlocked,
   upgradeLevelCost,
   upgradeMaxLevel,
   upgradeUnlocked,
@@ -128,9 +130,21 @@ export class ProgressService {
     return this.progress().perks[key];
   }
 
+  perkUnlocked(key: PerkKey) {
+    return perkUnlocked(key, this.progress().perks);
+  }
+
+  perkLockedBy(key: PerkKey) {
+    const required = PERK_REQUIRES[key];
+    if (!required || this.ownsPerk(required)) return '';
+    return PERK_DEFINITIONS.find((entry) => entry.key === required)?.label ?? required;
+  }
+
   buyPerk(key: PerkKey) {
     const current = this.progress();
-    if (current.perks[key] || current.gold < PERK_COST[key]) return false;
+    if (current.perks[key] || !perkUnlocked(key, current.perks) || current.gold < PERK_COST[key]) {
+      return false;
+    }
     this.save({
       ...current,
       gold: current.gold - PERK_COST[key],

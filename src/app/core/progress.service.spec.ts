@@ -120,6 +120,27 @@ describe('ProgressService upgrade shop', () => {
     expect(progress.effectiveUpgrades().weaponDamage).toBe(41);
   });
 
+  it('keeps ability amplifiers separate and locks both second tiers behind their first tier', () => {
+    const progress = new ProgressService();
+    progress.addRunReward(300000, 'amplifier-chain-budget');
+
+    expect(progress.buyPerk('upgradeAmplifier2')).toBe(false);
+    expect(progress.buyPerk('abilityUpgradeAmplifier2')).toBe(false);
+    expect(progress.perkLockedBy('upgradeAmplifier2')).toContain('Stufen-Upgrades');
+    expect(progress.perkLockedBy('abilityUpgradeAmplifier2')).toContain('Fähigkeiten');
+
+    expect(progress.buyPerk('abilityUpgradeAmplifier')).toBe(true);
+    expect(progress.maxLevel('weaponDamage')).toBe(40);
+    expect(progress.maxLevel('nullCoreDamage')).toBe(60);
+    expect(progress.buyPerk('abilityUpgradeAmplifier2')).toBe(true);
+    expect(progress.maxLevel('nullCoreDamage')).toBe(90);
+
+    expect(progress.buyPerk('upgradeAmplifier')).toBe(true);
+    expect(progress.maxLevel('weaponDamage')).toBe(60);
+    expect(progress.buyPerk('upgradeAmplifier2')).toBe(true);
+    expect(progress.maxLevel('weaponDamage')).toBe(90);
+  });
+
   it('falls back to grenades when an old save selected a now-locked ability', () => {
     localStorage.setItem(
       'zombie-defense-progress-v1',

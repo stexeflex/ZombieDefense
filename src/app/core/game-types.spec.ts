@@ -27,6 +27,7 @@ import {
   NULL_FIELD_BASE_DPS,
   NULL_FIELD_BASE_RADIUS,
   PERK_COST,
+  PERK_REQUIRES,
   PLAYER_ABILITIES,
   PLAYER_ABILITY_COST,
   PLAYER_ABILITY_ORDER,
@@ -82,6 +83,7 @@ import {
   isMeleeWeapon,
   magazineCapacity,
   precisionHealthDamageFraction,
+  perkUnlocked,
   repairCost,
   reserveCapacity,
   sellValue,
@@ -921,6 +923,16 @@ describe('vehicles', () => {
         'car',
         upgradeMaxLevel('vehicleSpeed', { ...EMPTY_PERKS, upgradeAmplifier: true }),
       ),
+    ).toBeCloseTo(VEHICLES.car.speed * 1.6);
+    expect(
+      vehicleTopSpeed(
+        'car',
+        upgradeMaxLevel('vehicleSpeed', {
+          ...EMPTY_PERKS,
+          upgradeAmplifier: true,
+          upgradeAmplifier2: true,
+        }),
+      ),
     ).toBeCloseTo(VEHICLES.car.speed * (1 + VEHICLE_MAX_SPEED_BONUS));
   });
 
@@ -955,6 +967,15 @@ describe('vehicles', () => {
     expect(
       vehicleArmorReduction(
         upgradeMaxLevel('vehicleArmor', { ...EMPTY_PERKS, upgradeAmplifier: true }),
+      ),
+    ).toBeCloseTo(0.53);
+    expect(
+      vehicleArmorReduction(
+        upgradeMaxLevel('vehicleArmor', {
+          ...EMPTY_PERKS,
+          upgradeAmplifier: true,
+          upgradeAmplifier2: true,
+        }),
       ),
     ).toBe(VEHICLE_MAX_ARMOR_REDUCTION);
     expect(vehicleArmorReduction(UPGRADE_MAX_LEVEL * 10)).toBe(VEHICLE_MAX_ARMOR_REDUCTION);
@@ -1100,11 +1121,13 @@ describe('permanent upgrades', () => {
     expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraMortar: true })).toBe(2);
     expect(abilityMaxCharges('precisionShot', { ...EMPTY_PERKS, extraPrecision: true })).toBe(2);
     expect(abilityMaxCharges('nullCore', { ...EMPTY_PERKS, nullCoreGravity: true })).toBe(1);
+    expect(abilityMaxCharges('nullCore', { ...EMPTY_PERKS, extraNullCore: true })).toBe(2);
     expect(EMPTY_PERKS.mortarNapalm).toBe(false);
     expect(EMPTY_PERKS.extraMortar).toBe(false);
     expect(EMPTY_PERKS.precisionReload).toBe(false);
     expect(EMPTY_PERKS.extraPrecision).toBe(false);
     expect(EMPTY_PERKS.nullCoreGravity).toBe(false);
+    expect(EMPTY_PERKS.extraNullCore).toBe(false);
     expect(PERK_COST.mortarNapalm).toBeGreaterThan(PERK_COST.extraGrenade);
     expect(PERK_COST.precisionReload).toBeGreaterThan(PERK_COST.mortarNapalm);
     expect(PERK_COST.extraMortar).toBeGreaterThan(PERK_COST.precisionReload);
@@ -1168,22 +1191,65 @@ describe('permanent upgrades', () => {
       ladder += upgradeLevelCost('dashResist', level);
     }
     const regularPerks = Object.entries(PERK_COST)
-      .filter(([key]) => key !== 'upgradeAmplifier')
+      .filter(([key]) => !key.toLowerCase().includes('amplifier'))
       .map(([, cost]) => cost);
     expect(ladder).toBeGreaterThan(Math.max(...regularPerks));
   });
 
-  it('offers the expensive global level amplifier', () => {
+  it('offers separate, chained level amplifiers without granting bought levels', () => {
     expect(PERK_COST.upgradeAmplifier).toBe(50000);
-    const perks = { ...EMPTY_PERKS, upgradeAmplifier: true };
-    expect(effectiveUpgradeLevel(1, perks)).toBe(1);
-    expect(effectiveUpgradeLevel(2, perks)).toBe(2);
-    expect(effectiveUpgradeLevel(0, perks)).toBe(0);
-    expect(effectiveUpgrades({ ...EMPTY_UPGRADES, weaponDamage: 7 }, perks).weaponDamage).toBe(7);
-    expect(upgradeMaxLevel('weaponDamage', perks)).toBe(60);
-    expect(upgradeMaxLevel('armor', perks)).toBe(53);
-    expect(upgradeMaxLevel('dashCharges', perks)).toBe(5);
-    expect(upgradeMaxLevel('dashResist', perks)).toBe(upgradeMaxLevel('dashResist'));
+    expect(PERK_COST.abilityUpgradeAmplifier).toBe(50000);
+    expect(PERK_COST.upgradeAmplifier2).toBe(100000);
+    expect(PERK_COST.abilityUpgradeAmplifier2).toBe(100000);
+    expect(PERK_REQUIRES.upgradeAmplifier2).toBe('upgradeAmplifier');
+    expect(PERK_REQUIRES.abilityUpgradeAmplifier2).toBe('abilityUpgradeAmplifier');
+
+    const firstTiers = {
+      ...EMPTY_PERKS,
+      upgradeAmplifier: true,
+      abilityUpgradeAmplifier: true,
+    };
+    expect(effectiveUpgradeLevel(1, firstTiers)).toBe(1);
+    expect(effectiveUpgradeLevel(2, firstTiers)).toBe(2);
+    expect(effectiveUpgradeLevel(0, firstTiers)).toBe(0);
+    expect(effectiveUpgrades({ ...EMPTY_UPGRADES, weaponDamage: 7 }, firstTiers).weaponDamage).toBe(
+      7,
+    );
+    expect(upgradeMaxLevel('weaponDamage', firstTiers)).toBe(60);
+    expect(upgradeMaxLevel('grenadeDamage', firstTiers)).toBe(60);
+    expect(upgradeMaxLevel('armor', firstTiers)).toBe(53);
+    expect(upgradeMaxLevel('grenadeSplit', firstTiers)).toBe(15);
+    expect(upgradeMaxLevel('dashCharges', firstTiers)).toBe(5);
+    expect(upgradeMaxLevel('dashResist', firstTiers)).toBe(upgradeMaxLevel('dashResist'));
+
+    const secondTiers = {
+      ...firstTiers,
+      upgradeAmplifier2: true,
+      abilityUpgradeAmplifier2: true,
+    };
+    expect(upgradeMaxLevel('weaponDamage', secondTiers)).toBe(90);
+    expect(upgradeMaxLevel('grenadeDamage', secondTiers)).toBe(90);
+    expect(upgradeMaxLevel('armor', secondTiers)).toBe(80);
+    expect(upgradeMaxLevel('grenadeSplit', secondTiers)).toBe(23);
+    for (const [ability, key] of [
+      ['mortarStrike', 'mortarCooldown'],
+      ['precisionShot', 'precisionCooldown'],
+      ['nullCore', 'nullCoreCooldown'],
+    ] as const) {
+      expect(
+        abilityRechargeTime(ability, {
+          ...EMPTY_UPGRADES,
+          [key]: upgradeMaxLevel(key, secondTiers),
+        }),
+      ).toBeLessThan(
+        abilityRechargeTime(ability, {
+          ...EMPTY_UPGRADES,
+          [key]: upgradeMaxLevel(key, firstTiers),
+        }),
+      );
+    }
+    expect(perkUnlocked('upgradeAmplifier2', EMPTY_PERKS)).toBe(false);
+    expect(perkUnlocked('upgradeAmplifier2', firstTiers)).toBe(true);
   });
 
   it('locks the dash upgrades that need a perk first', () => {
@@ -1225,6 +1291,15 @@ describe('permanent upgrades', () => {
     expect(
       armorReduction(upgradeMaxLevel('armor', { ...EMPTY_PERKS, upgradeAmplifier: true })),
     ).toBeCloseTo(0.53);
+    expect(
+      armorReduction(
+        upgradeMaxLevel('armor', {
+          ...EMPTY_PERKS,
+          upgradeAmplifier: true,
+          upgradeAmplifier2: true,
+        }),
+      ),
+    ).toBeCloseTo(0.8);
     expect(armorReduction(UPGRADE_MAX_LEVEL * 10)).toBeLessThan(1);
   });
 
