@@ -159,6 +159,7 @@ export const PROJECTILE_STYLE: Record<
   ionstorm: { texture: 'fx-energy', tint: 0x62d9ff, scaleX: 1.8, scaleY: 1.15 },
   colossus: { texture: 'fx-glow', tint: 0xffbd59, scaleX: 4.4, scaleY: 4.4 },
   sun: { texture: 'fx-glow', tint: 0xffd35c, scaleX: 1.4, scaleY: 1.4 },
+  riftcannon: { texture: 'fx-glow', tint: 0xd66cff, scaleX: 3.6, scaleY: 3.6 },
   turret_mg: { texture: 'fx-spark', tint: 0x9fe8ff, scaleX: 1.7, scaleY: 0.42 },
   turret_flame: { texture: 'fx-flame', tint: 0xff8f4a, scaleX: 1.6, scaleY: 1.6 },
   turret_frost: { texture: 'fx-energy', tint: 0xaef0ff, scaleX: 1.25, scaleY: 1 },

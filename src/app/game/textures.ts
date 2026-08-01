@@ -52,6 +52,7 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   colossus: 64,
   worldbreaker: 64,
   sun: 60,
+  riftcannon: 68,
 };
 
 export const OBSTACLE_TEXTURE_SIZE: Record<ObstacleKind, { w: number; h: number }> = {
@@ -586,6 +587,21 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
     fillRounded(ctx, 48, 8, 22, 17, 7, '#777068', '#211d19', 2);
     circle(ctx, 67, 16.5, 7, '#ffbd59', '#fff0b0', 2);
     fillRounded(ctx, 13, 25, 12, 7, 2, '#2d2722');
+  },
+  riftcannon: (ctx) => {
+    fillRounded(ctx, 0, 6, 48, 21, 8, '#241735', '#0b0612', 2.5);
+    fillRounded(ctx, 42, 9, 27, 15, 6, '#4d2a67', '#14091f', 2);
+    circle(ctx, 64, 16.5, 7, '#59247a', '#e9a7ff', 2.5);
+    circle(ctx, 64, 16.5, 3, '#ffffff');
+    circle(ctx, 24, 16.5, 9, '#160b24', '#b75cff', 2);
+    ctx.strokeStyle = '#d88cff';
+    ctx.lineWidth = 2;
+    for (let index = 0; index < 3; index += 1) {
+      ctx.beginPath();
+      ctx.arc(24, 16.5, 12 + index * 4, -0.75, 0.75);
+      ctx.stroke();
+    }
+    fillRounded(ctx, 13, 24, 11, 8, 2, '#1a1026', '#08050d', 1.5);
   },
 };
 

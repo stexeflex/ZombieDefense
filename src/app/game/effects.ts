@@ -143,11 +143,13 @@ export class EffectLayer {
         const nullCoreBurst = event.s === 'ability_null_core';
         const chronoBurst = event.s === 'turret_chrono';
         const waveBurst = event.s === 'turret_shockwave';
+        const riftBurst = event.s === 'riftcannon';
         const energyBlast =
           gravityBurst ||
           nullCoreBurst ||
           chronoBurst ||
           waveBurst ||
+          riftBurst ||
           event.s === 'nova' ||
           acidBurst;
         this.burst(
@@ -168,15 +170,17 @@ export class EffectLayer {
                 ? 0x6cecff
                 : waveBurst
                   ? 0x63ffd2
-                  : event.s === 'nova'
-                    ? 0xff9ee0
-                    : event.s === 'mortar' || event.s === 'ability_mortar'
-                      ? 0xff4f6b
-                      : 0xffb347;
+                  : riftBurst
+                    ? 0xd66cff
+                    : event.s === 'nova'
+                      ? 0xff9ee0
+                      : event.s === 'mortar' || event.s === 'ability_mortar'
+                        ? 0xff4f6b
+                        : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
         this.audio.play(
-          acidBurst ? 'shot-flame' : 'explosion',
-          acidBurst ? 0.5 : event.s === 'grenade-mini' ? 0.36 : 0.9,
+          acidBurst ? 'shot-flame' : riftBurst ? 'shot-energy' : 'explosion',
+          acidBurst ? 0.5 : riftBurst ? 0.28 : event.s === 'grenade-mini' ? 0.36 : 0.9,
         );
         break;
       }
@@ -337,17 +341,19 @@ export class EffectLayer {
                         ? 0xbaf7ff
                         : weapon === 'gravity'
                           ? 0xa67cff
-                          : weapon === 'nova'
-                            ? 0xff9ee0
-                            : weapon === 'laser'
-                              ? 0xff8fd8
-                              : weapon === 'acid'
-                                ? 0x42e9ff
-                                : weapon === 'tesla'
-                                  ? 0x9fdcff
-                                  : weapon === 'cryo'
-                                    ? 0xaef0ff
-                                    : 0xffd489,
+                          : weapon === 'riftcannon'
+                            ? 0xd66cff
+                            : weapon === 'nova'
+                              ? 0xff9ee0
+                              : weapon === 'laser'
+                                ? 0xff8fd8
+                                : weapon === 'acid'
+                                  ? 0x42e9ff
+                                  : weapon === 'tesla'
+                                    ? 0x9fdcff
+                                    : weapon === 'cryo'
+                                      ? 0xaef0ff
+                                      : 0xffd489,
       )
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.42, 0.3)

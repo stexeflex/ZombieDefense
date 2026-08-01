@@ -754,6 +754,12 @@ export class PlayerSystem {
         projectile.lightningDamage =
           (config.lightningPulse?.damage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
         projectile.lightningTargets = config.lightningPulse?.targets ?? 0;
+        projectile.riftEvery = config.riftPulse?.every ?? 0;
+        projectile.riftTimer = projectile.riftEvery;
+        projectile.riftRadius = config.riftPulse?.radius ?? 0;
+        projectile.riftDamage =
+          (config.riftPulse?.damage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
+        projectile.riftPull = config.riftPulse?.pull ?? 0;
       }
       this.world.pushFx({
         k: 'muzzle',

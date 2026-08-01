@@ -316,6 +316,37 @@ console.log('\n== Alle Waffen treffen ==');
   }
 }
 
+console.log('\n== Risskanone ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'rift-player');
+  startCombat(room);
+  room.systems.waves.spawnQueue = [];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  player.x = 600;
+  player.y = 800;
+  player.weapon = 'riftcannon';
+  player.ammo = 1;
+  player.reserveAmmo = 0;
+  player.fireCooldown = 0;
+  const victim = room.systems.world.spawnZombie('normal', { x: 760, y: 930 });
+  victim.health = victim.maxHealth = 10000;
+  victim.baseSpeed = victim.speed = 0;
+  const healthBefore = victim.health;
+  const pathDistanceBefore = Math.abs(victim.y - player.y);
+  const runtime = room.systems.world.runtime.get(player.id);
+  for (let tick = 0; tick < 20; tick += 1) {
+    runtime.input = { ...IDLE, shoot: true, aimX: 1400, aimY: 800 };
+    room.update(50);
+  }
+  check('Raumrisse verletzen Gegner neben der Flugbahn', victim.health < healthBefore);
+  check(
+    'Raumrisse ziehen Gegner zum fliegenden Kern',
+    Math.abs(victim.y - player.y) < pathDistanceBefore,
+  );
+}
+
 console.log('\n== Aufladewaffen ==');
 {
   const room = makeRoom('outpost');

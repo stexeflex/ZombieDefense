@@ -61,6 +61,7 @@ const WEAPON_SOUND: Record<WeaponType, SoundName> = {
   colossus: 'shot-heavy',
   worldbreaker: 'melee',
   sun: 'shot-rocket',
+  riftcannon: 'shot-energy',
 };
 
 /** Minor scale steps used by the generated soundtrack. */

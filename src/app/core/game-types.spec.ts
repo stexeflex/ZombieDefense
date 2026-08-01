@@ -494,8 +494,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists thirty-three weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(33);
+  it('lists thirty-four weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(34);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -535,19 +535,25 @@ describe('weapon balance', () => {
     expect(WEAPONS.throwshield.throwBounces).toBe(8);
     expect(WEAPONS.thunderhammer.charge?.kind).toBe('throw');
     expect(WEAPONS.dashknife.charge?.kind).toBe('dash');
+    expect(WEAPONS.riftcannon.riftPulse?.damage).toBeGreaterThan(0);
+    expect(WEAPONS.riftcannon.riftPulse?.pull).toBeGreaterThan(0);
   });
 
-  it('makes the five premium rebalances substantially pricier and stronger', () => {
-    expect(WEAPONS.knife.cost).toBeGreaterThanOrEqual(3500);
-    expect(WEAPONS.knife.damage).toBeGreaterThanOrEqual(450);
-    expect(WEAPONS.throwshield.cost).toBeGreaterThanOrEqual(8000);
-    expect(WEAPONS.throwshield.damage).toBeGreaterThanOrEqual(500);
-    expect(WEAPONS.thunderhammer.cost).toBeGreaterThanOrEqual(11000);
-    expect(WEAPONS.thunderhammer.lightningPulse!.damage).toBeGreaterThanOrEqual(170);
+  it('moves the three rebalanced melee weapons above Weltenbrecher and adds a new price peak', () => {
+    for (const weapon of ['knife', 'throwshield', 'thunderhammer'] as const) {
+      expect(WEAPONS[weapon].cost).toBeGreaterThan(WEAPONS.worldbreaker.cost);
+      expect(WEAPONS[weapon].damage).toBeGreaterThan(WEAPONS.phaselance.damage);
+    }
+    expect(WEAPONS.knife.damage).toBeGreaterThanOrEqual(750);
+    expect(WEAPONS.throwshield.damage).toBeGreaterThanOrEqual(900);
+    expect(WEAPONS.thunderhammer.damage).toBeGreaterThanOrEqual(1400);
+    expect(WEAPONS.thunderhammer.lightningPulse!.damage).toBeGreaterThanOrEqual(300);
     expect(WEAPONS.stormorb.cost).toBeGreaterThanOrEqual(16000);
     expect(WEAPONS.stormorb.lightningPulse!.targets).toBeGreaterThanOrEqual(4);
     expect(WEAPONS.colossus.cost).toBeGreaterThanOrEqual(20000);
     expect(WEAPONS.colossus.damage).toBeGreaterThanOrEqual(2300);
+    expect(WEAPONS.riftcannon.cost).toBeGreaterThan(WEAPONS.colossus.cost);
+    expect(WEAPON_ORDER.at(-1)).toBe('riftcannon');
   });
 
   it('offers ten ammo-free melee weapons from cheap to endgame', () => {
@@ -557,12 +563,12 @@ describe('weapon balance', () => {
       'fireaxe',
       'chainsaw',
       'spear',
-      'knife',
       'phaselance',
-      'throwshield',
       'dashknife',
-      'thunderhammer',
       'worldbreaker',
+      'knife',
+      'throwshield',
+      'thunderhammer',
     ]);
     for (const weapon of melee) {
       const config = WEAPONS[weapon];

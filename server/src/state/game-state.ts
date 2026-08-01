@@ -148,6 +148,12 @@ export class ProjectileState extends Schema {
   lightningRange = 0;
   lightningDamage = 0;
   lightningTargets = 0;
+  /** Repeating spatial tears emitted by the Risskanone while its core is moving. */
+  riftEvery = 0;
+  riftTimer = 0;
+  riftRadius = 0;
+  riftDamage = 0;
+  riftPull = 0;
   hitIds = new Set<string>();
 }
 

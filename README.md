@@ -33,7 +33,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
 - siebzehn Zombiearten plus sechzehn Bosse; seltene Hakenläufer weichen im
   Zickzack aus, Phantome werden von automatischen Türmen nicht erfasst
-- dreiunddreißig Waffen von der Pistole bis zum Kolosswerfer, darunter zehn
+- vierunddreißig Waffen von der Pistole bis zur Risskanone, darunter zehn
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
@@ -130,41 +130,42 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 
 ### Waffen
 
-| Waffe                | Preis | Besonderheit                                             |
-| -------------------- | ----- | -------------------------------------------------------- |
-| Pistole              | 0     | Startwaffe                                               |
-| Brecheisen           | 300   | Nahkampf, trifft zwei Gegner und braucht keine Munition  |
-| Maschinenpistole     | 450   | sehr hohe Feuerrate                                      |
-| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner                    |
-| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz                      |
-| Feuerwehr-Axt        | 1200  | Nahkampf, stößt Gruppen zurück und knackt Rüstung        |
-| Nagelwerfer          | 1400  | schwere Nägel durchbohren mehrere Gegner                 |
-| Schwere Magnum       | 1550  | harter Einzeltreffer, durchschlägt niemanden             |
-| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner                    |
-| Säurewerfer          | 2000  | lässt klar türkise, verbündete Säurelachen liegen        |
-| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                                    |
-| Elefantenbüchse      | 2500  | zehn Schuss, 850 Schaden pro Treffer                     |
-| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand                  |
-| Kettensäge           | 2800  | schneller Nahkampf gegen drei Ziele zugleich             |
-| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner         |
-| Sturmspeer           | 3200  | schmaler, langer Nahkampfstich durch ganze Reihen        |
-| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                                 |
-| Feuer-Raketenwerfer  | 3600  | Feuerexplosion, die weiterbrennt                         |
-| Kampfmesser          | 3750  | extrem kurz, sehr schnell und 460 Schaden                |
-| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner                    |
-| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner                   |
-| Railgun              | 5700  | Magnetgeschoss durchbohrt bis zu vierzehn Gegner         |
-| Phasenlanze          | 6200  | langer Nahkampfstich, ignoriert den Großteil der Rüstung |
-| Gravitationswerfer   | 6600  | zieht Horden in eine verlangsamende Singularität         |
-| Nova-Kanone          | 7600  | fünf explosive Plasmalanzen in einer breiten Salve       |
-| Wurfschild           | 8500  | 520 Schaden, prallt automatisch zwischen acht Gegnern    |
-| Dashmesser           | 9600  | aufladbarer, unverwundbarer Schadensdash                 |
-| Ionensturm           | 10800 | drei Blitze springen gleichzeitig durch die Horde        |
-| Blitzhammer          | 12000 | starker Wurf mit drei kräftigen Blitzentladungen         |
-| Weltenbrecher        | 13000 | gewaltiger Nahkampf-Rundschlag gegen ganze Horden        |
-| Sonnenwerfer         | 15000 | Mini-Sonne mit riesigem Brand- und Explosionsradius      |
-| Kugelblitzwerfer     | 16500 | langsames Geschoss mit starken Blitzen auf vier Ziele    |
-| Kolosswerfer         | 22000 | riesiges Massivgeschoss mit 2400 Kontaktschaden          |
+| Waffe                | Preis | Besonderheit                                               |
+| -------------------- | ----- | ---------------------------------------------------------- |
+| Pistole              | 0     | Startwaffe                                                 |
+| Brecheisen           | 300   | Nahkampf, trifft zwei Gegner und braucht keine Munition    |
+| Maschinenpistole     | 450   | sehr hohe Feuerrate                                        |
+| Sturmgewehr          | 900   | Allrounder, durchschlägt einen Gegner                      |
+| Schrotflinte         | 1100  | acht Schrotkugeln auf kurze Distanz                        |
+| Feuerwehr-Axt        | 1200  | Nahkampf, stößt Gruppen zurück und knackt Rüstung          |
+| Nagelwerfer          | 1400  | schwere Nägel durchbohren mehrere Gegner                   |
+| Schwere Magnum       | 1550  | harter Einzeltreffer, durchschlägt niemanden               |
+| Scharfschützengewehr | 1700  | 215 Schaden, durchschlägt vier Gegner                      |
+| Säurewerfer          | 2000  | lässt klar türkise, verbündete Säurelachen liegen          |
+| Maschinengewehr      | 2300  | 100 Schuss Dauerfeuer                                      |
+| Elefantenbüchse      | 2500  | zehn Schuss, 850 Schaden pro Treffer                       |
+| Flammenwerfer        | 2700  | kurze Reichweite, setzt Horden in Brand                    |
+| Kettensäge           | 2800  | schneller Nahkampf gegen drei Ziele zugleich               |
+| Frostkanone          | 3000  | halbes Tempo für 2,4 s, durchschlägt zwei Gegner           |
+| Sturmspeer           | 3200  | schmaler, langer Nahkampfstich durch ganze Reihen          |
+| Raketenwerfer        | 3300  | Sprengschaden im Umkreis                                   |
+| Feuer-Raketenwerfer  | 3600  | Feuerexplosion, die weiterbrennt                           |
+| Blitzstreuer         | 3900  | Blitz springt auf vier weitere Gegner                      |
+| Laserkanone          | 4800  | Dauerstrahl, durchschlägt sechs Gegner                     |
+| Railgun              | 5700  | Magnetgeschoss durchbohrt bis zu vierzehn Gegner           |
+| Phasenlanze          | 6200  | langer Nahkampfstich, ignoriert den Großteil der Rüstung   |
+| Gravitationswerfer   | 6600  | zieht Horden in eine verlangsamende Singularität           |
+| Nova-Kanone          | 7600  | fünf explosive Plasmalanzen in einer breiten Salve         |
+| Dashmesser           | 9600  | aufladbarer, unverwundbarer Schadensdash                   |
+| Ionensturm           | 10800 | drei Blitze springen gleichzeitig durch die Horde          |
+| Weltenbrecher        | 13000 | gewaltiger Nahkampf-Rundschlag gegen ganze Horden          |
+| Sonnenwerfer         | 15000 | Mini-Sonne mit riesigem Brand- und Explosionsradius        |
+| Kampfmesser          | 15500 | 780 Schaden, extrem schnell und starker Rüstungsbruch      |
+| Kugelblitzwerfer     | 16500 | langsames Geschoss mit starken Blitzen auf vier Ziele      |
+| Wurfschild           | 18000 | 920 Schaden, prallt schneller zwischen acht Gegnern        |
+| Blitzhammer          | 21000 | schwerer Wurf mit vier sehr starken Blitzentladungen       |
+| Kolosswerfer         | 22000 | riesiges Massivgeschoss mit 2400 Kontaktschaden            |
+| Risskanone           | 30000 | Flugkern erzeugt wiederholt schädliche, ziehende Raumrisse |
 
 ### Barrikaden
 

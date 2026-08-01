@@ -28,6 +28,15 @@ export class ProjectileSystem {
           pulses += 1;
         }
       }
+      if (projectile.riftEvery > 0) {
+        projectile.riftTimer -= delta;
+        let pulses = 0;
+        while (projectile.riftTimer <= 0 && pulses < 2) {
+          projectile.riftTimer += projectile.riftEvery;
+          this.pulseRift(projectile);
+          pulses += 1;
+        }
+      }
 
       // A wall stops the shot — but only what is behind it. Anything the
       // bullet passes on the way still gets hit, otherwise a fast weapon could
@@ -254,6 +263,40 @@ export class ProjectileSystem {
         s: projectile.kind,
       });
       this.world.damageZombie(id, zombie, projectile.lightningDamage, projectile.ownerId);
+    }
+  }
+
+  /** The Risskanone tears open a damaging gravity pocket without consuming its core. */
+  private pulseRift(projectile: ProjectileState) {
+    this.world.pushFx({
+      k: 'explosion',
+      x: projectile.x,
+      y: projectile.y,
+      r: projectile.riftRadius,
+      s: projectile.kind,
+    });
+    const victims = [...this.world.state.zombies.entries()];
+    for (const [id, zombie] of victims) {
+      const distance = Math.hypot(zombie.x - projectile.x, zombie.y - projectile.y);
+      if (distance > projectile.riftRadius + zombie.radius) continue;
+      const falloff = Math.max(
+        0.45,
+        1 - distance / Math.max(1, projectile.riftRadius + zombie.radius),
+      );
+      if (projectile.riftPull > 0 && distance > 0) {
+        const pull = projectile.riftPull * falloff;
+        zombie.x = this.world.clamp(
+          zombie.x + ((projectile.x - zombie.x) / distance) * pull,
+          0,
+          ARENA.width,
+        );
+        zombie.y = this.world.clamp(
+          zombie.y + ((projectile.y - zombie.y) / distance) * pull,
+          0,
+          ARENA.height,
+        );
+      }
+      this.world.damageZombie(id, zombie, projectile.riftDamage * falloff, projectile.ownerId);
     }
   }
 }

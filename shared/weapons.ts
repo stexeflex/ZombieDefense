@@ -31,7 +31,8 @@ export type WeaponType =
   | 'ionstorm'
   | 'colossus'
   | 'worldbreaker'
-  | 'sun';
+  | 'sun'
+  | 'riftcannon';
 
 export interface WeaponConfig {
   label: string;
@@ -78,6 +79,8 @@ export interface WeaponConfig {
   pull?: number;
   /** A moving projectile may discharge lightning without being consumed. */
   lightningPulse?: { every: number; range: number; damage: number; targets: number };
+  /** A moving projectile may tear repeated damaging, pulling rifts along its path. */
+  riftPulse?: { every: number; radius: number; damage: number; pull: number };
   /** An ammunition-free thrown shield chains through this many total victims. */
   throwBounces?: number;
   /** Holding fire charges a throw or a damaging invulnerable dash. */
@@ -260,9 +263,9 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   knife: {
     label: 'Kampfmesser',
     short: 'KM',
-    cost: 3750,
-    damage: 460,
-    fireDelay: 320,
+    cost: 15500,
+    damage: 780,
+    fireDelay: 240,
     magazine: 1,
     reserve: 0,
     reload: 0,
@@ -274,9 +277,10 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     ammoCost: 0,
     mode: 'melee',
     meleeArc: 0.72,
-    meleeTargets: 3,
-    armorPierce: 0.38,
-    description: 'Extrem kurze Reichweite, dafür vernichtender Schaden in sehr schneller Folge',
+    meleeTargets: 4,
+    armorPierce: 0.55,
+    description:
+      'Extrem kurze Reichweite, dafür rasende Präzisionshiebe mit gewaltigem Schaden und Rüstungsbruch',
   },
   acid: {
     label: 'Säurewerfer',
@@ -495,9 +499,9 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   throwshield: {
     label: 'Wurfschild',
     short: 'WS',
-    cost: 8500,
-    damage: 520,
-    fireDelay: 950,
+    cost: 18000,
+    damage: 920,
+    fireDelay: 760,
     magazine: 1,
     reserve: 0,
     reload: 0,
@@ -510,11 +514,12 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     mode: 'melee',
     meleeArc: 0.25,
     meleeTargets: 1,
-    armorPierce: 0.4,
-    chainRange: 400,
+    armorPierce: 0.65,
+    chainRange: 480,
     throwBounces: 8,
     projectileRadius: 14,
-    description: 'Prallt automatisch zwischen bis zu acht nahen Gegnern hin und her',
+    description:
+      'Prallt schneller und mit massivem Schaden automatisch zwischen bis zu acht weit entfernten Gegnern hin und her',
   },
   railgun: {
     label: 'Railgun',
@@ -580,33 +585,33 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   thunderhammer: {
     label: 'Blitzhammer',
     short: 'BH',
-    cost: 12000,
-    damage: 900,
-    fireDelay: 1350,
+    cost: 21000,
+    damage: 1450,
+    fireDelay: 1150,
     magazine: 1,
     reserve: 0,
     reload: 0,
     speed: 520,
     pellets: 1,
     spread: 0,
-    pierce: 18,
-    range: 1050,
+    pierce: 26,
+    range: 1180,
     ammoCost: 0,
     mode: 'melee',
     meleeArc: 1.05,
     meleeTargets: 9,
-    armorPierce: 0.55,
-    projectileRadius: 22,
-    lightningPulse: { every: 0.25, range: 280, damage: 175, targets: 3 },
+    armorPierce: 0.7,
+    projectileRadius: 26,
+    lightningPulse: { every: 0.2, range: 340, damage: 300, targets: 4 },
     charge: {
       kind: 'throw',
       minSeconds: 0.22,
       maxSeconds: 1.8,
       moveFactor: 0.34,
-      maxMultiplier: 2.65,
+      maxMultiplier: 3.1,
     },
     description:
-      'Aufladen und werfen: der Hammer durchschlägt Gegner und schleudert unterwegs Blitze',
+      'Aufladen und werfen: der schwere Hammer durchschlägt ganze Reihen und entfesselt unterwegs starke Kettenblitze',
   },
   nova: {
     label: 'Nova-Kanone',
@@ -757,6 +762,26 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     burnSeconds: 6,
     description: 'Schleudert eine Mini-Sonne mit gewaltigem Brandradius',
   },
+  riftcannon: {
+    label: 'Risskanone',
+    short: 'RK',
+    cost: 30000,
+    damage: 1350,
+    fireDelay: 3600,
+    magazine: 1,
+    reserve: 5,
+    reload: 4300,
+    speed: 220,
+    pellets: 1,
+    spread: 0.001,
+    pierce: 40,
+    range: 1320,
+    ammoCost: 3000,
+    projectileRadius: 34,
+    riftPulse: { every: 0.55, radius: 205, damage: 520, pull: 58 },
+    description:
+      'Ein langsamer Risskern durchbohrt die Horde und reißt entlang seiner Flugbahn wiederholt schädliche Raumrisse auf',
+  },
 };
 
 export const WEAPON_ORDER: WeaponType[] = [
@@ -778,21 +803,22 @@ export const WEAPON_ORDER: WeaponType[] = [
   'spear',
   'rocket',
   'firerocket',
-  'knife',
   'tesla',
   'laser',
   'railgun',
   'phaselance',
   'gravity',
   'nova',
-  'throwshield',
   'dashknife',
   'ionstorm',
-  'thunderhammer',
   'worldbreaker',
   'sun',
+  'knife',
   'stormorb',
+  'throwshield',
+  'thunderhammer',
   'colossus',
+  'riftcannon',
 ];
 
 export function isMeleeWeapon(weapon: WeaponType | undefined) {
