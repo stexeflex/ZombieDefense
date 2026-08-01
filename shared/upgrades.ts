@@ -173,8 +173,12 @@ export interface PermanentPerks {
   extraGrenade: boolean;
   /** A mortar impact leaves a burning field behind. */
   mortarNapalm: boolean;
+  /** One more mortar strike can be held ready. */
+  extraMortar: boolean;
   /** A lethal precision shot greatly reduces its running cooldown. */
   precisionReload: boolean;
+  /** One more precision shot can be held ready. */
+  extraPrecision: boolean;
   /** Once per wave a lethal hit leaves one hit point instead. */
   lastStand: boolean;
 }
@@ -192,7 +196,9 @@ export const EMPTY_PERKS: PermanentPerks = {
   engineer: false,
   extraGrenade: false,
   mortarNapalm: false,
+  extraMortar: false,
   precisionReload: false,
+  extraPrecision: false,
   lastStand: false,
 };
 
@@ -207,7 +213,9 @@ export const PERK_COST: Record<PerkKey, number> = {
   engineer: 700,
   extraGrenade: 1000,
   mortarNapalm: 1800,
+  extraMortar: 2600,
   precisionReload: 2200,
+  extraPrecision: 3000,
   lastStand: 2200,
 };
 

@@ -100,7 +100,13 @@ export function isPlayerAbility(value: unknown): value is PlayerAbilityType {
 }
 
 export function abilityMaxCharges(type: PlayerAbilityType, perks: PermanentPerks) {
-  return PLAYER_ABILITIES[type].charges + (type === 'grenade' && perks.extraGrenade ? 1 : 0);
+  const extra =
+    type === 'grenade'
+      ? perks.extraGrenade
+      : type === 'mortarStrike'
+        ? perks.extraMortar
+        : perks.extraPrecision;
+  return PLAYER_ABILITIES[type].charges + (extra ? 1 : 0);
 }
 
 export function abilityRechargeTime(type: PlayerAbilityType, upgrades: PermanentUpgrades) {

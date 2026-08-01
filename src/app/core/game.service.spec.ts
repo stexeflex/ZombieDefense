@@ -18,6 +18,7 @@ describe('GameService', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     service = TestBed.inject(GameService);
   });
 

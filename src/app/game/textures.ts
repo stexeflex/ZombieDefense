@@ -566,6 +566,7 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   tunneler: { skin: '#75573c', cloth: '#2e2117', accent: '#a8ff63', eye: '#f2ff9a' },
   roadking: { skin: '#8f3d2f', cloth: '#331713', accent: '#ff6f45', eye: '#ffe078' },
   eclipse: { skin: '#29264d', cloth: '#0d0b20', accent: '#ff477e', eye: '#7cf7ff' },
+  bulwark: { skin: '#66727a', cloth: '#202b35', accent: '#ffd166', eye: '#fff3b0' },
 };
 
 function paintZombieBody(type: ZombieType, radius: number): Painter {
@@ -1014,6 +1015,14 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     fillRounded(ctx, 4, 0, 16, 6, 2, '#695a2f', '#ffd35c', 1.2);
     circle(ctx, 11, 13.5, 4.5, '#213038', '#aeeeff', 1.5);
   },
+  longshot: (ctx) => {
+    fillRounded(ctx, 0, 4, 25, 19, 6, '#493b2d', '#17110c', 2.5);
+    for (const y of [7, 12, 17]) {
+      fillRounded(ctx, 22, y, 35, 4, 2, '#b7a994', '#282018', 1.2);
+    }
+    fillRounded(ctx, 7, 1, 14, 6, 2, '#735b3d', '#2b1c0e', 1.5);
+    circle(ctx, 55, 14, 4, '#ffe0a3', '#fff4d6', 1.3);
+  },
   flame: (ctx) => {
     fillRounded(ctx, 0, 5, 20, 16, 6, '#7a3324', '#1d0f0b', 2);
     fillRounded(ctx, 18, 9, 24, 8, 3, '#43504a', '#141d19', 2);
@@ -1098,6 +1107,18 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     circle(ctx, 53, 13, 6, '#72ddff', '#e2fbff', 2);
     circle(ctx, 11, 14, 5, '#16243a', '#7eeaff', 2);
   },
+  shockwave: (ctx) => {
+    circle(ctx, 17, 13, 12, '#143c36', '#63ffd2', 2.5);
+    circle(ctx, 17, 13, 5, '#d9fff6', '#8affe2', 1.5);
+    ctx.strokeStyle = '#63ffd2';
+    ctx.lineWidth = 2;
+    for (const radius of [16, 21]) {
+      ctx.beginPath();
+      ctx.arc(17, 13, radius, -0.8, 0.8);
+      ctx.stroke();
+    }
+    fillRounded(ctx, 30, 10, 25, 7, 3, '#3c756a', '#0b201c', 1.5);
+  },
   ring: (ctx) => {
     circle(ctx, 17, 13, 11, '#4b3519', '#ffd35c', 2.5);
     circle(ctx, 17, 13, 5, '#fff1a3', '#ffb52e', 1.5);
@@ -1112,6 +1133,21 @@ const TURRET_GUN_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     }
     fillRounded(ctx, 32, 9, 23, 8, 3, '#8b6634', '#2a1a0b', 1.5);
     circle(ctx, 54, 13, 4, '#ffd35c', '#fff1a3', 1.5);
+  },
+  ion_bastion: (ctx) => {
+    fillRounded(ctx, 0, 3, 28, 21, 7, '#222b50', '#090d1d', 2.5);
+    fillRounded(ctx, 24, 8, 32, 12, 5, '#53649a', '#11182f', 2);
+    ctx.strokeStyle = '#8fa8ff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(28, 5);
+    ctx.lineTo(49, 2);
+    ctx.lineTo(57, 14);
+    ctx.lineTo(49, 24);
+    ctx.lineTo(28, 21);
+    ctx.stroke();
+    circle(ctx, 54, 14, 6.5, '#7d91ff', '#eef1ff', 2);
+    circle(ctx, 11, 14, 5.5, '#151d3b', '#8fa8ff', 2);
   },
   gravity_well: (ctx) => {
     circle(ctx, 18, 13, 11, '#211733', '#a67cff', 2.5);
@@ -1706,9 +1742,12 @@ export function createGameTextures(scene: Phaser.Scene) {
     triple: '#c9f7a8',
     drone: '#4ce0d5',
     precision_mortar: '#ffd35c',
+    longshot: '#ffe0a3',
     laser: '#ff8fd8',
     plasma: '#7eeaff',
+    shockwave: '#63ffd2',
     ring: '#ffd35c',
+    ion_bastion: '#8fa8ff',
     gravity_well: '#a67cff',
     chrono: '#6cecff',
     executioner: '#ff526e',

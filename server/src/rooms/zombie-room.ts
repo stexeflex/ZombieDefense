@@ -46,6 +46,8 @@ interface JoinOptions {
 }
 
 const COLORS = ['#69f0ae', '#57b8ff', '#ffcc66', '#ff6b8a'];
+/** A dropped tab keeps its exact authoritative player state for one minute. */
+const RECONNECT_WINDOW_SECONDS = 60;
 
 const PLAYER_PRECISION: Record<string, number> = {
   x: 10,
@@ -321,6 +323,22 @@ export class ZombieRoom extends Room<{ state: GameState }> {
     return true;
   }
 
+  /** Freeze input immediately; Colyseus keeps the same session id and seat reserved. */
+  onDrop(client: Client) {
+    const runtime = this.world.runtime.get(client.sessionId);
+    if (runtime) {
+      runtime.input = { ...EMPTY_INPUT };
+      runtime.wasFiring = false;
+    }
+    void this.allowReconnection(client, RECONNECT_WINDOW_SECONDS);
+  }
+
+  onReconnect(_client: Client) {
+    this.snapshotElapsed = 0;
+    this.broadcastSnapshot();
+  }
+
+  /** Runs only after a deliberate leave or when the reserved reconnect seat expires. */
   onLeave(client: Client) {
     // Free the seat first, otherwise the hull keeps a ghost in its crew list.
     this.vehicles.leave(client.sessionId);

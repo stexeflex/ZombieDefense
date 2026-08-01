@@ -38,7 +38,9 @@ export class UpgradeShop {
   private readonly abilityPerkKeys = new Set<PerkKey>([
     'extraGrenade',
     'mortarNapalm',
+    'extraMortar',
     'precisionReload',
+    'extraPrecision',
   ]);
   readonly perkDefinitions = PERK_DEFINITIONS.filter((perk) => !this.abilityPerkKeys.has(perk.key));
   readonly abilities = PLAYER_ABILITY_ORDER.map((type) => ({ type, ...PLAYER_ABILITIES[type] }));
@@ -52,13 +54,13 @@ export class UpgradeShop {
     return this.abilityGroups.find((group) => group.key === groupKey)!;
   });
   readonly selectedAbilityPerks = computed(() => {
-    const perkKey: PerkKey =
+    const perkKeys: PerkKey[] =
       this.progress.ability() === 'grenade'
-        ? 'extraGrenade'
+        ? ['extraGrenade']
         : this.progress.ability() === 'mortarStrike'
-          ? 'mortarNapalm'
-          : 'precisionReload';
-    return PERK_DEFINITIONS.filter((perk) => perk.key === perkKey);
+          ? ['mortarNapalm', 'extraMortar']
+          : ['precisionReload', 'extraPrecision'];
+    return PERK_DEFINITIONS.filter((perk) => perkKeys.includes(perk.key));
   });
   /**
    * A short ladder gets one pip per level, so a pip always means a level. Long

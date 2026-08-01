@@ -14,6 +14,8 @@
     "server:build": "npm --prefix server run build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:reconnect": "npm run server:build && node scripts/test-reconnect.mjs",
+    "sim:quick": "npm run server:build && node scripts/simulate-run.mjs --quick",
     "sim": "npm run server:build && node scripts/simulate-run.mjs"
   },
   "private": true,

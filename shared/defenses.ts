@@ -28,8 +28,11 @@ export type DefenseType =
   | 'laser'
   | 'drone'
   | 'precision_mortar'
+  | 'longshot'
   | 'plasma'
+  | 'shockwave'
   | 'ring'
+  | 'ion_bastion'
   | 'gravity_well'
   | 'chrono'
   | 'executioner'
@@ -485,6 +488,23 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     armorPierce: 0.65,
     description: 'Jagt langsame Tanks und schlägt nach langer Warnzeit vernichtend ein',
   },
+  longshot: {
+    label: 'Fernschrot-Turm',
+    short: 'FS',
+    kind: 'turret',
+    cost: 6200,
+    health: 620,
+    width: 56,
+    height: 56,
+    damage: 48,
+    fireDelay: 0.95,
+    range: 820,
+    speed: 1700,
+    pierce: 0,
+    pellets: 11,
+    spread: 0.115,
+    description: 'Bündelt elf Schrotkugeln zu einer schmalen Salve mit hoher Reichweite',
+  },
   plasma: {
     label: 'Plasma-Bastion',
     short: '◉',
@@ -499,6 +519,20 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     speed: 3200,
     pierce: 9,
     description: 'Vernichtet mit Plasma ganze Reihen auf maximale Distanz',
+  },
+  shockwave: {
+    label: 'Schockwellen-Turm',
+    short: 'SW',
+    kind: 'turret',
+    cost: 8500,
+    health: 780,
+    width: 60,
+    height: 60,
+    damage: 230,
+    fireDelay: 2.6,
+    range: 620,
+    areaPulse: true,
+    description: 'Entlädt eine projektilfreie Schadenswelle gegen jede Gruppe im Umkreis',
   },
   ring: {
     label: 'Donnerkranz',
@@ -515,6 +549,22 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     pierce: 2,
     radialShots: 24,
     description: 'Sehr langsam: feuert 24 schwere Geschosse im kompletten Kreis',
+  },
+  ion_bastion: {
+    label: 'Ionen-Bastion',
+    short: 'IB',
+    kind: 'turret',
+    cost: 11200,
+    health: 920,
+    width: 64,
+    height: 64,
+    damage: 190,
+    fireDelay: 0.34,
+    range: 1280,
+    speed: 3600,
+    pierce: 12,
+    description:
+      'Langsamer als Plasma, aber jeder Ionenschuss ist stärker und durchdringt mehr Ziele',
   },
   gravity_well: {
     label: 'Gravitationskanone',
@@ -615,8 +665,11 @@ export const TURRET_ORDER: DefenseType[] = [
   'laser',
   'drone',
   'precision_mortar',
+  'longshot',
   'plasma',
+  'shockwave',
   'ring',
+  'ion_bastion',
   'gravity_well',
   'chrono',
   'executioner',

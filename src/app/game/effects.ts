@@ -141,7 +141,9 @@ export class EffectLayer {
         const acidBurst = event.s === 'acid' || event.s === 'turret_acid';
         const gravityBurst = event.s === 'gravity' || event.s === 'turret_gravity_well';
         const chronoBurst = event.s === 'turret_chrono';
-        const energyBlast = gravityBurst || chronoBurst || event.s === 'nova' || acidBurst;
+        const waveBurst = event.s === 'turret_shockwave';
+        const energyBlast =
+          gravityBurst || chronoBurst || waveBurst || event.s === 'nova' || acidBurst;
         this.burst(
           energyBlast ? 'energy' : 'flame',
           Math.min(26, 10 + radius / 8),
@@ -156,11 +158,13 @@ export class EffectLayer {
             ? 0xa67cff
             : chronoBurst
               ? 0x6cecff
-              : event.s === 'nova'
-                ? 0xff9ee0
-                : event.s === 'mortar' || event.s === 'ability_mortar'
-                  ? 0xff4f6b
-                  : 0xffb347;
+              : waveBurst
+                ? 0x63ffd2
+                : event.s === 'nova'
+                  ? 0xff9ee0
+                  : event.s === 'mortar' || event.s === 'ability_mortar'
+                    ? 0xff4f6b
+                    : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
         this.audio.play(
           acidBurst ? 'shot-flame' : 'explosion',
@@ -302,27 +306,33 @@ export class EffectLayer {
       .setTint(
         source === 'plasma'
           ? 0x7eeaff
-          : source === 'ring' || weapon === 'sun'
-            ? 0xffd35c
-            : source === 'drone'
-              ? 0x4ce0d5
-              : weapon === 'ionstorm'
-                ? 0x62d9ff
-                : weapon === 'railgun'
-                  ? 0xbaf7ff
-                  : weapon === 'gravity'
-                    ? 0xa67cff
-                    : weapon === 'nova'
-                      ? 0xff9ee0
-                      : weapon === 'laser'
-                        ? 0xff8fd8
-                        : weapon === 'acid'
-                          ? 0x42e9ff
-                          : weapon === 'tesla'
-                            ? 0x9fdcff
-                            : weapon === 'cryo'
-                              ? 0xaef0ff
-                              : 0xffd489,
+          : source === 'ion_bastion'
+            ? 0x8fa8ff
+            : source === 'shockwave'
+              ? 0x63ffd2
+              : source === 'longshot'
+                ? 0xffe0a3
+                : source === 'ring' || weapon === 'sun'
+                  ? 0xffd35c
+                  : source === 'drone'
+                    ? 0x4ce0d5
+                    : weapon === 'ionstorm'
+                      ? 0x62d9ff
+                      : weapon === 'railgun'
+                        ? 0xbaf7ff
+                        : weapon === 'gravity'
+                          ? 0xa67cff
+                          : weapon === 'nova'
+                            ? 0xff9ee0
+                            : weapon === 'laser'
+                              ? 0xff8fd8
+                              : weapon === 'acid'
+                                ? 0x42e9ff
+                                : weapon === 'tesla'
+                                  ? 0x9fdcff
+                                  : weapon === 'cryo'
+                                    ? 0xaef0ff
+                                    : 0xffd489,
       )
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.42, 0.3)

@@ -34,7 +34,8 @@ export type ZombieType =
   | 'siren'
   | 'tunneler'
   | 'roadking'
-  | 'eclipse';
+  | 'eclipse'
+  | 'bulwark';
 
 export type ZombieRank = 'trash' | 'elite' | 'mini' | 'boss';
 
@@ -683,6 +684,23 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
       { kind: 'split', count: 2, type: 'warden' },
     ],
   },
+  bulwark: {
+    label: 'AEGIS PRIME',
+    health: 18900,
+    speed: 42,
+    damage: 116,
+    radius: 86,
+    reward: 12000,
+    rank: 'boss',
+    threat: 'riesiger Frontschild, Schildverstärkung und Belagerungsschläge',
+    armor: 0.3,
+    frontShield: { arc: Math.PI * 0.92, turnSpeed: 0.38 },
+    abilities: [
+      { kind: 'slam', every: 7.2, radius: 480, damage: 132, telegraph: 1.45 },
+      { kind: 'charge', every: 9.5, speed: 230, duration: 1.8 },
+      { kind: 'summon', every: 8, count: 5, type: 'shieldbearer' },
+    ],
+  },
 };
 
 export const ZOMBIE_TYPES = Object.keys(ZOMBIES) as ZombieType[];
@@ -705,6 +723,7 @@ export const BOSSES: ZombieType[] = [
   'tunneler',
   'roadking',
   'eclipse',
+  'bulwark',
 ];
 
 export type AbilityOf<K extends ZombieAbility['kind']> = Extract<ZombieAbility, { kind: K }>;

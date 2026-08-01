@@ -352,7 +352,7 @@ export class WaveSystem {
     const map = this.world.map;
     if (wave <= map.waves.length) return map.waves[wave - 1];
     return this.world.state.endless
-      ? endlessWave(map.boss, wave, map.difficulty >= 6 ? 2 : 1)
+      ? endlessWave(map.boss, wave, map.difficulty >= 6 ? 2 : 1, map.enemyMode)
       : undefined;
   }
 

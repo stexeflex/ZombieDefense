@@ -167,7 +167,7 @@ export class Lobby implements OnInit, OnDestroy {
     const map = this.activeMap();
     const wave =
       snapshot.endless && number > map.waves.length
-        ? endlessWave(map.boss, number, map.difficulty >= 6 ? 2 : 1)
+        ? endlessWave(map.boss, number, map.difficulty >= 6 ? 2 : 1, map.enemyMode)
         : map.waves[number - 1];
     if (!wave) return null;
     return { number, label: wave.label, kind: wave.kind, enemies: wave.zombies.length };
@@ -754,6 +754,7 @@ export class Lobby implements OnInit, OnDestroy {
   };
 
   private readonly creditRewardBeforeUnload = () => {
+    this.game.prepareForUnload();
     this.game.creditVisibleRunReward();
   };
 }

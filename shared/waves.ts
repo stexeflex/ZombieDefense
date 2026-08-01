@@ -8,6 +8,9 @@ import type { ZombieType } from './zombies.js';
 export type SpawnPattern =
   'all' | 'north' | 'east' | 'south' | 'west' | 'north-south' | 'east-west' | 'clockwise';
 
+/** A map may replace the regular mixed horde with one deliberate challenge roster. */
+export type EnemyMode = 'standard' | 'shieldfront';
+
 export interface WaveDefinition {
   kind: WaveKind;
   label: string;
@@ -221,9 +224,34 @@ export function endlessSpeedScale(wave: number) {
  * swarm every fifth and the boss of the map every tenth. Everything is seeded
  * from the wave number, so the same wave always looks the same.
  */
-export function endlessWave(boss: ZombieType, wave: number, rareThreatCopies = 1): WaveDefinition {
+export function endlessWave(
+  boss: ZombieType,
+  wave: number,
+  rareThreatCopies = 1,
+  enemyMode: EnemyMode = 'standard',
+): WaveDefinition {
   const size = Math.min(ENDLESS_CAP, ENDLESS_BASE + (wave - 1) * ENDLESS_STEP);
   const seed = 8801 + wave * 17;
+
+  if (enemyMode === 'shieldfront') {
+    const shieldCount = Math.min(70, 8 + Math.floor(wave * 1.65));
+    const escort = pack({ shieldbearer: Math.min(30, Math.ceil(shieldCount * 0.65)) });
+    if (wave % 10 === 0) {
+      return {
+        kind: 'boss',
+        label: 'SCHILDBOSS',
+        zombies: [boss, ...shuffled(escort, seed)],
+        spawnPattern: 'clockwise',
+      };
+    }
+    return {
+      kind: wave % 5 === 0 ? 'swarm' : 'normal',
+      label: wave % 5 === 0 ? 'SCHILDFLUT' : 'SCHILDFRONT',
+      zombies: shuffled(pack({ shieldbearer: shieldCount }), seed),
+      spawnPattern: ['north', 'east', 'south', 'west'][(wave - 1) % 4] as SpawnPattern,
+      spawnDelayScale: wave % 5 === 0 ? 0.55 : 0.9,
+    };
+  }
 
   if (wave % 10 === 0) {
     const escort = Math.min(size * 0.8, 110);

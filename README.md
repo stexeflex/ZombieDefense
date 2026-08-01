@@ -1,7 +1,7 @@
 # Zombie Defense
 
 Kooperatives 2D-Top-down-Spiel für 1–4 Freunde. Ein Spieler erstellt eine
-Lobby, teilt den Link und kämpft sich durch 16 Karten mit festen Wellen,
+Lobby, teilt den Link und kämpft sich durch 17 Karten mit festen Wellen,
 Mini-Bossen, Endbossen und einer achtminütigen Überlebensmission.
 
 Der aktuelle Stand ist ein spielbarer Online-Prototyp. Er braucht keine
@@ -16,8 +16,8 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 - Link-Lobbys mit fünfstelligem Code, 1–4 Spieler über Colyseus/WebSockets
 - autoritative Bewegung, Zombie-KI, Treffer und Wellen auf dem Server
-- 16 Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
-- fünfzehn Karten enden mit einem **eigenen** Endboss; die Todeszone Null wird
+- 17 Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
+- sechzehn Karten enden mit einem **eigenen** Endboss; die Todeszone Null wird
   nach acht Minuten Überleben gewonnen und schickt zum Schluss drei Bosse zugleich
 - späte Karten bringen gerichtete Angriffe, extrem dichte Kleinwellen, eine
   kompakte Killbox, ein offenes Großfeld sowie echte Verteidigungs- und
@@ -31,13 +31,13 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Kopfgeld wird **gleichmäßig geteilt**: jeder im Trupp bekommt denselben
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
-- siebzehn Zombiearten plus fünfzehn Bosse; seltene Hakenläufer weichen im
+- siebzehn Zombiearten plus sechzehn Bosse; seltene Hakenläufer weichen im
   Zickzack aus, Phantome werden von automatischen Türmen nicht erfasst
 - sechsundzwanzig Waffen von der Pistole bis zum Sonnenwerfer, darunter fünf
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- zwölf Barrikaden und zwanzig Türme vom günstigen MG bis zum Omega-Fokus,
+- zwölf Barrikaden und dreiundzwanzig Türme vom günstigen MG bis zum Omega-Fokus,
   inklusive zwei Mörsern und Drohnenhangar mit drei fliegenden Jagddrohnen
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
   mehrere Spieler; langsamere, deutlich robustere Hüllen machen Insassen
@@ -56,7 +56,7 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Sprites, Lauf- und Angriffsanimationen, Blut-, Feuer- und Explosionseffekte,
   rote Warnkreise, Lava- und Giftpfützen
 - prozedural erzeugte Soundeffekte und Musik (Bauphase, Kampf, Boss)
-- permanentes Gold, getrennte Stufen-Upgrades, zehn besondere Vorteile und drei aktive Fähigkeiten
+- permanentes Gold, getrennte Stufen-Upgrades, vierzehn besondere Vorteile und drei aktive Fähigkeiten
   in einem verschlüsselten und gegen einfache Änderungen signierten `localStorage`-Save
 
 ### Karten
@@ -78,6 +78,8 @@ Aufruf kann das Laden deshalb kurz dauern.
 | Damm 13            | 29     | ×10   | Tiefenwurm      | West-/Ost-Frontwechsel        | 48993         |
 | Route Lazarus      | 30     | ×10,9 | Straßenkönig    | Konvoi eskortieren            | 60500         |
 | Eklipsen-Riss      | 32     | ×11,8 | EKLIPSE         | rotierende Angriffsseiten     | 77347         |
+| Todeszone Null     | 10     | ×12,8 | OMEGA           | acht Minuten Elite-Überleben  | 93971         |
+| Aegis-Bollwerk     | 20     | ×14,2 | AEGIS PRIME     | nur Frontschild-Gegner        | 124182        |
 
 Beim Signalkern und beim Konvoi endet der Run auch dann, wenn das Missionsziel
 zerstört wird. Der Konvoi muss pro Welle einen Streckenabschnitt schaffen,
@@ -90,7 +92,9 @@ Karte, hört aber nach ihrer letzten geplanten Welle nicht auf: Von da an baut d
 Server jede Welle selbst, mit Mini-Bossen in jeder dritten, einer Schwarmwelle in
 jeder fünften und dem Boss der Karte in jeder zehnten. Ab Welle 30 ziehen Leben,
 Schaden und Tempo immer stärker an; größere Trupps erhöhen den Gegnerdruck
-zusätzlich. Der Lohn richtet sich nach der erreichten Welle — freischalten lässt
+zusätzlich. Im Aegis-Bollwerk bleibt auch der erzeugte Endloskader vollständig
+auf Schildträger und den Schildboss beschränkt.
+Der Lohn richtet sich nach der erreichten Welle — freischalten lässt
 sich im Endlosmodus nichts, dafür bleibt die Kampagne da.
 
 ### Bosse
@@ -182,8 +186,11 @@ Mauer zu benötigen. Die Kontaktmine ist eine günstige Einmal-Falle:
 | Laserturm           | 3200  | durchschlägt Reihen auf weite Distanz              |
 | Drohnenhangar       | 3600  | drei fliegende Jagddrohnen verfolgen Gegner        |
 | Präzisionsmörser    | 5200  | langsamer Panzertöter mit sehr hohem Einschlag     |
+| Fernschrot-Turm     | 6200  | elf eng gebündelte Kugeln auf hohe Reichweite      |
 | Plasma-Bastion      | 6800  | starkes Plasma gegen ganze Reihen                  |
+| Schockwellen-Turm   | 8500  | projektilfreie Schadenswelle gegen alle im Umkreis |
 | Donnerkranz         | 9800  | 24 schwere Geschosse in einer langsamen 360°-Salve |
+| Ionen-Bastion       | 11200 | langsameres, stärkeres Plasma mit mehr Durchschlag |
 | Gravitationskanone  | 12800 | zieht und verlangsamt große Gruppen                |
 | Chronosphäre        | 16800 | Zeitimpuls gegen alle Gegner im Umkreis            |
 | Hinrichter          | 23000 | jagt Verwundete und verstärkt Hinrichtungsschaden  |
@@ -323,8 +330,9 @@ bisher vom Verkaufserlös abgezogen.
 
 Die Bauphase läuft ohne Uhr: Sobald alle auf „Bereit“ gedrückt haben, startet
 die nächste Welle automatisch. Der Host kann fehlende Stimmen mit
-„Welle jetzt starten“ übergehen. Ein Spieler, der erst in einen laufenden Run
-einsteigt oder erneut verbindet, bekommt kein zweites Startbudget. Zwischen den
+„Welle jetzt starten“ übergehen. Ein neuer Spieler, der erst in einen laufenden
+Run einsteigt, bekommt kein Startbudget; ein echter Rejoin übernimmt stattdessen
+seinen bestehenden Stand. Zwischen den
 Wellen wird der Trupp voll geheilt, Gefallene stehen wieder auf. Zum
 Wiederbeleben mitten in der Welle genügt es, kurz neben einem gefallenen
 Mitspieler stehen zu bleiben. Sound und Musik lassen sich oben rechts
@@ -349,7 +357,12 @@ Karte 1.415 statt 615 Gold bringt. „Zurück zur Lobby“ hält den verbundenen
 nach Run-Ende zusammen; ein freiwilliger Ausstieg zur Startseite lässt die
 Mitspieler dagegen in ihrem laufenden Run. Der Shop steht auf der Startseite
 und in der Lobby offen, solange der Run noch nicht läuft — dort gekaufte
-Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
+Upgrades zählen sofort für den nächsten Run. Es gibt drei Arten von Käufen:
+
+Ein versehentlich getrennter Spieler kann innerhalb einer Minute mit derselben
+Browser-Session zurückkehren und behält Geld, Arsenal, Munition, Ladungen,
+Fahrzeug- und Bau-Besitz. Ein zusätzlicher Tab besitzt dieses Reconnect-Token
+nicht und erhält in einem bereits laufenden Run weiterhin kein Startgeld.
 
 - **Stufen-Upgrades** – maximales Spielerleben, Panzerung, Tempo, Waffenschaden,
   Nahkampf-Angriffstempo und -Reichweite, Nachladen, Magazin, Munitionsvorrat,
@@ -366,7 +379,8 @@ Upgrades zählen sofort für den nächsten Run. Es gibt zwei Arten von Käufen:
 - **Fähigkeiten** – genau eine Auswahl für `G`: Granaten, ein verzögerter großer
   Mörserschlag oder ein sichtbarer Vernichtungsschuss mit enormem Einzelschaden
   ohne Durchschlag. Granaten-Upgrades samt zweitem Gürtel liegen vollständig in
-  diesem Reiter; Mörser und Vernichtungsschuss besitzen eigene Upgrade-Leitern.
+  diesem Reiter; Mörser und Vernichtungsschuss besitzen eigene Upgrade-Leitern
+  sowie je einen einmaligen Vorteil für eine zweite Ladung.
 
 Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als

@@ -360,11 +360,23 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     icon: '♨',
   },
   {
+    key: 'extraMortar',
+    label: 'Doppelrohr-Freigabe',
+    description: 'Du kannst eine zweite Ladung Mörserschlag bereithalten.',
+    icon: '2×',
+  },
+  {
     key: 'precisionReload',
     label: 'Todesurteil',
     description:
       'Tötet der Vernichtungsschuss sein Ziel, verkürzt sich seine verbleibende Abklingzeit um 70 %.',
     icon: '‡',
+  },
+  {
+    key: 'extraPrecision',
+    label: 'Doppelmagazin',
+    description: 'Du kannst eine zweite Ladung Vernichtungsschuss bereithalten.',
+    icon: '2×',
   },
   {
     key: 'lastStand',

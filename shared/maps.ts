@@ -1,5 +1,5 @@
 import { ARENA } from './arena.js';
-import type { WaveDefinition } from './waves.js';
+import type { EnemyMode, WaveDefinition } from './waves.js';
 import { buildWaves, pack, type SpawnPattern, type WavePlan } from './waves.js';
 import type { ZombieType } from './zombies.js';
 
@@ -83,6 +83,8 @@ export interface GameMap {
   reward: number;
   /** The one boss this map ends with — every map has its own. */
   boss: ZombieType;
+  /** Optional roster rule that also remains active after planned endless waves. */
+  enemyMode?: EnemyMode;
   theme: MapTheme;
   /** Optional campaign objective that changes how the map is won or lost. */
   mission?: MapMission;
@@ -500,6 +502,24 @@ const ECLIPSE_STRUCTURES: MapObstacle[] = [
   obstacle('pipe', 1350, 1130, Math.PI / 2),
 ];
 
+/** Layered blast doors create flanking lanes for the shield-only challenge. */
+const AEGIS_STRUCTURES: MapObstacle[] = [
+  obstacle('wall', 720, 430),
+  obstacle('wall', 1680, 430),
+  obstacle('wall', 720, 1170),
+  obstacle('wall', 1680, 1170),
+  obstacle('container', 420, 620, Math.PI / 2),
+  obstacle('container', 1980, 980, Math.PI / 2),
+  obstacle('container', 420, 980, Math.PI / 2),
+  obstacle('container', 1980, 620, Math.PI / 2),
+  obstacle('sandbag', 1010, 560),
+  obstacle('sandbag', 1390, 1040),
+  obstacle('ruin', 250, 280),
+  obstacle('ruin', 2150, 1320),
+  obstacle('pipe', 1200, 280),
+  obstacle('pipe', 1200, 1320),
+];
+
 // ---------------------------------------------------------------- wave plans
 
 /** Which enemies a map sends and from which wave on they show up. */
@@ -562,6 +582,26 @@ function patternedWaves(waves: number, patterns: SpawnPattern[]) {
     result[wave] = patterns[(wave - 1) % patterns.length];
   }
   return result;
+}
+
+/** Every body in this challenge carries the same readable forward shield. */
+function shieldfrontWaves(waves: number): WaveDefinition[] {
+  const patterns: SpawnPattern[] = ['north', 'east', 'south', 'west'];
+  return Array.from({ length: waves }, (_, index) => {
+    const wave = index + 1;
+    const finale = wave === waves;
+    const rush = !finale && wave % 5 === 0;
+    const amount = finale ? 20 : 7 + Math.floor(wave * 1.25);
+    return {
+      kind: finale ? 'boss' : rush ? 'swarm' : 'normal',
+      label: finale ? 'AEGIS PRIME' : rush ? 'SCHILDFLUT' : 'SCHILDFRONT',
+      zombies: finale
+        ? ['bulwark', ...pack({ shieldbearer: amount })]
+        : pack({ shieldbearer: amount }),
+      spawnPattern: finale ? 'clockwise' : patterns[index % patterns.length],
+      spawnDelayScale: finale ? 0.55 : rush ? 0.48 : 0.88,
+    };
+  });
 }
 
 // -------------------------------------------------------------------- maps
@@ -1299,6 +1339,35 @@ export const MAPS: GameMap[] = [
     ],
     obstacles: scatter([], ['rock', 'container', 'car'], 5, 168061),
     decor: decorate(16016, ['grass', 'crack', 'marking', 'bones', 'blood'], 185),
+  },
+  {
+    id: 'aegis',
+    name: 'Aegis-Bollwerk',
+    subtitle: 'Schildfront-Sondermodus',
+    description:
+      'Jeder Gegner trägt einen Frontschild und blockiert Projektile aus seiner Blickrichtung. Flankiert die Formation oder setzt auf Flächenschaden, bevor AEGIS PRIME anrückt.',
+    difficulty: 14.2,
+    moneyScale: 8.2,
+    reward: 60000,
+    boss: 'bulwark',
+    enemyMode: 'shieldfront',
+    theme: {
+      ground: '#13191d',
+      groundAlt: '#1b242a',
+      grid: '#2b3942',
+      accent: '#ffd166',
+      edge: '#52616b',
+      fog: '#070b0d',
+    },
+    mission: {
+      kind: 'survival',
+      title: 'Schildsturm',
+      briefing:
+        'Nur Schildträger. Frontale Projektile werden vollständig abgewehrt — brecht die Formation von der Seite oder mit Flächenwellen.',
+    },
+    waves: shieldfrontWaves(20),
+    obstacles: scatter(AEGIS_STRUCTURES, ['wall', 'container', 'sandbag', 'crate'], 14, 181071),
+    decor: decorate(17017, ['marking', 'crack', 'rubble', 'bones', 'blood'], 190),
   },
 ];
 

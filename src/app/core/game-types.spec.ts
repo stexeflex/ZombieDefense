@@ -108,8 +108,8 @@ function dps(weapon: WeaponType) {
 }
 
 describe('map campaign', () => {
-  it('offers sixteen maps that get harder and pay out more', () => {
-    expect(MAPS).toHaveLength(16);
+  it('offers seventeen maps that get harder and pay out more', () => {
+    expect(MAPS).toHaveLength(17);
     for (let index = 1; index < MAPS.length; index += 1) {
       expect(MAPS[index].difficulty).toBeGreaterThan(MAPS[index - 1].difficulty);
       expect(MAPS[index].reward).toBeGreaterThan(MAPS[index - 1].reward);
@@ -200,9 +200,28 @@ describe('map campaign', () => {
     ).toBe(true);
   });
 
+  it('keeps the Aegis challenge shield-only in campaign and endless mode', () => {
+    const map = MAPS.find((entry) => entry.id === 'aegis');
+    expect(map?.enemyMode).toBe('shieldfront');
+    if (!map) throw new Error('shieldfront map missing');
+
+    const campaignRoster = map.waves.flatMap((wave) => wave.zombies);
+    expect(campaignRoster.length).toBeGreaterThan(100);
+    expect(campaignRoster.every((type) => ZOMBIES[type].frontShield)).toBe(true);
+    expect(map.boss).toBe('bulwark');
+    expect(ZOMBIES[map.boss].rank).toBe('boss');
+
+    const endless = endlessWave(map.boss, 21, 2, map.enemyMode);
+    expect(endless.zombies.every((type) => ZOMBIES[type].frontShield)).toBe(true);
+  });
+
   it('schedules mini boss and swarm waves before the finale', () => {
     for (const map of MAPS) {
       const miniWaves = map.waves.filter((wave) => wave.kind === 'mini');
+      if (map.enemyMode === 'shieldfront') {
+        expect(miniWaves).toHaveLength(0);
+        continue;
+      }
       expect(miniWaves.length).toBeGreaterThanOrEqual(1);
       for (const wave of miniWaves) {
         expect(MINI_BOSSES).toContain(wave.zombies[0]);
@@ -293,12 +312,16 @@ describe('enemy roster', () => {
     expect(new Set(MAPS.map((map) => map.boss)).size).toBe(BOSSES.length);
   });
 
-  it('uses shield carriers as rare isolated threats on every map', () => {
+  it('uses shield carriers as rare isolated threats outside the shieldfront challenge', () => {
     for (const [mapIndex, map] of MAPS.entries()) {
       const carriers = map.waves
         .flatMap((wave) => wave.zombies)
         .filter((type) => type === 'shieldbearer');
       expect(carriers.length).toBeGreaterThan(0);
+      if (map.enemyMode === 'shieldfront') {
+        expect(carriers.length).toBeGreaterThan(100);
+        continue;
+      }
       expect(carriers.length).toBeLessThanOrEqual(
         Math.ceil(map.waves.length / (mapIndex >= 7 ? 2 : 4)),
       );
@@ -309,6 +332,7 @@ describe('enemy roster', () => {
 
   it('introduces rare Phasenwächter with a short all-round shield', () => {
     for (const [mapIndex, map] of MAPS.entries()) {
+      if (map.enemyMode === 'shieldfront') continue;
       const guards = map.waves
         .flatMap((wave) => wave.zombies)
         .filter((type) => type === 'phaseguard');
@@ -325,6 +349,7 @@ describe('enemy roster', () => {
 
   it('sprinkles rare zig-zag runners and turret-invisible phantoms across the campaign', () => {
     for (const [mapIndex, map] of MAPS.entries()) {
+      if (map.enemyMode === 'shieldfront') continue;
       const roster = map.waves.flatMap((wave) => wave.zombies);
       const evasive = roster.filter((type) => type === 'evasive');
       const phantoms = roster.filter((type) => type === 'phantom');
@@ -404,11 +429,10 @@ describe('enemy roster', () => {
       roadking: 14100,
       eclipse: 15800,
     } as const;
-    for (const boss of BOSSES) {
-      expect(ZOMBIES[boss].health).toBe(
-        Math.round(formerHealth[boss as keyof typeof formerHealth] * 1.05),
-      );
+    for (const [boss, health] of Object.entries(formerHealth)) {
+      expect(ZOMBIES[boss as keyof typeof formerHealth].health).toBe(Math.round(health * 1.05));
     }
+    expect(ZOMBIES.bulwark.health).toBeGreaterThan(ZOMBIES.eclipse.health);
   });
 
   it('lets the final boss borrow from everyone but never heal itself', () => {
@@ -541,9 +565,9 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers twelve barricades and twenty turrets', () => {
+  it('offers twelve barricades and twenty-three turrets', () => {
     expect(BARRICADE_ORDER).toHaveLength(12);
-    expect(TURRET_ORDER).toHaveLength(20);
+    expect(TURRET_ORDER).toHaveLength(23);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
   });
@@ -625,6 +649,18 @@ describe('defenses', () => {
     expect(DEFENSES.executioner.execute).toBeGreaterThan(2);
     expect(DEFENSES.focus.focusRamp).toBeGreaterThan(0.3);
     expect(DEFENSES.focus.focusRampMax).toBeGreaterThan(5);
+    expect(DEFENSES.ion_bastion.cost).toBeGreaterThanOrEqual(9000);
+    expect(DEFENSES.ion_bastion.cost).toBeLessThanOrEqual(12000);
+    expect(DEFENSES.ion_bastion.fireDelay).toBeGreaterThan(DEFENSES.plasma.fireDelay!);
+    expect(DEFENSES.ion_bastion.damage).toBeGreaterThan(DEFENSES.plasma.damage!);
+    expect(DEFENSES.shockwave.cost).toBeGreaterThanOrEqual(7000);
+    expect(DEFENSES.shockwave.cost).toBeLessThanOrEqual(10000);
+    expect(DEFENSES.shockwave.areaPulse).toBe(true);
+    expect(DEFENSES.longshot.cost).toBeGreaterThanOrEqual(5000);
+    expect(DEFENSES.longshot.cost).toBeLessThanOrEqual(8000);
+    expect(DEFENSES.longshot.range).toBeGreaterThan(DEFENSES.shotgun.range! * 2);
+    expect(DEFENSES.longshot.pellets).toBeGreaterThan(DEFENSES.shotgun.pellets!);
+    expect(DEFENSES.longshot.spread).toBeLessThan(DEFENSES.shotgun.spread! / 2);
   });
 
   it('keeps the three barrels on the tower and the drones in the hangar', () => {
@@ -963,10 +999,16 @@ describe('permanent upgrades', () => {
     expect(precisionHealthDamageFraction(5, 'boss')).toBeCloseTo(0.0075);
     expect(abilityMaxCharges('grenade', { ...EMPTY_PERKS, extraGrenade: true })).toBe(4);
     expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraGrenade: true })).toBe(1);
+    expect(abilityMaxCharges('mortarStrike', { ...EMPTY_PERKS, extraMortar: true })).toBe(2);
+    expect(abilityMaxCharges('precisionShot', { ...EMPTY_PERKS, extraPrecision: true })).toBe(2);
     expect(EMPTY_PERKS.mortarNapalm).toBe(false);
+    expect(EMPTY_PERKS.extraMortar).toBe(false);
     expect(EMPTY_PERKS.precisionReload).toBe(false);
+    expect(EMPTY_PERKS.extraPrecision).toBe(false);
     expect(PERK_COST.mortarNapalm).toBeGreaterThan(PERK_COST.extraGrenade);
     expect(PERK_COST.precisionReload).toBeGreaterThan(PERK_COST.mortarNapalm);
+    expect(PERK_COST.extraMortar).toBeGreaterThan(PERK_COST.precisionReload);
+    expect(PERK_COST.extraPrecision).toBeGreaterThan(PERK_COST.extraMortar);
     expect(
       abilityRechargeTime('precisionShot', { ...EMPTY_UPGRADES, precisionCooldown: 40 }),
     ).toBeGreaterThanOrEqual(PLAYER_ABILITIES.precisionShot.minCooldown);

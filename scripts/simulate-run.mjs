@@ -355,8 +355,11 @@ for (const type of [
   'laser',
   'drone',
   'precision_mortar',
+  'longshot',
   'plasma',
+  'shockwave',
   'ring',
+  'ion_bastion',
   'gravity_well',
   'chrono',
   'executioner',
@@ -1799,7 +1802,7 @@ console.log('\n== Wellenende heilt den Trupp ==');
   );
 }
 
-console.log('\n== Host-Start und sicherer Rejoin ==');
+console.log('\n== Host-Start und sichere neue Tabs ==');
 {
   const room = makeRoom('outpost');
   const host = join(room, 'host');
@@ -1847,9 +1850,9 @@ console.log('\n== Host-Start und sicherer Rejoin ==');
   const buildings = room.state.defenses.size;
   room.onLeave({ sessionId: 'p1' });
   const returned = join(room, 'p1-return', { upgrades: { startMoney: 40 } });
-  check('Gebautes bleibt nach dem Rejoin stehen', room.state.defenses.size === buildings);
+  check('Gebautes bleibt stehen, wenn ein Spieler geht', room.state.defenses.size === buildings);
   check(
-    'Rejoin in einen laufenden Run gibt kein neues Anfangsgeld',
+    'Eine neue Session in einem laufenden Run gibt kein neues Anfangsgeld',
     returned.money === 0,
     `($ ${returned.money})`,
   );
@@ -2280,9 +2283,10 @@ console.log('\n== Sonderzombies ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1', {
     ability: 'mortarStrike',
-    perks: { mortarNapalm: true },
+    perks: { mortarNapalm: true, extraMortar: true },
   });
   startCombat(room);
+  check('Zusatzkammer hält zwei Mörserschläge bereit', player.abilityCharges === 2);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   room.systems.players.useAbility('p1', { x: player.x + 180, y: player.y });
@@ -2297,19 +2301,20 @@ console.log('\n== Sonderzombies ==');
   const room = makeRoom('outpost');
   const player = join(room, 'p1', {
     ability: 'precisionShot',
-    perks: { precisionReload: true },
+    perks: { precisionReload: true, extraPrecision: true },
   });
   startCombat(room);
+  check('Doppelmagazin hält zwei Vernichtungsschüsse bereit', player.abilityCharges === 2);
   room.systems.waves.spawnQueue = [];
   room.state.zombies.clear();
   const victim = room.systems.world.spawnZombie('normal', { x: player.x + 120, y: player.y });
   room.systems.players.useAbility('p1', { x: victim.x, y: victim.y });
-  check('Vernichtungsschuss verbraucht zunächst seine Ladung', player.abilityCharges === 0);
+  check('Vernichtungsschuss verbraucht zunächst eine Ladung', player.abilityCharges === 1);
   room.systems.projectiles.update(0.1);
   check(
     'Todesurteil reduziert nach einem tödlichen Treffer den Cooldown stark, aber nicht auf null',
     !room.state.zombies.has(victim.id) &&
-      player.abilityCharges === 0 &&
+      player.abilityCharges === 1 &&
       player.abilityCooldown > 0 &&
       player.abilityCooldown < 11,
   );
@@ -2444,7 +2449,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
 {
   const dedicatedMaps = MAPS.filter((map) => map.mission?.kind !== 'timed');
   const bosses = dedicatedMaps.map((map) => map.boss);
-  check('Sechzehn Karten', MAPS.length === 16, `(${MAPS.length})`);
+  check('Siebzehn Karten', MAPS.length === 17, `(${MAPS.length})`);
   check('Kein Boss doppelt', new Set(bosses).size === bosses.length);
   check(
     'Jeder Boss ist als Boss eingestuft',
@@ -2461,7 +2466,17 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
     `(${(ZOMBIES.omega.abilities ?? []).length})`,
   );
   check('Vier Mini-Bosse plus Brutling', MINI_BOSSES.length === 4);
-  check('Zwanzig Türme', TURRET_ORDER.length === 20, `(${TURRET_ORDER.length})`);
+  check('Dreiundzwanzig Türme', TURRET_ORDER.length === 23, `(${TURRET_ORDER.length})`);
+  const aegis = MAPS.find((map) => map.id === 'aegis');
+  check(
+    'Aegis schickt ausschließlich Frontschild-Gegner',
+    Boolean(
+      aegis &&
+      aegis.waves
+        .flatMap((wave) => wave.zombies)
+        .every((type) => Boolean(ZOMBIES[type].frontShield)),
+    ),
+  );
   check(
     'Signalkern-Mission ist eingeplant',
     MAPS.some((map) => map.mission?.kind === 'holdout'),
@@ -2472,6 +2487,13 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
   );
   const swarmWaves = MAPS.flatMap((map) => map.waves).filter((wave) => wave.kind === 'swarm');
   check('Schwarmwellen sind eingeplant', swarmWaves.length > 0, `(${swarmWaves.length})`);
+}
+
+if (process.argv.includes('--quick')) {
+  console.log(
+    `\n${failures.length === 0 ? 'Alle schnellen Prüfungen bestanden.' : `Fehlgeschlagen: ${failures.join(', ')}`}`,
+  );
+  process.exit(failures.length === 0 ? 0 : 1);
 }
 
 console.log('\n== Kampagnen-Missionsziele ==');

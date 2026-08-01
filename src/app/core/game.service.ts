@@ -35,6 +35,7 @@ const SETTLE_TIMEOUT = 1200;
 const LEAVE_TIMEOUT = 1500;
 /** A shared lobby transition should arrive with the next server snapshot. */
 const LOBBY_RETURN_TIMEOUT = 2000;
+const RECONNECT_STORAGE_PREFIX = 'zombie-defense-reconnect:';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
@@ -42,6 +43,8 @@ export class GameService {
   private readonly audio = inject(AudioService);
   private client?: Client;
   private room?: Room;
+  private reconnectStorageKey = '';
+  private pageUnloading = false;
   private lastPhase: GamePhase | null = null;
   private lastWave = 0;
 
@@ -223,8 +226,11 @@ export class GameService {
 
     try {
       this.client = new Client(this.serverEndpoint());
+      const normalizedCode = lobbyCode.toUpperCase();
+      const reconnectStorageKey = `${RECONNECT_STORAGE_PREFIX}${normalizedCode}`;
+      this.reconnectStorageKey = reconnectStorageKey;
       const options = {
-        lobbyCode: lobbyCode.toUpperCase(),
+        lobbyCode: normalizedCode,
         name: name.trim(),
         mapId: this.preferredMap(),
         endless: this.preferredEndless(),
@@ -232,9 +238,18 @@ export class GameService {
         perks: this.progress.perks(),
         ability: this.progress.ability(),
       };
-      this.room = create
+      const reconnectToken = create ? '' : (sessionStorage.getItem(reconnectStorageKey) ?? '');
+      if (reconnectToken) {
+        try {
+          this.room = await this.client.reconnect(reconnectToken);
+        } catch {
+          sessionStorage.removeItem(reconnectStorageKey);
+        }
+      }
+      this.room ??= create
         ? await this.client.create('zombie_defense', options)
         : await this.client.joinOrCreate('zombie_defense', options);
+      sessionStorage.setItem(reconnectStorageKey, this.room.reconnectionToken);
       this.sessionId.set(this.room.sessionId);
       this.bindRoom(this.room);
       this.connection.set('connected');
@@ -250,7 +265,11 @@ export class GameService {
   }
 
   async disconnect(settleReward = true) {
+    // During reload/close the browser itself drops the socket. Sending a
+    // consented leave here would destroy the reserved session before reload.
+    if (this.pageUnloading) return;
     const room = this.room;
+    if (room && this.reconnectStorageKey) sessionStorage.removeItem(this.reconnectStorageKey);
     if (room && settleReward) await this.settleRunReward();
     this.room = undefined;
     if (room) {
@@ -273,6 +292,11 @@ export class GameService {
     this.connection.set('idle');
     this.lastPhase = null;
     this.lastWave = 0;
+  }
+
+  /** Marks a real page unload so the server may distinguish it from leaving the lobby. */
+  prepareForUnload() {
+    this.pageUnloading = true;
   }
 
   startRun() {
@@ -604,8 +628,22 @@ export class GameService {
     room.onError((_code, message) => {
       this.errorMessage.set(message || 'Der Spielserver hat einen Fehler gemeldet.');
     });
+    room.onDrop(() => {
+      this.connection.set('connecting');
+      this.errorMessage.set('Verbindung wird wiederhergestellt …');
+    });
+    room.onReconnect(() => {
+      this.connection.set('connected');
+      this.errorMessage.set('');
+      if (this.reconnectStorageKey) {
+        sessionStorage.setItem(this.reconnectStorageKey, room.reconnectionToken);
+      }
+    });
     room.onLeave((code) => {
       this.audio.setTrack('none');
+      if (this.room === room && this.reconnectStorageKey) {
+        sessionStorage.removeItem(this.reconnectStorageKey);
+      }
       if (code !== 4000) {
         this.connection.set('error');
         this.errorMessage.set('Die Verbindung zur Lobby wurde getrennt.');
