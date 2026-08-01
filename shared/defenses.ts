@@ -6,6 +6,7 @@ export type DefenseType =
   | 'block'
   | 'mine'
   | 'wood'
+  | 'longwall'
   | 'wire'
   | 'stone'
   | 'spike'
@@ -153,6 +154,16 @@ export const DEFENSES: Record<DefenseType, DefenseConfig> = {
     width: 58,
     height: 26,
     description: 'Billig und schnell ersetzt',
+  },
+  longwall: {
+    label: 'Langbarrikade',
+    short: 'LB',
+    kind: 'barricade',
+    cost: 330,
+    health: 800,
+    width: 116,
+    height: 26,
+    description: 'Echte 4 × 1 Barrikade: doppelt so lang wie die Holzbarrikade',
   },
   wire: {
     label: 'Stacheldraht',
@@ -642,6 +653,7 @@ export const BARRICADE_ORDER: DefenseType[] = [
   'wood',
   'wire',
   'spike',
+  'longwall',
   'stone',
   'block',
   'blastwall',

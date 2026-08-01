@@ -884,6 +884,22 @@ const DEFENSE_PAINTERS: Partial<Record<DefenseType, Painter>> = {
     ctx.fillRect(w * 0.72, 2, 4, h - 4);
     noise(ctx, w, h, 50, ['rgba(0,0,0,0.25)', 'rgba(255,255,255,0.08)'], 1, 2, 21);
   },
+  longwall: (ctx, w, h) => {
+    fillRounded(ctx, 1, 1, w - 2, h - 2, 3, '#735037', '#291a10', 2);
+    ctx.fillStyle = '#946c47';
+    for (let index = 0; index < 3; index += 1) {
+      ctx.fillRect(3, 4 + index * ((h - 8) / 3), w - 6, (h - 10) / 3.4);
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    for (let index = 0; index < 3; index += 1) {
+      ctx.fillRect(3, 4 + index * ((h - 8) / 3) + (h - 10) / 4.2, w - 6, 2);
+    }
+    ctx.fillStyle = '#352318';
+    for (const x of [w * 0.125, w * 0.375, w * 0.625, w * 0.875]) {
+      ctx.fillRect(x - 2, 2, 4, h - 4);
+    }
+    noise(ctx, w, h, 80, ['rgba(0,0,0,0.25)', 'rgba(255,255,255,0.08)'], 1, 2, 22);
+  },
   wire: (ctx, w, h) => {
     ctx.strokeStyle = '#aebbb4';
     ctx.lineWidth = 2;

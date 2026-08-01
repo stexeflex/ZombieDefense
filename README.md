@@ -37,7 +37,7 @@ Aufruf kann das Laden deshalb kurz dauern.
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
-- zwölf Barrikaden und dreiundzwanzig Türme vom günstigen MG bis zum Omega-Fokus,
+- dreizehn Barrikaden und dreiundzwanzig Türme vom günstigen MG bis zum Omega-Fokus,
   inklusive zwei Mörsern und Drohnenhangar mit drei fliegenden Jagddrohnen
 - **sieben Fahrzeuge** vom Quad bis zum Kampfpanzer, fünf davon mit Platz für
   mehrere Spieler; langsamere, deutlich robustere Hüllen machen Insassen
@@ -163,6 +163,7 @@ Mauer zu benötigen. Die Kontaktmine ist eine günstige Einmal-Falle:
 | ----------------- | ----- | ----- | ---------------------------------------- |
 | Kistenblock       | 95    | 220   | kleine quadratische Deckung              |
 | Kontaktmine       | 140   | 1     | explodiert beim ersten Feindkontakt      |
+| Langbarrikade     | 330   | 800   | echte 4 × 1 Wand, doppelte Normallänge   |
 | Betonblock        | 520   | 1380  | große quadratische Deckung               |
 | Schockgitter      | 1100  | 3100  | hoher Gegenschaden und kurzer Slow       |
 | Kryo-Bollwerk     | 1900  | 5400  | zwingt Angreifer lange auf Kriechtempo   |

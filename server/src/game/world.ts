@@ -568,12 +568,10 @@ export class GameWorld {
   damageObjective(amount: number, coreId = '') {
     const state = this.state;
     if (!state.objectiveActive || amount <= 0 || state.objectiveHealth <= 0) return;
-    // Mission structures are fortified targets, not oversized players. Their
-    // armor keeps one leaked pack from deleting a long campaign in seconds.
     if (state.objectiveCores.size > 0) {
       const core = coreId ? state.objectiveCores.get(coreId) : undefined;
       if (!core || core.health <= 0) return;
-      core.health = Math.max(0, core.health - amount * 0.0015);
+      core.health = Math.max(0, core.health - amount);
       state.objectiveHealth = [...state.objectiveCores.values()].reduce(
         (sum, entry) => sum + entry.health,
         0,
@@ -588,7 +586,7 @@ export class GameWorld {
       if (core.health <= 0) this.onObjectiveDestroyed?.();
       return;
     }
-    state.objectiveHealth = Math.max(0, state.objectiveHealth - amount * 0.0015);
+    state.objectiveHealth = Math.max(0, state.objectiveHealth - amount);
     this.pushFx({
       k: 'structure',
       x: state.objectiveX,

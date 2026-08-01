@@ -614,8 +614,8 @@ describe('weapon balance', () => {
 });
 
 describe('defenses', () => {
-  it('offers twelve barricades and twenty-three turrets', () => {
-    expect(BARRICADE_ORDER).toHaveLength(12);
+  it('offers thirteen barricades and twenty-three turrets', () => {
+    expect(BARRICADE_ORDER).toHaveLength(13);
     expect(TURRET_ORDER).toHaveLength(23);
     expect(BARRICADE_ORDER.every((type) => DEFENSES[type].kind === 'barricade')).toBe(true);
     expect(TURRET_ORDER.every((type) => DEFENSES[type].kind === 'turret')).toBe(true);
@@ -649,6 +649,12 @@ describe('defenses', () => {
     expect(DEFENSES.mine.passable).toBe(true);
     expect(DEFENSES.mine.triggerOnContact).toBe(true);
     expect(DEFENSES.mine.blastDamage).toBeGreaterThan(DEFENSES.blastwall.blastDamage!);
+  });
+
+  it('makes the long barricade a true four-by-one version of the wood wall', () => {
+    expect(DEFENSES.longwall.width).toBe(DEFENSES.wood.width * 2);
+    expect(DEFENSES.longwall.height).toBe(DEFENSES.wood.height);
+    expect(DEFENSES.longwall.width / DEFENSES.longwall.height).toBeGreaterThan(4);
   });
 
   it('gives every turret a range and a fire rate', () => {

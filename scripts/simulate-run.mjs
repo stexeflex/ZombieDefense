@@ -571,6 +571,25 @@ console.log('\n== Drei Signalkerne ==');
   check('Der Verlust eines einzelnen Kerns beendet den Run', room.state.phase === 'gameover');
 }
 
+console.log('\n== Missionsziel-Schaden ==');
+{
+  for (const [mapId, label] of [
+    ['relay', 'Verteidigungsziel'],
+    ['convoy', 'Eskortziel'],
+  ]) {
+    const room = makeRoom(mapId);
+    join(room, 'p1');
+    startCombat(room);
+    const before = room.state.objectiveHealth;
+    room.systems.world.damageObjective(137);
+    check(
+      `${label} bekommt den vollständigen Trefferschaden`,
+      before - room.state.objectiveHealth === 137,
+      `(${before} -> ${room.state.objectiveHealth})`,
+    );
+  }
+}
+
 console.log('\n== Säure, Feuer und Magnum ==');
 {
   // Der Säurewerfer zündet nichts mehr an, er lässt Lachen liegen.
