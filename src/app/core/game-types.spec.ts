@@ -116,23 +116,33 @@ function dps(weapon: WeaponType) {
 }
 
 describe('map campaign', () => {
-  it('offers nineteen maps that get harder and pay out more', () => {
-    expect(MAPS).toHaveLength(19);
+  it('offers twenty maps that get harder and pay out more', () => {
+    expect(MAPS).toHaveLength(20);
     for (let index = 1; index < MAPS.length; index += 1) {
       expect(MAPS[index].difficulty).toBeGreaterThan(MAPS[index - 1].difficulty);
       expect(MAPS[index].reward).toBeGreaterThan(MAPS[index - 1].reward);
-      if (MAPS[index].mission?.kind !== 'timed') {
+      if (MAPS[index].mission?.kind !== 'timed' && MAPS[index].id !== 'endgame') {
         expect(MAPS[index].waves.length).toBeGreaterThanOrEqual(MAPS[index - 1].waves.length);
       }
     }
   });
 
-  it('adds one wave per regular level until the twenty-wave cap', () => {
+  it('adds one wave per regular level until the cap and ends with a five-wave finale', () => {
     expect(MAPS.map((map) => map.waves.length)).toEqual([
-      10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 20, 20, 20, 20, 10, 20, 20, 20,
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 20, 20, 20, 20, 10, 20, 20, 20, 5,
     ]);
     expect(Math.max(...MAPS.map((map) => map.waves.length))).toBe(20);
     expect(MAPS.find((map) => map.id === 'eclipse')?.waves).toHaveLength(20);
+    const finale = MAPS.find((map) => map.id === 'endgame');
+    expect(finale?.waves).toHaveLength(5);
+    expect(finale?.startingMoneyBonus).toBeGreaterThanOrEqual(15000);
+    expect(finale?.returningBossHealthScale).toBeLessThanOrEqual(0.5);
+    expect(finale?.waves.at(-1)?.zombies[0]).toBe('worldeater');
+    expect(ZOMBIES.worldeater.radius).toBeGreaterThan(120);
+    expect(ZOMBIES.worldeater.health).toBeGreaterThan(ZOMBIES.eclipse.health);
+    expect(
+      finale?.waves.at(-1)?.zombies.filter((type) => ZOMBIES[type].rank === 'boss').length,
+    ).toBeGreaterThanOrEqual(8);
   });
 
   it('pays enough boss gold to fund several upgrade paths across the campaign', () => {
@@ -497,8 +507,8 @@ describe('enemy roster', () => {
 });
 
 describe('weapon balance', () => {
-  it('lists thirty-four weapons ordered by price', () => {
-    expect(WEAPON_ORDER).toHaveLength(34);
+  it('lists thirty-five weapons ordered by price', () => {
+    expect(WEAPON_ORDER).toHaveLength(35);
     for (let index = 1; index < WEAPON_ORDER.length; index += 1) {
       expect(WEAPONS[WEAPON_ORDER[index]].cost).toBeGreaterThan(
         WEAPONS[WEAPON_ORDER[index - 1]].cost,
@@ -538,6 +548,7 @@ describe('weapon balance', () => {
     expect(WEAPONS.throwshield.throwBounces).toBe(8);
     expect(WEAPONS.thunderhammer.charge?.kind).toBe('throw');
     expect(WEAPONS.dashknife.charge?.kind).toBe('dash');
+    expect(WEAPONS.resonanceblade.charge?.kind).toBe('wave');
     expect(WEAPONS.riftcannon.riftPulse?.damage).toBeGreaterThan(0);
     expect(WEAPONS.riftcannon.riftPulse?.pull).toBeGreaterThan(0);
   });
@@ -557,9 +568,11 @@ describe('weapon balance', () => {
     expect(WEAPONS.colossus.damage).toBeGreaterThanOrEqual(2300);
     expect(WEAPONS.riftcannon.cost).toBeGreaterThan(WEAPONS.colossus.cost);
     expect(WEAPON_ORDER.at(-1)).toBe('riftcannon');
+    expect(WEAPONS.resonanceblade.cost).toBeGreaterThan(WEAPONS.thunderhammer.cost);
+    expect(WEAPONS.resonanceblade.cost).toBeLessThan(WEAPONS.riftcannon.cost);
   });
 
-  it('offers ten ammo-free melee weapons from cheap to endgame', () => {
+  it('offers eleven ammo-free melee weapons from cheap to endgame', () => {
     const melee = WEAPON_ORDER.filter(isMeleeWeapon);
     expect(melee).toEqual([
       'crowbar',
@@ -572,6 +585,7 @@ describe('weapon balance', () => {
       'knife',
       'throwshield',
       'thunderhammer',
+      'resonanceblade',
     ]);
     for (const weapon of melee) {
       const config = WEAPONS[weapon];
@@ -888,8 +902,8 @@ describe('building rules', () => {
 });
 
 describe('vehicles', () => {
-  it('offers twelve hulls ordered by price, with room for a squad', () => {
-    expect(VEHICLE_ORDER).toHaveLength(12);
+  it('offers thirteen hulls ordered by price, with room for a squad', () => {
+    expect(VEHICLE_ORDER).toHaveLength(13);
     for (let index = 1; index < VEHICLE_ORDER.length; index += 1) {
       expect(VEHICLES[VEHICLE_ORDER[index]].cost).toBeGreaterThan(
         VEHICLES[VEHICLE_ORDER[index - 1]].cost,
@@ -953,6 +967,8 @@ describe('vehicles', () => {
     expect(VEHICLES.pickup.gun).toBeDefined();
     expect(VEHICLES.apc.gun!.damage).toBeGreaterThan(VEHICLES.pickup.gun!.damage);
     expect(VEHICLES.tank.gun!.splashRadius).toBeGreaterThan(0);
+    expect(VEHICLES.gunship.gun!.damage).toBeGreaterThan(VEHICLES.tank.gun!.damage);
+    expect(VEHICLES.gunship.gun!.pierce).toBeGreaterThan(VEHICLES.tank.gun!.pierce);
     expect(VEHICLES.tank.ram).toBeGreaterThan(VEHICLES.car.ram);
     expect(VEHICLES.steamroller.ram).toBeGreaterThan(VEHICLES.tank.ram);
     expect(VEHICLES.steamroller.speed).toBeLessThan(VEHICLES.tank.speed);
@@ -963,11 +979,17 @@ describe('vehicles', () => {
     expect(VEHICLES.ricochet.bounce).toBeGreaterThan(0.9);
     expect(VEHICLES.ricochet.directionalDrive).toBe(true);
     expect(VEHICLES.ricochet.turn).toBeLessThan(VEHICLES.bulldozer.turn);
-    expect(VEHICLES.jumper.teleport).toBeGreaterThan(500);
+    expect(VEHICLES.jumper.teleport).toBeGreaterThanOrEqual(280);
+    expect(VEHICLES.jumper.teleport).toBeLessThanOrEqual(360);
     expect(VEHICLES.jumper.boost).toBeUndefined();
     expect(VEHICLES.explosive.wreckExplosion?.radius).toBeGreaterThan(500);
     expect(VEHICLES.explosive.wreckExplosion?.damage).toBeGreaterThan(2000);
     for (const type of VEHICLE_ORDER) expect(VEHICLES[type].perk.length).toBeGreaterThan(0);
+    expect(VEHICLES.gunship.cost).toBeGreaterThanOrEqual(9000);
+    expect(VEHICLES.gunship.cost).toBeLessThanOrEqual(11000);
+    expect(VEHICLES.bulldozer.cost).toBeGreaterThanOrEqual(12000);
+    expect(VEHICLES.bulldozer.cost).toBeLessThanOrEqual(14000);
+    expect(VEHICLES.bulldozer.health).toBeGreaterThan(VEHICLES.tank.health);
   });
 
   it('lets armour strengthen the hull while vehicles still wear down', () => {

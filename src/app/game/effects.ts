@@ -144,12 +144,14 @@ export class EffectLayer {
         const chronoBurst = event.s === 'turret_chrono';
         const waveBurst = event.s === 'turret_shockwave';
         const riftBurst = event.s === 'riftcannon';
+        const resonanceBurst = event.s === 'resonanceblade';
         const energyBlast =
           gravityBurst ||
           nullCoreBurst ||
           chronoBurst ||
           waveBurst ||
           riftBurst ||
+          resonanceBurst ||
           event.s === 'nova' ||
           acidBurst;
         this.burst(
@@ -172,11 +174,13 @@ export class EffectLayer {
                   ? 0x63ffd2
                   : riftBurst
                     ? 0xd66cff
-                    : event.s === 'nova'
-                      ? 0xff9ee0
-                      : event.s === 'mortar' || event.s === 'ability_mortar'
-                        ? 0xff4f6b
-                        : 0xffb347;
+                    : resonanceBurst
+                      ? 0x7eeaff
+                      : event.s === 'nova'
+                        ? 0xff9ee0
+                        : event.s === 'mortar' || event.s === 'ability_mortar'
+                          ? 0xff4f6b
+                          : 0xffb347;
         this.shockwave(event.x, event.y, radius, color);
         this.audio.play(
           acidBurst ? 'shot-flame' : riftBurst ? 'shot-energy' : 'explosion',

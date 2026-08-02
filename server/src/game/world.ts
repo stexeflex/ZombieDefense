@@ -185,8 +185,17 @@ export class GameWorld {
       ? endlessHealthScale(this.state.wave, this.state.players.size)
       : 1;
     const missionStrength = this.map.enemyStrength ?? 1;
+    const returningBossHealth =
+      config.rank === 'boss' && type !== this.map.boss
+        ? (this.map.returningBossHealthScale ?? 1)
+        : 1;
     zombie.maxHealth = Math.round(
-      config.health * waveScale * this.map.difficulty * missionStrength * endlessHealth,
+      config.health *
+        waveScale *
+        this.map.difficulty *
+        missionStrength *
+        endlessHealth *
+        returningBossHealth,
     );
     zombie.health = zombie.maxHealth;
     const endlessSpeed = this.state.endless ? endlessSpeedScale(this.state.wave) : 1;

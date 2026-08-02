@@ -51,6 +51,7 @@ export const WEAPON_MUZZLE: Record<WeaponType, number> = {
   ionstorm: 54,
   colossus: 64,
   worldbreaker: 64,
+  resonanceblade: 68,
   sun: 60,
   riftcannon: 68,
 };
@@ -514,6 +515,22 @@ const WEAPON_PAINTERS: Record<WeaponType, Painter> = {
       ctx.stroke();
     }
   },
+  resonanceblade: (ctx) => {
+    fillRounded(ctx, 1, 13, 36, 8, 3, '#263942', '#09151a', 2);
+    fillRounded(ctx, 30, 10, 14, 14, 5, '#355866', '#0b1b22', 2);
+    ctx.fillStyle = '#b8fbff';
+    ctx.strokeStyle = '#4cecff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(42, 5);
+    ctx.lineTo(70, 16.5);
+    ctx.lineTo(42, 28);
+    ctx.lineTo(49, 16.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    circle(ctx, 35, 17, 5, '#102c35', '#8ff8ff', 2);
+  },
   sun: (ctx) => {
     fillRounded(ctx, 1, 6, 43, 19, 8, '#50351b', '#1b0e05', 2);
     fillRounded(ctx, 40, 9, 24, 12, 5, '#94632a', '#2a1608', 2);
@@ -652,6 +669,7 @@ const ZOMBIE_SKINS: Record<ZombieType, ZombieSkin> = {
   bulwark: { skin: '#66727a', cloth: '#202b35', accent: '#ffd166', eye: '#fff3b0' },
   nightlord: { skin: '#396f69', cloth: '#102829', accent: '#70f5df', eye: '#e5fffb' },
   signalbreaker: { skin: '#53617a', cloth: '#182236', accent: '#72a7ff', eye: '#e0ebff' },
+  worldeater: { skin: '#25162f', cloth: '#08050d', accent: '#ff315f', eye: '#f5f0ff' },
 };
 
 function paintZombieBody(type: ZombieType, radius: number): Painter {
@@ -1510,6 +1528,30 @@ const VEHICLE_PAINTERS: Record<VehicleType, Painter> = {
     circle(ctx, w * 0.44, h / 2, 5, '#2a3324');
     noise(ctx, w, h, 80, ['rgba(0,0,0,0.3)', 'rgba(255,255,255,0.06)'], 1, 3, 43);
   },
+  gunship: (ctx, w, h) => {
+    for (const y of [1, h - 11]) {
+      fillRounded(ctx, 5, y, w - 10, 10, 4, '#18262d', '#071015', 2);
+      ctx.fillStyle = '#3c5662';
+      for (let x = 10; x < w - 12; x += 12) ctx.fillRect(x, y + 2, 7, 6);
+    }
+    ctx.beginPath();
+    ctx.moveTo(5, h / 2);
+    ctx.lineTo(20, 10);
+    ctx.lineTo(w - 18, 10);
+    ctx.lineTo(w - 3, h / 2);
+    ctx.lineTo(w - 18, h - 10);
+    ctx.lineTo(20, h - 10);
+    ctx.closePath();
+    ctx.fillStyle = '#294855';
+    ctx.fill();
+    ctx.strokeStyle = '#72e8ff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    fillRounded(ctx, w * 0.62, 14, w * 0.21, h - 28, 4, '#101f27', '#061014', 1.5);
+    circle(ctx, w * 0.43, h / 2, 13, '#17313b', '#8ff5ff', 2.5);
+    circle(ctx, w * 0.43, h / 2, 5, '#d8ffff');
+    noise(ctx, w, h, 70, ['rgba(0,0,0,0.3)', 'rgba(114,232,255,0.12)'], 1, 3, 97);
+  },
   explosive: (ctx, w, h) => {
     wheels(ctx, w, h, 9, 17);
     fillRounded(ctx, 3, 5, w - 6, h - 10, 7, '#35393a', '#101313', 2.5);
@@ -1594,6 +1636,20 @@ const VEHICLE_GUN_PAINTERS: Partial<Record<VehicleType, Painter>> = {
     fillRounded(ctx, 26, 9, 32, 8, 3, '#8b9a78', '#141a12', 2);
     fillRounded(ctx, 52, 7, 8, 12, 3, '#b3c1a9', '#141a12', 1.5);
     circle(ctx, 10, 13, 5, '#2a3324', '#8b9a78', 2);
+  },
+  gunship: (ctx) => {
+    fillRounded(ctx, 0, 3, 27, 20, 7, '#22434f', '#071217', 2.5);
+    circle(ctx, 11, 13, 8, '#15303a', '#8ff5ff', 2);
+    fillRounded(ctx, 23, 8, 35, 10, 4, '#4f91a5', '#0a1b22', 2);
+    fillRounded(ctx, 51, 10, 11, 6, 3, '#c7fbff', '#285868', 1.5);
+    ctx.strokeStyle = '#72e8ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(29, 6);
+    ctx.lineTo(52, 6);
+    ctx.moveTo(29, 20);
+    ctx.lineTo(52, 20);
+    ctx.stroke();
   },
 };
 

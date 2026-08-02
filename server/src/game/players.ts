@@ -486,6 +486,40 @@ export class PlayerSystem {
       return;
     }
 
+    if (charge.kind === 'wave') {
+      const radius =
+        config.range * (1 + runtime.upgrades.meleeRange * 0.01) * (0.65 + ratio * 0.35);
+      const victims = [...this.world.state.zombies.entries()].filter(
+        ([, zombie]) =>
+          Math.hypot(zombie.x - player.x, zombie.y - player.y) <= radius + zombie.radius,
+      );
+      this.world.pushFx({
+        k: 'explosion',
+        x: player.x,
+        y: player.y,
+        r: radius,
+        s: weapon,
+      });
+      for (const [id, zombie] of victims) {
+        const distance = Math.hypot(zombie.x - player.x, zombie.y - player.y);
+        const falloff = Math.max(0.55, 1 - distance / (radius + zombie.radius));
+        const direction =
+          distance > 0.01 ? Math.atan2(zombie.y - player.y, zombie.x - player.x) : aimAngle;
+        if (config.knockback) {
+          const shove = config.knockback * (0.7 + ratio * 0.3);
+          zombie.x = this.world.clamp(zombie.x + Math.cos(direction) * shove, 12, ARENA.width - 12);
+          zombie.y = this.world.clamp(
+            zombie.y + Math.sin(direction) * shove,
+            12,
+            ARENA.height - 12,
+          );
+        }
+        this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: weapon });
+        this.world.damageZombie(id, zombie, damage * falloff, player.id, config.armorPierce ?? 0);
+      }
+      return;
+    }
+
     const speed = config.speed * (0.82 + ratio * 0.18);
     const muzzleX = player.x + Math.cos(aimAngle) * 30;
     const muzzleY = player.y + Math.sin(aimAngle) * 30;

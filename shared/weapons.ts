@@ -31,6 +31,7 @@ export type WeaponType =
   | 'ionstorm'
   | 'colossus'
   | 'worldbreaker'
+  | 'resonanceblade'
   | 'sun'
   | 'riftcannon';
 
@@ -83,9 +84,9 @@ export interface WeaponConfig {
   riftPulse?: { every: number; radius: number; damage: number; pull: number };
   /** An ammunition-free thrown shield chains through this many total victims. */
   throwBounces?: number;
-  /** Holding fire charges a throw or a damaging invulnerable dash. */
+  /** Holding fire charges a throw, a damaging invulnerable dash or a radial shockwave. */
   charge?: {
-    kind: 'throw' | 'dash';
+    kind: 'throw' | 'dash' | 'wave';
     minSeconds: number;
     maxSeconds: number;
     moveFactor: number;
@@ -741,6 +742,36 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     armorPierce: 0.5,
     description: 'Gravitationshammer: vernichtender Rundschlag gegen eine ganze Horde',
   },
+  resonanceblade: {
+    label: 'Resonanzbrecher',
+    short: 'RB',
+    cost: 24500,
+    damage: 2200,
+    fireDelay: 3200,
+    magazine: 1,
+    reserve: 0,
+    reload: 0,
+    speed: 1,
+    pellets: 1,
+    spread: 0,
+    pierce: 0,
+    range: 640,
+    ammoCost: 0,
+    mode: 'melee',
+    meleeArc: Math.PI * 2,
+    meleeTargets: 95,
+    knockback: 145,
+    armorPierce: 0.6,
+    charge: {
+      kind: 'wave',
+      minSeconds: 0.4,
+      maxSeconds: 2.4,
+      moveFactor: 0.24,
+      maxMultiplier: 3.2,
+    },
+    description:
+      'Aufladen und den Boden brechen: eine gewaltige Schadenswelle trifft und stößt alles im Umkreis zurück',
+  },
   sun: {
     label: 'Sonnenwerfer',
     short: 'SO',
@@ -818,6 +849,7 @@ export const WEAPON_ORDER: WeaponType[] = [
   'throwshield',
   'thunderhammer',
   'colossus',
+  'resonanceblade',
   'riftcannon',
 ];
 

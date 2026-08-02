@@ -235,6 +235,7 @@
   color: var(--gold);
   font-size: 0.66rem;
   margin: 0 0 10px;
+  overflow-wrap: anywhere;
 }
 
 .upgrade-item.owned .upgrade-buy b {
@@ -243,7 +244,7 @@
 
 .upgrade-item {
   display: grid;
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
   min-height: 108px;
@@ -261,6 +262,19 @@
   background: rgba(105, 240, 174, 0.06);
   color: var(--acid);
   font-size: 1.3rem;
+}
+
+.upgrade-icon.compact {
+  box-sizing: border-box;
+  padding: 3px;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.upgrade-copy {
+  min-width: 0;
 }
 
 .upgrade-copy h3,

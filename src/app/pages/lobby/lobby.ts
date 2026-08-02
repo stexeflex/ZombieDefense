@@ -484,6 +484,8 @@ export class Lobby implements OnInit, OnDestroy {
         `${this.stat(vehicleGunDamage(vehicle.gun.damage, upgrades.vehicleGun))} Bordwaffenschaden`,
       );
     }
+    const armor = this.vehicleArmorPercent();
+    if (armor > 0) effects.push(`${armor} % Fahrzeugpanzerung`);
     return effects.join(' · ');
   }
 

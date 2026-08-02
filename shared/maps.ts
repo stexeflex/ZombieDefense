@@ -90,6 +90,10 @@ export interface GameMap {
   moneyScale: number;
   /** Late missions trim only spendable run money, never permanent gold. */
   ingameMoneyScale?: number;
+  /** A short special mission may replace missing wave income with an opening reserve. */
+  startingMoneyBonus?: number;
+  /** Optional health scale for earlier bosses returning beside this map's final boss. */
+  returningBossHealthScale?: number;
   /** Small extra health and damage multiplier used after level ten. */
   enemyStrength?: number;
   /** permanent gold for beating the final boss */
@@ -559,6 +563,16 @@ const TRINITY_STRUCTURES: MapObstacle[] = [
   obstacle('pipe', 1450, 800, Math.PI / 2),
   obstacle('ruin', 250, 300),
   obstacle('ruin', 2150, 1300),
+];
+
+/** The last arena stays open enough for the enormous final boss to traverse it. */
+const FINAL_STRUCTURES: MapObstacle[] = [
+  obstacle('ruin', 260, 260, Math.PI * 0.12, 1.2),
+  obstacle('ruin', 2140, 260, -Math.PI * 0.12, 1.2),
+  obstacle('ruin', 260, 1340, -Math.PI * 0.12, 1.2),
+  obstacle('ruin', 2140, 1340, Math.PI * 0.12, 1.2),
+  obstacle('rock', 680, 420, 0, 1.25),
+  obstacle('rock', 1720, 1180, 0, 1.25),
 ];
 
 // ---------------------------------------------------------------- wave plans
@@ -1563,6 +1577,115 @@ export const MAPS: GameMap[] = [
     }),
     obstacles: scatter(TRINITY_STRUCTURES, ['sandbag', 'crate', 'barrel', 'wall'], 10, 207091),
     decor: decorate(19019, ['marking', 'crack', 'rubble', 'puddle', 'bones'], 205),
+  },
+  {
+    id: 'endgame',
+    name: 'Nullthron',
+    subtitle: 'Der letzte Krieg',
+    description:
+      'Nur fünf gewaltige Wellen. Die Endschlacht ruft die Bosse der Kampagne zurück, bevor der riesige WELTENFRESSER mit weiteren alten Endgegnern die Arena betritt.',
+    difficulty: 18.2,
+    moneyScale: 10.5,
+    ingameMoneyScale: 0.7,
+    startingMoneyBonus: 20000,
+    returningBossHealthScale: 0.4,
+    enemyStrength: 1.08,
+    reward: 110000,
+    boss: 'worldeater',
+    theme: {
+      ground: '#09070d',
+      groundAlt: '#120b16',
+      grid: '#281329',
+      accent: '#ff315f',
+      edge: '#5d213c',
+      fog: '#020104',
+    },
+    mission: {
+      kind: 'survival',
+      title: 'Der letzte Krieg',
+      briefing:
+        'Eine Einsatzreserve und hohe Boss-Kopfgelder ersetzen das Einkommen der sonst zwanzig Wellen.',
+    },
+    waves: [
+      {
+        kind: 'normal',
+        label: 'DIE ERSTEN KÖNIGE',
+        zombies: [
+          'butcher',
+          'brood',
+          ...pack({
+            normal: 8,
+            fast: 6,
+            crawler: 6,
+            exploder: 3,
+            armored: 3,
+            shieldbearer: 1,
+          }),
+        ],
+        spawnPattern: 'north-south',
+        spawnDelayScale: 0.72,
+      },
+      {
+        kind: 'mini',
+        label: 'FEUER UND SCHWERKRAFT',
+        zombies: [
+          'mortar',
+          'artillery',
+          'vortex',
+          'slag',
+          'render',
+          ...pack({ spitter: 6, screamer: 4, armored: 5, jammer: 2, blink: 2, evasive: 1 }),
+        ],
+        spawnPattern: 'east-west',
+        spawnDelayScale: 0.66,
+      },
+      {
+        kind: 'normal',
+        label: 'DIE GEFALLENE ENDLINIE',
+        zombies: [
+          'swarmqueen',
+          'omega',
+          'bastion',
+          ...pack({ crawler: 12, shieldbearer: 4, phantom: 3, phaseguard: 2 }),
+        ],
+        spawnPattern: 'clockwise',
+        spawnDelayScale: 0.58,
+      },
+      {
+        kind: 'swarm',
+        label: 'ALLE FRONTEN BRECHEN',
+        zombies: [
+          'tunneler',
+          'roadking',
+          'eclipse',
+          'bulwark',
+          'nightlord',
+          'signalbreaker',
+          ...pack({ warden: 2, mortar: 2, brute: 2, stalker: 2, jammer: 3 }),
+        ],
+        spawnPattern: 'clockwise',
+        spawnDelayScale: 0.48,
+      },
+      {
+        kind: 'boss',
+        label: 'WELTENFRESSER',
+        zombies: [
+          'worldeater',
+          'butcher',
+          'vortex',
+          'render',
+          'omega',
+          'eclipse',
+          'nightlord',
+          'signalbreaker',
+          ...pack({ brute: 2, warden: 2, stalker: 2, mortar: 2, phaseguard: 3 }),
+        ],
+        spawnPattern: 'clockwise',
+        spawnDelayScale: 0.38,
+      },
+    ],
+    obstacles: scatter(FINAL_STRUCTURES, ['rock', 'ruin', 'crate'], 5, 220211),
+    decor: decorate(20020, ['blood', 'bones', 'crack', 'rubble', 'marking'], 230),
   },
 ];
 

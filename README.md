@@ -1,7 +1,7 @@
 # Zombie Defense
 
 Kooperatives 2D-Top-down-Spiel für 1–4 Freunde. Ein Spieler erstellt eine
-Lobby, teilt den Link und kämpft sich durch 19 Karten mit festen Wellen,
+Lobby, teilt den Link und kämpft sich durch 20 Karten mit festen Wellen,
 Mini-Bossen, Endbossen und einer achtminütigen Überlebensmission.
 
 Der aktuelle Stand ist ein spielbarer Online-Prototyp. Er braucht keine
@@ -16,8 +16,8 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 - Link-Lobbys mit fünfstelligem Code, 1–4 Spieler über Colyseus/WebSockets
 - autoritative Bewegung, Zombie-KI, Treffer und Wellen auf dem Server
-- 19 Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
-- sechzehn Karten enden mit einem **eigenen** Endboss; die Todeszone Null wird
+- 20 Karten mit eigener Optik, eigenen Hindernissen und steigender Härte
+- neunzehn Karten enden mit einem **eigenen** Endboss; die Todeszone Null wird
   nach acht Minuten Überleben gewonnen und schickt zum Schluss drei Bosse zugleich
 - späte Karten bringen gerichtete Angriffe, extrem dichte Kleinwellen, eine
   kompakte Killbox, ein offenes Großfeld sowie echte Verteidigungs- und
@@ -31,15 +31,15 @@ Aufruf kann das Laden deshalb kurz dauern.
 - Kopfgeld wird **gleichmäßig geteilt**: jeder im Trupp bekommt denselben
   Anteil, egal ob er geschossen, gebaut oder wiederbelebt hat
 - Mini-Boss-Wellen mit vier verschiedenen Anführern, dazu Schwarmwellen
-- siebzehn Zombiearten plus sechzehn Bosse; seltene Hakenläufer weichen im
+- neunzehn Zombiearten plus neunzehn Bosse; seltene Hakenläufer weichen im
   Zickzack aus, Phantome werden von automatischen Türmen nicht erfasst
-- vierunddreißig Waffen von der Pistole bis zur Risskanone, darunter zehn
+- fünfunddreißig Waffen von der Pistole bis zur Risskanone, darunter elf
   munitionsfreie Nahkampfwaffen und sehr teure Endgame-Builds
 - gekaufte Waffen bleiben im Arsenal; Wechsel per Zifferntaste oder Mausrad,
   jede Waffe behält ihre eigene Munition
 - dreizehn Barrikaden und dreiundzwanzig Türme vom günstigen MG bis zum Omega-Fokus,
   inklusive zwei Mörsern und Drohnenhangar mit drei fliegenden Jagddrohnen
-- **zwölf Fahrzeuge** vom Quad bis zum Kampfpanzer, neun davon mit Platz für
+- **dreizehn Fahrzeuge** vom Quad bis zur Planierraupe, zehn davon mit Platz für
   mehrere Spieler; langsamere, deutlich robustere Hüllen machen Insassen
   unverwundbar, dafür wird der Dash zur jeweiligen Fahrzeugfähigkeit
 - Barrikaden lassen sich lückenlos aneinander bauen, die Vorschau rastet ein;
@@ -61,33 +61,38 @@ Aufruf kann das Laden deshalb kurz dauern.
 
 ### Karten
 
-| Karte              | Wellen | Härte | Endboss         | Besonderheit                  | Gold bei Sieg |
-| ------------------ | ------ | ----- | --------------- | ----------------------------- | ------------- |
-| Vorposten 07       | 10     | ×1    | Fleischkönig    | offener Einstieg              | 670           |
-| Industriehafen     | 11     | ×1,45 | Brutmutter      | Container-Gassen              | 1168          |
-| Militärbasis Nord  | 12     | ×2    | Feldmarschall   | lange Feuergassen             | 1977          |
-| Krater-Quarantäne  | 13     | ×2,8  | Artillerist     | offenes Feld                  | 3116          |
-| Metro Sektor 9     | 14     | ×3,6  | Sogfürst        | Tunnelkreuzung                | 4587          |
-| Stahlwerk Kessel 3 | 15     | ×4,4  | Schlackenherr   | enge Gießhalle                | 6175          |
-| Zitadelle Alpha    | 16     | ×5,2  | Zerreißer       | Festungsring                  | 8701          |
-| Nekropole          | 17     | ×6    | Schwarmkönigin  | kompakte Arena                | 11945         |
-| Reaktorblock 4     | 18     | ×6,8  | Seuchenfürst    | offenes Großfeld              | 16209         |
-| Abgrund-Kathedrale | 19     | ×7,6  | OMEGA           | alte Endlinie                 | 24541         |
-| Bunker K-11        | 20     | ×8,4  | Bastionsbrecher | Killbox, einseitige Kleinflut | 31372         |
-| Relais Helios      | 20     | ×9,2  | Sirene Null     | Signalkern verteidigen        | 38576         |
-| Damm 13            | 20     | ×10   | Tiefenwurm      | West-/Ost-Frontwechsel        | 47805         |
-| Route Lazarus      | 20     | ×10,9 | Straßenkönig    | Konvoi eskortieren            | 59060         |
-| Eklipsen-Riss      | 20     | ×11,8 | EKLIPSE         | rotierende Angriffsseiten     | 75417         |
-| Todeszone Null     | 10     | ×12,8 | OMEGA           | acht Minuten Elite-Überleben  | 93971         |
-| Aegis-Bollwerk     | 20     | ×14,2 | AEGIS PRIME     | nur Frontschild-Gegner        | 124182        |
-| Schleierbezirk     | 20     | ×15,4 | NACHTFÜRST      | viele unsichtbare Gegner      | 148488        |
-| Triarch-Relais     | 20     | ×16,4 | TRIARCH-BRECHER | drei Signalkerne verteidigen  | 174845        |
+| Karte              | Wellen | Härte | Endboss         | Besonderheit                      | Gold bei Sieg |
+| ------------------ | ------ | ----- | --------------- | --------------------------------- | ------------- |
+| Vorposten 07       | 10     | ×1    | Fleischkönig    | offener Einstieg                  | 670           |
+| Industriehafen     | 11     | ×1,45 | Brutmutter      | Container-Gassen                  | 1168          |
+| Militärbasis Nord  | 12     | ×2    | Feldmarschall   | lange Feuergassen                 | 1977          |
+| Krater-Quarantäne  | 13     | ×2,8  | Artillerist     | offenes Feld                      | 3116          |
+| Metro Sektor 9     | 14     | ×3,6  | Sogfürst        | Tunnelkreuzung                    | 4587          |
+| Stahlwerk Kessel 3 | 15     | ×4,4  | Schlackenherr   | enge Gießhalle                    | 6175          |
+| Zitadelle Alpha    | 16     | ×5,2  | Zerreißer       | Festungsring                      | 8701          |
+| Nekropole          | 17     | ×6    | Schwarmkönigin  | kompakte Arena                    | 11945         |
+| Reaktorblock 4     | 18     | ×6,8  | Seuchenfürst    | offenes Großfeld                  | 16209         |
+| Abgrund-Kathedrale | 19     | ×7,6  | OMEGA           | alte Endlinie                     | 24541         |
+| Bunker K-11        | 20     | ×8,4  | Bastionsbrecher | Killbox, einseitige Kleinflut     | 31372         |
+| Relais Helios      | 20     | ×9,2  | Sirene Null     | Signalkern verteidigen            | 38576         |
+| Damm 13            | 20     | ×10   | Tiefenwurm      | West-/Ost-Frontwechsel            | 47805         |
+| Route Lazarus      | 20     | ×10,9 | Straßenkönig    | Konvoi eskortieren                | 59060         |
+| Eklipsen-Riss      | 20     | ×11,8 | EKLIPSE         | rotierende Angriffsseiten         | 75417         |
+| Todeszone Null     | 10     | ×12,8 | OMEGA           | acht Minuten Elite-Überleben      | 93971         |
+| Aegis-Bollwerk     | 20     | ×14,2 | AEGIS PRIME     | nur Frontschild-Gegner            | 124182        |
+| Schleierbezirk     | 20     | ×15,4 | NACHTFÜRST      | viele unsichtbare Gegner          | 148488        |
+| Triarch-Relais     | 20     | ×16,4 | TRIARCH-BRECHER | drei Signalkerne verteidigen      | 174845        |
+| Nullthron          | 5      | ×18,2 | WELTENFRESSER   | fünf Bossphasen, 20.000 $ Reserve | 221575        |
 
 Reguläre Kampagnenkarten starten bei zehn Wellen, gewinnen pro Level genau eine
 Welle dazu und enden spätestens bei 20. Mini-Bosse und Spezialangriffe sind auf
 den kürzeren Läufen entsprechend dichter bis zur finalen Bosswelle verteilt.
 Die Todeszone Null bleibt als zeitgesteuerter Acht-Minuten-Sondermodus bei zehn
 Einsatzphasen.
+Der Nullthron ist die finale Ausnahme: Seine fünf handgebauten Wellen bestehen
+aus zurückkehrenden Endgegnern. Eine Einsatzreserve von 20.000 $ pro Spieler
+und deren hohe Kopfgelder gleichen das fehlende Einkommen der sonst bis zu
+zwanzig Bau- und Kampfphasen aus.
 
 Beim Signalkern und beim Konvoi endet der Run auch dann, wenn das Missionsziel
 zerstört wird. Der Konvoi muss pro Welle einen Streckenabschnitt schaffen,
@@ -126,6 +131,10 @@ Jede Karte hat genau einen Endboss, und jeder kann etwas anderes:
 | Tiefenwurm      | Giftspur, schnelle Jagd und drei Schlitzer beim Tod                       |
 | Straßenkönig    | Bombardement, Sprenglinge und Druckwellen gegen den Konvoi                |
 | EKLIPSE         | Feuer, Gift, Gravitation und Elite-Nachschub zugleich                     |
+| AEGIS PRIME     | riesiger Frontschild, Schildverstärkung und Belagerungsschläge            |
+| NACHTFÜRST      | bleibt für Türme unsichtbar und ruft Phantome                             |
+| TRIARCH-BRECHER | Störfelder, schwere Schläge und Angriffe auf die Signalkerne              |
+| WELTENFRESSER   | riesiger Endgegner mit Druckwellen, Bombardement und Weltenriss           |
 
 Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 (gepanzert, ruft Verstärkung), Schlitzer (springt heran) und Mörserträger
@@ -168,6 +177,7 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 | Wurfschild           | 18000 | 920 Schaden, prallt schneller zwischen acht Gegnern        |
 | Blitzhammer          | 21000 | schwerer Wurf mit vier sehr starken Blitzentladungen       |
 | Kolosswerfer         | 22000 | riesiges Massivgeschoss mit 2400 Kontaktschaden            |
+| Resonanzbrecher      | 24500 | aufladbare massive Rundum-Schadenswelle                    |
 | Risskanone           | 30000 | Flugkern erzeugt wiederholt schädliche, ziehende Raumrisse |
 
 ### Barrikaden
@@ -219,20 +229,21 @@ Fahrzeuge werden wie Bauten in der Bauphase gekauft und abgestellt. Mit `E`
 steigt man ein und wieder aus; wer zuerst einsteigt, fährt. Alle an Bord zielen
 und schießen weiter mit ihrer eigenen Waffe.
 
-| Fahrzeug         | Preis | Plätze | Leben | Besonderheit                           |
-| ---------------- | ----- | ------ | ----- | -------------------------------------- |
-| Quad             | 850   | 1      | 800   | einziges schnelles Fahrzeug, Nitro     |
-| Geländewagen     | 1500  | 2      | 1600  | robuster Allrounder                    |
-| Mannschaftswagen | 2300  | 4      | 2400  | heilt die Besatzung während der Fahrt  |
-| Kampf-Pickup     | 2900  | 2      | 1900  | MG feuert selbstständig                |
-| Sprengwagen      | 3400  | 2      | 1500  | massive Explosion beim Zerbrechen      |
-| Werkstattwagen   | 3700  | 3      | 2800  | repariert Bauten, liefert Munition     |
-| Dampfwalze       | 4500  | 2      | 4300  | sehr langsam, extremer Überrollschaden |
-| Planierraupe     | 5000  | 2      | 4800  | Frontschub, verwundbare Seiten         |
-| Schützenpanzer   | 5200  | 4      | 5000  | langsame Festung mit Bordkanone        |
-| Sprungfahrzeug   | 5800  | 1      | 2050  | teleportiert per Dash 620 Einheiten    |
-| Turbo-Abpraller  | 6800  | 1      | 2350  | prallt von Grenzen und Hindernissen ab |
-| Kampfpanzer      | 8200  | 2      | 7600  | schwerste Hülle und Sprengkanone       |
+| Fahrzeug         | Preis | Plätze | Leben | Besonderheit                            |
+| ---------------- | ----- | ------ | ----- | --------------------------------------- |
+| Quad             | 850   | 1      | 800   | einziges schnelles Fahrzeug, Nitro      |
+| Geländewagen     | 1500  | 2      | 1600  | robuster Allrounder                     |
+| Mannschaftswagen | 2300  | 4      | 2400  | heilt die Besatzung während der Fahrt   |
+| Kampf-Pickup     | 2900  | 2      | 1900  | MG feuert selbstständig                 |
+| Sprengwagen      | 3400  | 2      | 1500  | massive Explosion beim Zerbrechen       |
+| Werkstattwagen   | 3700  | 3      | 2800  | repariert Bauten, liefert Munition      |
+| Dampfwalze       | 4500  | 2      | 4300  | sehr langsam, extremer Überrollschaden  |
+| Schützenpanzer   | 5200  | 4      | 5000  | langsame Festung mit Bordkanone         |
+| Sprungfahrzeug   | 5800  | 1      | 2050  | teleportiert per Dash 320 Einheiten     |
+| Turbo-Abpraller  | 6800  | 1      | 2350  | prallt von Grenzen und Hindernissen ab  |
+| Kampfpanzer      | 8200  | 2      | 7600  | schwerste Hülle und Sprengkanone        |
+| Ionenstürmer     | 10400 | 3      | 6400  | explosive, durchschlagende Ionenkanone  |
+| Planierraupe     | 13000 | 2      | 10500 | Titanräumschild und enormer Rammschaden |
 
 Solange das Fahrzeug noch steht, sind alle Insassen vollständig
 unverwundbar. Das bisherige Upgrade _Innenraumschutz_ heißt deshalb jetzt
@@ -241,6 +252,8 @@ der sichere Innenraum mit dem Dash: Am Steuer gibt es kein Ausweichen mehr,
 nur das Quad ist schneller als ein Überlebender zu Fuß und macht aus der Ladung
 ein Nitro. Das Sprungfahrzeug verbraucht sie stattdessen für einen kollisionsgeprüften
 Vorwärts-Teleport. Die anderen Fahrzeuge sind bewusst langsame, teure Lebenspuffer.
+Fahrzeugpanzerung wird in der Fahrzeugliste nur in den aktuellen Werten am
+Info-Icon angezeigt; die Basiswerte bleiben bei 0 % Zusatzpanzerung unverändert.
 Zombies gehen auf die Hülle los, Überfahren kostet auch die Karosserie Leben,
 und repariert wird erst wieder in der nächsten Bauphase. Geht die Hülle hoch,
 fliegen alle heraus und nehmen Wrackschaden. Das Motor-Upgrade endet bei

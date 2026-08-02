@@ -146,7 +146,7 @@ export class WaveSystem {
       player.shieldMax = Math.round(player.maxHealth * SHIELD_SHARE);
       player.shield = 0;
       player.alive = true;
-      player.money = startingMoney(upgrades.startMoney);
+      player.money = startingMoney(upgrades.startMoney) + (this.world.map.startingMoneyBonus ?? 0);
       player.weapon = 'pistol';
       player.owned.clear();
       player.owned.push('pistol');

@@ -60,6 +60,7 @@ const WEAPON_SOUND: Record<WeaponType, SoundName> = {
   ionstorm: 'shot-tesla',
   colossus: 'shot-heavy',
   worldbreaker: 'melee',
+  resonanceblade: 'shot-energy',
   sun: 'shot-rocket',
   riftcannon: 'shot-energy',
 };

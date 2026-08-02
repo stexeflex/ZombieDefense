@@ -251,7 +251,7 @@
             [class.owned]="progress.ownsPerk(perk.key)"
             [class.locked]="!progress.perkUnlocked(perk.key)"
           >
-            <span class="upgrade-icon">{{ perk.icon }}</span>
+            <span class="upgrade-icon" [class.compact]="perk.icon.length > 3">{{ perk.icon }}</span>
             <div class="upgrade-copy">
               <h3>{{ perk.label }}</h3>
               <p>{{ perk.description }}</p>

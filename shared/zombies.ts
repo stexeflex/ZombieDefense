@@ -39,7 +39,8 @@ export type ZombieType =
   | 'eclipse'
   | 'bulwark'
   | 'nightlord'
-  | 'signalbreaker';
+  | 'signalbreaker'
+  | 'worldeater';
 
 export type ZombieRank = 'trash' | 'elite' | 'mini' | 'boss';
 
@@ -776,6 +777,44 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
       { kind: 'vortex', every: 13, radius: 820, force: 780, duration: 0.5, push: true },
     ],
   },
+  worldeater: {
+    label: 'WELTENFRESSER',
+    health: 24000,
+    speed: 34,
+    damage: 168,
+    radius: 132,
+    reward: 30000,
+    rank: 'boss',
+    armor: 0.38,
+    threat: 'riesiger Endgegner mit Druckwellen, Bombardement und Weltenriss',
+    abilities: [
+      { kind: 'slam', every: 7.8, radius: 660, damage: 188, telegraph: 1.8 },
+      {
+        kind: 'mortar',
+        every: 6.2,
+        shots: 10,
+        radius: 150,
+        damage: 112,
+        telegraph: 1.25,
+        range: 2100,
+      },
+      { kind: 'vortex', every: 10, radius: 1180, force: 430, duration: 1.7, push: false },
+      { kind: 'vortex', every: 15, radius: 900, force: 900, duration: 0.55, push: true },
+      {
+        kind: 'puddle',
+        every: 5.4,
+        hazard: 'lava',
+        radius: 132,
+        dps: 56,
+        life: 12,
+        count: 4,
+        spread: 680,
+      },
+      { kind: 'charge', every: 12, speed: 220, duration: 2.1 },
+      { kind: 'phaseShield', every: 9.5, duration: 1.25 },
+      { kind: 'summon', every: 11, count: 5, type: 'jammer' },
+    ],
+  },
 };
 
 export const ZOMBIE_TYPES = Object.keys(ZOMBIES) as ZombieType[];
@@ -801,6 +840,7 @@ export const BOSSES: ZombieType[] = [
   'bulwark',
   'nightlord',
   'signalbreaker',
+  'worldeater',
 ];
 
 export type AbilityOf<K extends ZombieAbility['kind']> = Extract<ZombieAbility, { kind: K }>;

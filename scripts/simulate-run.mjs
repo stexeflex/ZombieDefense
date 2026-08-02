@@ -105,7 +105,9 @@ function aimAtNearest(room, id) {
   });
   runtime.input = {
     ...IDLE,
-    shoot: Boolean(best),
+    shoot:
+      Boolean(best) &&
+      (!WEAPONS[player.weapon].charge || Math.max(0, player.weaponCharge ?? 0) < 0.99),
     aimX: best ? best.x : player.x + 100,
     aimY: best ? best.y : player.y,
   };
@@ -370,6 +372,34 @@ console.log('\n== Aufladewaffen ==');
   check(
     'Dashmesser macht während des geladenen Angriffs unverwundbar',
     player.weaponDashing > 0 && !landed && player.health === 1000,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'wave-player');
+  const runtime = room.systems.world.runtime.get(player.id);
+  startCombat(room);
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  player.weapon = 'resonanceblade';
+  player.x = 600;
+  player.y = 800;
+  const sideVictim = room.systems.world.spawnZombie('normal', { x: 600, y: 1180 });
+  const farVictim = room.systems.world.spawnZombie('normal', { x: 1400, y: 800 });
+  for (const victim of [sideVictim, farVictim]) {
+    victim.health = victim.maxHealth = 100000;
+    victim.baseSpeed = victim.speed = 0;
+  }
+  for (let tick = 0; tick < 48; tick += 1) {
+    runtime.input = { ...IDLE, shoot: true, aimX: 1000, aimY: 800 };
+    room.update(50);
+  }
+  runtime.input = { ...IDLE, shoot: false, aimX: 1000, aimY: 800 };
+  room.update(50);
+  check(
+    'Resonanzbrecher entlädt eine Rundum-Schadenswelle',
+    sideVictim.health < sideVictim.maxHealth && farVictim.health === farVictim.maxHealth,
   );
 }
 
@@ -1018,6 +1048,33 @@ console.log('\n== Fahrzeuge ==');
   room.systems.vehicles.toggle('p1');
   step(room, 20);
   check('Mit Besatzung feuert das MG von allein', target.health < 1e6);
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'p1');
+  startCombat(room);
+  room.systems.waves.finishWave();
+  player.money = 1e6;
+  player.x = 1200;
+  player.y = 800;
+  room.systems.build.placeVehicle('p1', { type: 'gunship', x: 1260, y: 800, rotation: 0 });
+  const gunship = [...room.state.vehicles.values()][0];
+  room.systems.vehicles.toggle('p1');
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  makeInvincible(player);
+  const target = room.systems.world.spawnZombie('normal', { x: gunship.x + 240, y: gunship.y });
+  const splash = room.systems.world.spawnZombie('normal', {
+    x: gunship.x + 260,
+    y: gunship.y + 80,
+  });
+  for (const zombie of [target, splash]) zombie.health = zombie.maxHealth = 1e6;
+  step(room, 35);
+  check(
+    'Ionenstürmer beschießt Gruppen mit seiner schweren Bordwaffe',
+    target.health < target.maxHealth && splash.health < splash.maxHealth,
+  );
 }
 {
   const room = makeRoom('outpost');
@@ -2770,7 +2827,7 @@ console.log('\n== Jede Karte hat ihren eigenen Boss ==');
 {
   const dedicatedMaps = MAPS.filter((map) => map.mission?.kind !== 'timed');
   const bosses = dedicatedMaps.map((map) => map.boss);
-  check('Neunzehn Karten', MAPS.length === 19, `(${MAPS.length})`);
+  check('Zwanzig Karten', MAPS.length === 20, `(${MAPS.length})`);
   check('Kein Boss doppelt', new Set(bosses).size === bosses.length);
   check(
     'Jeder Boss ist als Boss eingestuft',
@@ -2917,6 +2974,19 @@ campaignMaps.forEach((map) => {
         nearestDistance = distance;
         nearest = zombie;
       });
+      // In the finale, keep charging into the boss instead of swapping back to
+      // the laser whenever one of its short-lived summons becomes closer. The
+      // Resonanzbrecher's wave clears those escorts at the same time.
+      if (map.id === 'endgame') {
+        room.state.zombies.forEach((zombie) => {
+          if (ZOMBIES[zombie.type].rank !== 'boss') return;
+          const distance = Math.hypot(zombie.x - player.x, zombie.y - player.y);
+          if (nearest && ZOMBIES[nearest.type].rank === 'boss' && distance >= nearestDistance)
+            return;
+          nearestDistance = distance;
+          nearest = zombie;
+        });
+      }
       let bossEngaged = false;
       if (nearest?.type === 'shieldbearer') {
         // The tactical bot demonstrates the intended counter: step around the
@@ -2929,7 +2999,7 @@ campaignMaps.forEach((map) => {
           if (!room.systems.world.canTravel(x, y, nearest.x, nearest.y, 18)) continue;
           player.x = x;
           player.y = y;
-          player.weapon = 'worldbreaker';
+          player.weapon = map.id === 'endgame' ? 'resonanceblade' : 'worldbreaker';
           bossEngaged = true;
           break;
         }
@@ -2947,7 +3017,7 @@ campaignMaps.forEach((map) => {
           if (!room.systems.world.canStand(x, y, 18)) continue;
           player.x = x;
           player.y = y;
-          player.weapon = 'worldbreaker';
+          player.weapon = map.id === 'endgame' ? 'resonanceblade' : 'worldbreaker';
           bossEngaged = true;
           break;
         }

@@ -1117,9 +1117,6 @@
                             {{ vehicle.seats }} {{ vehicle.seats === 1 ? 'Platz' : 'Plätze' }} ·
                             {{ vehicleHealth(vehicle.type) }} HP · Insassen unverwundbar
                           </small>
-                          @if (vehicleArmorPercent() > 0) {
-                            <small>+{{ vehicleArmorPercent() }} % Fahrzeugpanzerung</small>
-                          }
                           <small>{{ vehicle.description }}</small>
                           <small class="vehicle-perk">★ {{ vehicle.perk }}</small>
                           @if (showBasicStats()) {

@@ -14,7 +14,8 @@ export type VehicleType =
   | 'apc'
   | 'jumper'
   | 'ricochet'
-  | 'tank';
+  | 'tank'
+  | 'gunship';
 
 /** Mounted weapon that aims and fires on its own while somebody is on board. */
 export interface VehicleGun {
@@ -199,20 +200,20 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
   bulldozer: {
     label: 'Planierraupe',
     short: 'PR',
-    cost: 5000,
-    health: 4800,
+    cost: 13000,
+    health: 10500,
     width: 116,
     height: 62,
     seats: 2,
-    speed: 94,
-    grip: 2.4,
-    turn: 0.92,
-    ram: 155,
-    ramPush: 105,
+    speed: 102,
+    grip: 2.7,
+    turn: 1.05,
+    ram: 380,
+    ramPush: 175,
     frontRamOnly: true,
-    directionalArmor: { frontArc: Math.PI * 0.72, front: 0.68, exposed: 1.35 },
-    perk: 'Schiebt Gegner mit dem Frontschild weit vor sich her',
-    description: 'Träge beim Drehen und an Seiten sowie Heck deutlich verwundbarer',
+    directionalArmor: { frontArc: Math.PI * 0.78, front: 0.42, exposed: 1.16 },
+    perk: 'Titanräumschild zerdrückt und schleudert ganze Bosskeile zurück',
+    description: 'Extrem robuste Front, gewaltiger Rammschaden, an Seiten und Heck verwundbar',
   },
   apc: {
     label: 'Schützenpanzer',
@@ -242,10 +243,10 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     grip: 3,
     turn: 3.6,
     ram: 115,
-    teleport: 620,
+    teleport: 320,
     perk: 'Dash-Taste teleportiert das Fahrzeug augenblicklich nach vorn',
     description:
-      'Langsam im Normalbetrieb, überspringt mit einer Dash-Ladung sofort weite Strecken',
+      'Langsam im Normalbetrieb, überspringt mit einer Dash-Ladung etwa eine normale Dash-Distanz',
   },
   ricochet: {
     label: 'Turbo-Abpraller',
@@ -288,6 +289,32 @@ export const VEHICLES: Record<VehicleType, VehicleConfig> = {
     perk: 'Sprengkanone walzt ganze Reihen nieder',
     description: 'Kriecht über das Feld und räumt mit Kettenkanone und Gewicht auf',
   },
+  gunship: {
+    label: 'Ionenstürmer',
+    short: 'IS',
+    cost: 10400,
+    health: 6400,
+    width: 112,
+    height: 56,
+    seats: 3,
+    speed: 122,
+    grip: 3.1,
+    turn: 2.45,
+    ram: 148,
+    gun: {
+      damage: 210,
+      fireDelay: 0.78,
+      range: 920,
+      speed: 1750,
+      pierce: 8,
+      splashRadius: 180,
+      splashDamage: 310,
+      burn: 42,
+      burnSeconds: 4.5,
+    },
+    perk: 'Autonome Ionenkanone durchschlägt Reihen und detoniert im Ziel',
+    description: 'Schwerer Dreisitzer mit einer verheerenden selbstzielenden Bordwaffe',
+  },
 };
 
 export const VEHICLE_ORDER: VehicleType[] = [
@@ -298,11 +325,12 @@ export const VEHICLE_ORDER: VehicleType[] = [
   'explosive',
   'workshop',
   'steamroller',
-  'bulldozer',
   'apc',
   'jumper',
   'ricochet',
   'tank',
+  'gunship',
+  'bulldozer',
 ];
 
 /** How far from the hull a player may get in, repair or sell it. */

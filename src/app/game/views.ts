@@ -182,6 +182,7 @@ export const PROJECTILE_STYLE: Record<
   vehicle_pickup: { texture: 'fx-spark', tint: 0xffe89a, scaleX: 1.8, scaleY: 0.44 },
   vehicle_apc: { texture: 'fx-spark', tint: 0xd8fbff, scaleX: 2.6, scaleY: 0.5 },
   vehicle_tank: { texture: 'fx-glow', tint: 0xffb066, scaleX: 0.6, scaleY: 0.45 },
+  vehicle_gunship: { texture: 'fx-energy', tint: 0x72e8ff, scaleX: 2.8, scaleY: 1.15 },
 };
 
 /** Pool colours; warnings are drawn in red no matter what fires them. */
