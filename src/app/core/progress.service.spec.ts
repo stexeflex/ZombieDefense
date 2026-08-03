@@ -95,7 +95,8 @@ describe('ProgressService upgrade shop', () => {
     expect(progress.abilityUnlocked('mortarStrike')).toBe(false);
     expect(progress.selectAbility('mortarStrike')).toBe(false);
     expect(PLAYER_ABILITY_COST.mortarStrike).toBe(PLAYER_ABILITY_COST.precisionShot);
-    expect(PLAYER_ABILITY_COST.nullCore).toBeGreaterThan(PLAYER_ABILITY_COST.precisionShot);
+    expect(PLAYER_ABILITY_COST.nullCore).toBe(1800);
+    expect(PLAYER_ABILITY_COST.nullCore).toBe(PLAYER_ABILITY_COST.precisionShot);
 
     progress.addRunReward(PLAYER_ABILITY_COST.mortarStrike, 'ability-unlock');
     expect(progress.buyAbility('mortarStrike')).toBe(true);

@@ -116,7 +116,7 @@ export const PLAYER_ABILITY_COST: Record<PlayerAbilityType, number> = {
   grenade: 0,
   mortarStrike: 1800,
   precisionShot: 1800,
-  nullCore: 2800,
+  nullCore: 1800,
 };
 
 export function isPlayerAbility(value: unknown): value is PlayerAbilityType {

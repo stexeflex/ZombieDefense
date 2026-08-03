@@ -105,8 +105,7 @@
 .ability-card {
   min-height: 150px;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  justify-items: start;
+  grid-template-rows: 1fr auto;
   gap: 7px;
   padding: 17px;
   border: 0;
@@ -116,11 +115,24 @@
   text-align: left;
 }
 
+.ability-preview {
+  width: 100%;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  justify-items: start;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
 .ability-card:last-child {
   border-right: 0;
 }
 
-.ability-card > span {
+.ability-preview > span {
   width: 36px;
   height: 36px;
   display: grid;
@@ -130,11 +142,11 @@
   font-size: 1rem;
 }
 
-.ability-card strong {
+.ability-preview strong {
   font-size: 0.82rem;
 }
 
-.ability-card small {
+.ability-preview small {
   color: var(--muted-2);
   font-size: 0.66rem;
   line-height: 1.45;
@@ -154,6 +166,9 @@
 
 .ability-card.selected {
   background: rgba(105, 240, 174, 0.09);
+}
+
+.ability-card.previewed {
   box-shadow: inset 0 0 0 1px var(--acid);
 }
 

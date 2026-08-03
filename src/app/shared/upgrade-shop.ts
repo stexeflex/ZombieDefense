@@ -24,6 +24,8 @@ export class UpgradeShop {
   readonly bought = output<void>();
   readonly closed = output<void>();
   readonly shopTab = signal<'levels' | 'perks' | 'abilities'>('levels');
+  /** The inspected ability is independent from the one equipped for the next run. */
+  readonly inspectedAbility = signal<PlayerAbilityType>(this.progress.ability());
   readonly definitions = UPGRADE_DEFINITIONS;
   private readonly allGroups = UPGRADE_GROUPS.map((group) => ({
     ...group,
@@ -48,22 +50,22 @@ export class UpgradeShop {
   readonly abilities = PLAYER_ABILITY_ORDER.map((type) => ({ type, ...PLAYER_ABILITIES[type] }));
   readonly selectedAbilityGroup = computed(() => {
     const groupKey =
-      this.progress.ability() === 'grenade'
+      this.inspectedAbility() === 'grenade'
         ? 'grenades'
-        : this.progress.ability() === 'mortarStrike'
+        : this.inspectedAbility() === 'mortarStrike'
           ? 'mortar'
-          : this.progress.ability() === 'precisionShot'
+          : this.inspectedAbility() === 'precisionShot'
             ? 'precision'
             : 'nullCore';
     return this.abilityGroups.find((group) => group.key === groupKey)!;
   });
   readonly selectedAbilityPerks = computed(() => {
     const perkKeys: PerkKey[] =
-      this.progress.ability() === 'grenade'
+      this.inspectedAbility() === 'grenade'
         ? ['extraGrenade']
-        : this.progress.ability() === 'mortarStrike'
+        : this.inspectedAbility() === 'mortarStrike'
           ? ['mortarNapalm', 'extraMortar']
-          : this.progress.ability() === 'precisionShot'
+          : this.inspectedAbility() === 'precisionShot'
             ? ['precisionReload', 'extraPrecision']
             : ['nullCoreGravity', 'extraNullCore'];
     return PERK_DEFINITIONS.filter((perk) => perkKeys.includes(perk.key));
@@ -77,10 +79,15 @@ export class UpgradeShop {
   }
 
   useAbilityAction(ability: PlayerAbilityType) {
+    this.inspectedAbility.set(ability);
     const changed = this.progress.abilityUnlocked(ability)
       ? this.progress.selectAbility(ability)
       : this.progress.buyAbility(ability);
     if (changed) this.bought.emit();
+  }
+
+  inspectAbility(ability: PlayerAbilityType) {
+    this.inspectedAbility.set(ability);
   }
 
   level(key: UpgradeKey) {

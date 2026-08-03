@@ -117,11 +117,20 @@
             <article
               class="ability-card"
               [class.selected]="progress.ability() === ability.type"
+              [class.previewed]="inspectedAbility() === ability.type"
               [class.locked]="!progress.abilityUnlocked(ability.type)"
             >
-              <span>{{ ability.short }}</span>
-              <strong>{{ ability.label }}</strong>
-              <small>{{ ability.description }}</small>
+              <button
+                class="ability-preview"
+                type="button"
+                [attr.aria-pressed]="inspectedAbility() === ability.type"
+                [attr.aria-label]="ability.label + ' Upgrades ansehen'"
+                (click)="inspectAbility(ability.type)"
+              >
+                <span>{{ ability.short }}</span>
+                <strong>{{ ability.label }}</strong>
+                <small>{{ ability.description }}</small>
+              </button>
               <button
                 class="ability-action"
                 type="button"

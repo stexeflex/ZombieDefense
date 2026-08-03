@@ -1142,7 +1142,7 @@ describe('permanent upgrades', () => {
     expect(PLAYER_ABILITY_COST.grenade).toBe(0);
     expect(PLAYER_ABILITY_COST.mortarStrike).toBe(PLAYER_ABILITY_COST.precisionShot);
     expect(PLAYER_ABILITY_COST.mortarStrike).toBeGreaterThan(0);
-    expect(PLAYER_ABILITY_COST.nullCore).toBeGreaterThan(PLAYER_ABILITY_COST.precisionShot);
+    expect(PLAYER_ABILITY_COST.nullCore).toBe(PLAYER_ABILITY_COST.precisionShot);
     expect(PRECISION_KILL_COOLDOWN_REDUCTION).toBe(0.7);
     expect(precisionHealthDamageFraction(5, 'elite')).toBe(5 * PRECISION_HEALTH_DAMAGE_PER_LEVEL);
     expect(precisionHealthDamageFraction(5, 'mini')).toBeCloseTo(0.02);
