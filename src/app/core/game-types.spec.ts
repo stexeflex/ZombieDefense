@@ -546,6 +546,9 @@ describe('weapon balance', () => {
     expect(WEAPONS.stormorb.speed).toBeLessThan(WEAPONS.rocket.speed);
     expect(WEAPONS.colossus.projectileRadius).toBeGreaterThan(30);
     expect(WEAPONS.colossus.speed).toBeLessThan(WEAPONS.stormorb.speed);
+    expect(WEAPONS.colossus.damage).toBe(2640);
+    expect(WEAPONS.colossus.magazine).toBe(4);
+    expect(WEAPONS.colossus.reserve).toBe(20);
     expect(WEAPONS.throwshield.throwBounces).toBe(8);
     expect(WEAPONS.throwshield.throwReturnDamageFactor).toBeCloseTo(0.45);
     expect(WEAPONS.throwshield.speed).toBeGreaterThanOrEqual(750);
@@ -556,6 +559,10 @@ describe('weapon balance', () => {
     expect(WEAPONS.resonanceblade.charge?.kind).toBe('wave');
     expect(WEAPONS.riftcannon.riftPulse?.damage).toBeGreaterThan(0);
     expect(WEAPONS.riftcannon.riftPulse?.pull).toBeGreaterThan(0);
+    expect(WEAPONS.riftcannon.damage).toBe(1485);
+    expect(WEAPONS.riftcannon.magazine).toBe(2);
+    expect(WEAPONS.riftcannon.reserve).toBe(10);
+    expect(WEAPONS.riftcannon.riftPulse?.damage).toBe(572);
   });
 
   it('moves the three rebalanced melee weapons above Weltenbrecher and adds a new price peak', () => {

@@ -176,7 +176,7 @@ Dazu kommen vier Mini-Bosse: Zerstörer (Sturm und Schockwelle), Wächter
 | Kugelblitzwerfer     | 16500 | langsames Geschoss mit starken Blitzen auf vier Ziele      |
 | Wurfschild           | 18000 | 920 Schaden, prallt schneller zwischen acht Gegnern        |
 | Blitzhammer          | 21000 | schwerer Wurf mit vier sehr starken Blitzentladungen       |
-| Kolosswerfer         | 22000 | riesiges Massivgeschoss mit 2400 Kontaktschaden            |
+| Kolosswerfer         | 22000 | riesiges Massivgeschoss mit 2640 Kontaktschaden            |
 | Resonanzbrecher      | 24500 | aufladbare massive Rundum-Schadenswelle                    |
 | Risskanone           | 30000 | Flugkern erzeugt wiederholt schädliche, ziehende Raumrisse |
 
