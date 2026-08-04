@@ -52,7 +52,7 @@ export class PlayerState extends Schema {
   @type('number') reviveProgress = 0;
   @type('number') reloading = 0;
   @type('number') firing = 0;
-  /** Visible charge of the Blitzhammer or Dashmesser, from zero to one. */
+  /** Visible charge of any held-fire melee special, from zero to one. */
   @type('number') weaponCharge = 0;
   @type('number') hurt = 0;
   fireCooldown = 0;
@@ -154,6 +154,14 @@ export class ProjectileState extends Schema {
   riftRadius = 0;
   riftDamage = 0;
   riftPull = 0;
+  /** The Wurfschild flies in visible legs before piercing back to its owner. */
+  shieldReturning = false;
+  shieldBouncesRemaining = 0;
+  shieldLegRange = 0;
+  shieldLegDistance = 0;
+  shieldSpeed = 0;
+  shieldReturnDamage = 0;
+  shieldArmorPierce = 0;
   hitIds = new Set<string>();
 }
 

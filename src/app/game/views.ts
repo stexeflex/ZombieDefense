@@ -77,6 +77,9 @@ export interface VehicleView extends BaseView {
   gun?: Phaser.GameObjects.Image;
   healthBar: Phaser.GameObjects.Rectangle;
   crewLabel: Phaser.GameObjects.Text;
+  /** Charge meter stays visible on the hull while its passenger is hidden. */
+  chargeBackground: Phaser.GameObjects.Rectangle;
+  chargeBar: Phaser.GameObjects.Rectangle;
   type: VehicleType;
   /** Own heading, so a parked hull does not snap around on every snapshot. */
   rotation: number;
@@ -150,7 +153,7 @@ export const PROJECTILE_STYLE: Record<
   firerocket: { texture: 'fx-glow', tint: 0xff7a3a, scaleX: 0.7, scaleY: 0.55 },
   tesla: { texture: 'fx-energy', tint: 0x9fdcff, scaleX: 1.4, scaleY: 1.1 },
   laser: { texture: 'fx-spark', tint: 0xff8fd8, scaleX: 4.2, scaleY: 0.6 },
-  throwshield: { texture: 'fx-energy', tint: 0x9fdcff, scaleX: 2.2, scaleY: 2.2 },
+  throwshield: { texture: 'projectile-throwshield', tint: 0xffffff, scaleX: 1, scaleY: 1 },
   railgun: { texture: 'fx-glow', tint: 0xbaf7ff, scaleX: 4.2, scaleY: 0.9 },
   gravity: { texture: 'fx-energy', tint: 0xa67cff, scaleX: 2.2, scaleY: 2.2 },
   thunderhammer: { texture: 'fx-energy', tint: 0x9fdcff, scaleX: 2.8, scaleY: 1.6 },

@@ -546,6 +546,8 @@ describe('weapon balance', () => {
     expect(WEAPONS.colossus.projectileRadius).toBeGreaterThan(30);
     expect(WEAPONS.colossus.speed).toBeLessThan(WEAPONS.stormorb.speed);
     expect(WEAPONS.throwshield.throwBounces).toBe(8);
+    expect(WEAPONS.throwshield.throwReturnDamageFactor).toBeCloseTo(0.45);
+    expect(WEAPONS.throwshield.speed).toBeGreaterThanOrEqual(750);
     expect(WEAPONS.thunderhammer.charge?.kind).toBe('throw');
     expect(WEAPONS.dashknife.charge?.kind).toBe('dash');
     expect(WEAPONS.resonanceblade.charge?.kind).toBe('wave');
@@ -556,10 +558,13 @@ describe('weapon balance', () => {
   it('moves the three rebalanced melee weapons above Weltenbrecher and adds a new price peak', () => {
     for (const weapon of ['knife', 'throwshield', 'thunderhammer'] as const) {
       expect(WEAPONS[weapon].cost).toBeGreaterThan(WEAPONS.worldbreaker.cost);
-      expect(WEAPONS[weapon].damage).toBeGreaterThan(WEAPONS.phaselance.damage);
     }
+    expect(WEAPONS.knife.damage).toBeGreaterThan(WEAPONS.phaselance.damage);
+    expect(WEAPONS.thunderhammer.damage).toBeGreaterThan(WEAPONS.phaselance.damage);
     expect(WEAPONS.knife.damage).toBeGreaterThanOrEqual(750);
-    expect(WEAPONS.throwshield.damage).toBeGreaterThanOrEqual(900);
+    expect(WEAPONS.throwshield.damage * (1 + WEAPONS.throwshield.throwBounces!)).toBeGreaterThan(
+      WEAPONS.worldbreaker.damage * 4,
+    );
     expect(WEAPONS.thunderhammer.damage).toBeGreaterThanOrEqual(1400);
     expect(WEAPONS.thunderhammer.lightningPulse!.damage).toBeGreaterThanOrEqual(300);
     expect(WEAPONS.stormorb.cost).toBeGreaterThanOrEqual(16000);

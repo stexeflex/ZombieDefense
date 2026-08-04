@@ -413,7 +413,7 @@ export class PlayerSystem {
   ) {
     const config = WEAPONS[player.weapon];
     const charge = config.charge;
-    if (!charge || !combat || !player.alive || player.vehicleId) {
+    if (!charge || !combat || !player.alive) {
       runtime.weaponChargeSeconds = 0;
       runtime.chargedWeapon = '';
       player.weaponCharge = 0;
@@ -805,10 +805,14 @@ export class PlayerSystem {
     }
   }
 
-  /** Ammo-free shield throw; the projectile system resolves its eight instant ricochets. */
+  /** Only one visible shield may be away from its owner at a time. */
   private throwShield(player: PlayerState, upgrades: PermanentUpgrades) {
     const config = WEAPONS[player.weapon];
     if (player.fireCooldown > 0) return;
+    const activeShield = [...this.world.state.projectiles.values()].some(
+      (projectile) => projectile.kind === 'throwshield' && projectile.ownerId === player.id,
+    );
+    if (activeShield) return;
     player.fireCooldown = config.fireDelay / 1000 / (1 + upgrades.meleeSpeed * 0.02);
     player.firing = Math.min(0.26, player.fireCooldown);
     const muzzleX = player.x + Math.cos(player.rotation) * 28;
@@ -822,10 +826,15 @@ export class PlayerSystem {
       config.speed,
       player.weapon,
     );
-    projectile.life = weaponLife(config);
+    // Every outbound leg receives the same maximum range. The long safety
+    // lifetime merely prevents an abandoned shield from living forever.
+    projectile.life = 20;
     projectile.radius = config.projectileRadius ?? 12;
-    projectile.chain = Math.max(0, (config.throwBounces ?? 1) - 1);
-    projectile.chainRange = config.chainRange ?? 300;
+    projectile.shieldBouncesRemaining = config.throwBounces ?? 0;
+    projectile.shieldLegRange = config.range * (1 + upgrades.meleeRange * 0.01);
+    projectile.shieldSpeed = config.speed;
+    projectile.shieldReturnDamage = projectile.damage * (config.throwReturnDamageFactor ?? 0.5);
+    projectile.shieldArmorPierce = config.armorPierce ?? 0;
     this.world.pushFx({
       k: 'melee',
       x: player.x,

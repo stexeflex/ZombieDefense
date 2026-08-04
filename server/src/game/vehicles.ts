@@ -2,6 +2,7 @@ import {
   ARENA,
   DEFENSES,
   VEHICLES,
+  WEAPONS,
   VEHICLE_RAM_COOLDOWN,
   VEHICLE_RAM_MIN_SPEED,
   VEHICLE_RAM_SELF,
@@ -19,7 +20,7 @@ import {
   type VehicleConfig,
 } from '../../../shared/game-types.js';
 import type { DefenseState, PlayerState, VehicleState, ZombieState } from '../state/game-state.js';
-import type { GameWorld } from './world.js';
+import type { GameWorld, RuntimePlayer } from './world.js';
 
 /**
  * Everything a hull does: driving, running enemies over, its mounted gun and
@@ -38,10 +39,13 @@ export class VehicleSystem {
         else vehicle.ramCooldowns.set(id, timer - delta);
       }
 
-      const speed = this.drive(vehicle, config, delta);
+      const weaponDasher = this.weaponDasherOf(vehicle);
+      const speed = this.drive(vehicle, config, delta, weaponDasher);
       this.carryCrew(vehicle);
       if (!combat) return;
-      this.ram(vehicle, speed);
+      // The Dashmesser supplies its own upgraded damage. It must not also turn
+      // the same movement into normal ram damage and self-damage.
+      if (!weaponDasher) this.ram(vehicle, speed);
       this.fireGun(vehicle, config);
       this.applyAuras(vehicle, config, delta);
     });
@@ -49,7 +53,14 @@ export class VehicleSystem {
 
   // ------------------------------------------------------------------ driving
 
-  private drive(vehicle: VehicleState, config: VehicleConfig, delta: number) {
+  private drive(
+    vehicle: VehicleState,
+    config: VehicleConfig,
+    delta: number,
+    weaponDasher?: { player: PlayerState; runtime: RuntimePlayer },
+  ) {
+    if (weaponDasher) return this.dashWithWeapon(vehicle, config, weaponDasher, delta);
+
     const driver = this.driverOf(vehicle);
     const runtime = driver ? this.world.runtime.get(driver.id) : undefined;
     let dirX = 0;
@@ -61,6 +72,8 @@ export class VehicleSystem {
 
     const upgrades = driver ? this.world.upgradesOf(driver.id) : undefined;
     let topSpeed = vehicleTopSpeed(vehicle.type, upgrades?.vehicleSpeed ?? 0);
+    const charged = driver ? WEAPONS[driver.weapon].charge : undefined;
+    if (charged && driver!.weaponCharge > 0) topSpeed *= charged.moveFactor;
     // The nitro of a light vehicle spends a dash charge, so the burst of pace
     // stays as rare as the dodge it replaces.
     if (vehicle.boost > 0) {
@@ -71,6 +84,96 @@ export class VehicleSystem {
     const speed = driveVehicle(vehicle, dirX, dirY, config, delta, topSpeed);
     this.resolveCollisions(vehicle, config);
     return speed;
+  }
+
+  /** Any occupied seat may trigger it; the whole hull follows the blade dash. */
+  private weaponDasherOf(vehicle: VehicleState) {
+    for (const id of vehicle.crew) {
+      const player = this.world.state.players.get(id);
+      const runtime = player ? this.world.runtime.get(id) : undefined;
+      if (player?.alive && runtime && player.weaponDashing > 0) return { player, runtime };
+    }
+    return undefined;
+  }
+
+  /**
+   * The car moves through the dash in short physical steps. It remains a
+   * damageable hull, stops on scenery and applies the Dashmesser's own damage
+   * along the actual travelled line.
+   */
+  private dashWithWeapon(
+    vehicle: VehicleState,
+    config: VehicleConfig,
+    dasher: { player: PlayerState; runtime: RuntimePlayer },
+    delta: number,
+  ) {
+    const { player, runtime } = dasher;
+    const speed = runtime.weaponDashSpeed;
+    const distance = speed * delta;
+    const steps = Math.max(1, Math.ceil(distance / 28));
+    const step = distance / steps;
+    const directionX = player.dashDirX;
+    const directionY = player.dashDirY;
+    vehicle.rotation = Math.atan2(directionY, directionX);
+    vehicle.boost = 0;
+
+    for (let index = 0; index < steps; index += 1) {
+      const fromX = vehicle.x;
+      const fromY = vehicle.y;
+      const expectedX = fromX + directionX * step;
+      const expectedY = fromY + directionY * step;
+      vehicle.x = expectedX;
+      vehicle.y = expectedY;
+      vehicle.vx = directionX * speed;
+      vehicle.vy = directionY * speed;
+      this.resolveCollisions(vehicle, config);
+      this.hitZombiesAlongWeaponDash(vehicle, config, dasher, fromX, fromY);
+
+      if (Math.hypot(vehicle.x - expectedX, vehicle.y - expectedY) > 1) {
+        player.weaponDashing = 0;
+        player.dashing = 0;
+        vehicle.vx = 0;
+        vehicle.vy = 0;
+        break;
+      }
+    }
+    return speed;
+  }
+
+  private hitZombiesAlongWeaponDash(
+    vehicle: VehicleState,
+    config: VehicleConfig,
+    dasher: { player: PlayerState; runtime: RuntimePlayer },
+    fromX: number,
+    fromY: number,
+  ) {
+    const { player, runtime } = dasher;
+    const reach = config.height / 2 + 8;
+    const victims: Array<[string, ZombieState]> = [];
+    this.world.state.zombies.forEach((zombie, id) => {
+      if (runtime.weaponDashHits.has(id)) return;
+      const at = this.world.segmentCircleAt(
+        fromX,
+        fromY,
+        vehicle.x,
+        vehicle.y,
+        zombie.x,
+        zombie.y,
+        zombie.radius + reach,
+      );
+      if (at !== undefined) victims.push([id, zombie]);
+    });
+    for (const [id, zombie] of victims) {
+      runtime.weaponDashHits.add(id);
+      this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: 'dashknife' });
+      this.world.damageZombie(
+        id,
+        zombie,
+        runtime.weaponDashDamage,
+        player.id,
+        runtime.weaponDashArmorPierce,
+      );
+    }
   }
 
   /**

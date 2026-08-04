@@ -1918,6 +1918,34 @@ function paintShard(color: string): Painter {
   };
 }
 
+/** A readable top-down shield with an asymmetric brace so its spin is visible. */
+function paintThrownShield(): Painter {
+  return (ctx, w, h) => {
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.shadowColor = '#67dfff';
+    ctx.shadowBlur = 8;
+    circle(ctx, cx, cy, 17, '#263d4b', '#b8f4ff', 3);
+    ctx.shadowBlur = 0;
+    circle(ctx, cx, cy, 12, '#496a7b', '#14242d', 2);
+    ctx.fillStyle = '#8edff2';
+    ctx.beginPath();
+    ctx.moveTo(cx - 3, cy - 12);
+    ctx.lineTo(cx + 6, cy - 8);
+    ctx.lineTo(cx + 2, cy + 9);
+    ctx.lineTo(cx - 6, cy + 5);
+    ctx.closePath();
+    ctx.fill();
+    circle(ctx, cx, cy, 5, '#172731', '#e1fbff', 2);
+    ctx.strokeStyle = '#d9f8ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 13, cy + 7);
+    ctx.lineTo(cx - 7, cy + 12);
+    ctx.stroke();
+  };
+}
+
 // -------------------------------------------------------------------- entry
 
 export function createGameTextures(scene: Phaser.Scene) {
@@ -2014,6 +2042,7 @@ export function createGameTextures(scene: Phaser.Scene) {
   make(scene, 'fx-energy', 20, 20, paintSoftCircle('rgba(150, 220, 255, 1)'));
   make(scene, 'fx-shard', 12, 12, paintShard('#c8d0cc'));
   make(scene, 'fx-glow', 64, 64, paintSoftCircle('rgba(255, 200, 120, 1)'));
+  make(scene, 'projectile-throwshield', 40, 40, paintThrownShield());
   make(scene, 'fx-pool', 128, 128, paintPool());
 }
 

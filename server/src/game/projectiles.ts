@@ -14,6 +14,10 @@ export class ProjectileSystem {
   update(delta: number) {
     const expired: string[] = [];
     this.world.state.projectiles.forEach((projectile, id) => {
+      if (projectile.kind === 'throwshield' && projectile.shieldLegRange > 0) {
+        if (this.updateThrowShield(projectile, delta)) expired.push(id);
+        return;
+      }
       projectile.life -= delta;
       const fromX = projectile.x;
       const fromY = projectile.y;
@@ -144,6 +148,234 @@ export class ProjectileSystem {
       }
     });
     expired.forEach((id) => this.world.state.projectiles.delete(id));
+  }
+
+  /**
+   * The Wurfschild is deliberately not chain lightning in disguise. Each leg
+   * travels through the world at the configured projectile speed, redirects
+   * only after a real collision and gets the full throwing range of its own.
+   */
+  private updateThrowShield(projectile: ProjectileState, delta: number) {
+    projectile.life -= delta;
+    const owner = this.world.state.players.get(projectile.ownerId);
+    if (!owner || projectile.life <= 0) return true;
+
+    if (projectile.shieldReturning) {
+      return this.returnShield(projectile, owner, delta);
+    }
+
+    let distanceLeft = projectile.shieldSpeed * delta;
+    // A single server tick may contain a close target and the redirect after
+    // it. Capping the loop protects pathological piles without dropping the
+    // unused movement from ordinary throws.
+    for (let interactions = 0; distanceLeft > 0.01 && interactions < 12; interactions += 1) {
+      const legLeft = projectile.shieldLegRange - projectile.shieldLegDistance;
+      if (legLeft <= 0.01) {
+        this.startShieldReturn(projectile);
+        return false;
+      }
+
+      const speed = Math.hypot(projectile.vx, projectile.vy) || projectile.shieldSpeed;
+      const step = Math.min(distanceLeft, legLeft);
+      const dx = (projectile.vx / speed) * step;
+      const dy = (projectile.vy / speed) * step;
+      const toX = projectile.x + dx;
+      const toY = projectile.y + dy;
+      const obstacleAt = this.world.obstacleHitAt(projectile.x, projectile.y, toX, toY);
+      const edgeAt = this.arenaExitAt(projectile, toX, toY);
+      const wallAt =
+        obstacleAt === undefined
+          ? edgeAt
+          : edgeAt === undefined
+            ? obstacleAt
+            : Math.min(obstacleAt, edgeAt);
+      const hit = this.firstShieldVictim(projectile, toX, toY, wallAt);
+
+      if (hit) {
+        const travelled = step * hit.at;
+        projectile.x += dx * hit.at;
+        projectile.y += dy * hit.at;
+        projectile.shieldLegDistance += travelled;
+        distanceLeft -= travelled;
+        projectile.hitIds.add(hit.id);
+        this.world.pushFx({ k: 'hit', x: hit.zombie.x, y: hit.zombie.y, s: 'throwshield' });
+        this.world.damageZombie(
+          hit.id,
+          hit.zombie,
+          projectile.damage,
+          projectile.ownerId,
+          projectile.shieldArmorPierce,
+        );
+        if (!this.redirectShield(projectile)) {
+          this.startShieldReturn(projectile);
+          return false;
+        }
+        continue;
+      }
+
+      if (wallAt !== undefined) {
+        // Stay just outside the prop. Starting the redirected segment exactly
+        // on its inclusive edge would count the same obstacle twice.
+        const safeAt = Math.max(0, wallAt - Math.min(0.025, 2 / Math.max(step, 1)));
+        const travelled = step * safeAt;
+        projectile.x += dx * safeAt;
+        projectile.y += dy * safeAt;
+        projectile.shieldLegDistance += travelled;
+        distanceLeft -= travelled;
+        this.world.pushFx({ k: 'hit', x: projectile.x, y: projectile.y, s: 'wall' });
+        // Arena limits end the outbound journey. Solid map props count as one
+        // ricochet and can redirect the shield towards the next visible enemy.
+        const hitArenaEdge =
+          edgeAt !== undefined && (obstacleAt === undefined || edgeAt <= obstacleAt);
+        if (hitArenaEdge) {
+          this.startShieldReturn(projectile);
+          return false;
+        }
+        if (obstacleAt !== undefined && (edgeAt === undefined || obstacleAt < edgeAt)) {
+          if (!this.redirectShield(projectile)) {
+            this.startShieldReturn(projectile);
+            return false;
+          }
+          continue;
+        }
+      }
+
+      projectile.x = toX;
+      projectile.y = toY;
+      projectile.shieldLegDistance += step;
+      distanceLeft -= step;
+      if (projectile.shieldLegDistance >= projectile.shieldLegRange - 0.01) {
+        this.startShieldReturn(projectile);
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /** Finds the first still-unused enemy before a wall on the current flight segment. */
+  private firstShieldVictim(
+    projectile: ProjectileState,
+    toX: number,
+    toY: number,
+    wallAt: number | undefined,
+  ) {
+    let first: { id: string; zombie: ZombieState; at: number } | undefined;
+    for (const [id, zombie] of this.world.state.zombies.entries()) {
+      if (projectile.hitIds.has(id)) continue;
+      const at = this.world.segmentCircleAt(
+        projectile.x,
+        projectile.y,
+        toX,
+        toY,
+        zombie.x,
+        zombie.y,
+        zombie.radius + projectile.radius,
+      );
+      if (at === undefined || (wallAt !== undefined && at > wallAt)) continue;
+      if (!first || at < first.at) first = { id, zombie, at };
+    }
+    return first;
+  }
+
+  /** One real hit spends one of the eight redirects and aims a fresh flight leg. */
+  private redirectShield(projectile: ProjectileState) {
+    if (projectile.shieldBouncesRemaining <= 0) return false;
+    let target: ZombieState | undefined;
+    let bestDistance = projectile.shieldLegRange;
+    for (const [id, zombie] of this.world.state.zombies.entries()) {
+      if (projectile.hitIds.has(id)) continue;
+      const distance = Math.hypot(zombie.x - projectile.x, zombie.y - projectile.y);
+      if (distance > bestDistance) continue;
+      if (!this.world.hasLineOfSight(projectile.x, projectile.y, zombie.x, zombie.y)) continue;
+      bestDistance = distance;
+      target = zombie;
+    }
+    if (!target) return false;
+    projectile.shieldBouncesRemaining -= 1;
+    projectile.shieldLegDistance = 0;
+    const angle = Math.atan2(target.y - projectile.y, target.x - projectile.x);
+    projectile.vx = Math.cos(angle) * projectile.shieldSpeed;
+    projectile.vy = Math.sin(angle) * projectile.shieldSpeed;
+    return true;
+  }
+
+  /** Return flight ignores scenery, seeks only its owner and pierces every enemy once. */
+  private returnShield(
+    projectile: ProjectileState,
+    owner: { x: number; y: number },
+    delta: number,
+  ) {
+    const angle = Math.atan2(owner.y - projectile.y, owner.x - projectile.x);
+    projectile.vx = Math.cos(angle) * projectile.shieldSpeed;
+    projectile.vy = Math.sin(angle) * projectile.shieldSpeed;
+    const toX = projectile.x + projectile.vx * delta;
+    const toY = projectile.y + projectile.vy * delta;
+    const catchAt = this.world.segmentCircleAt(
+      projectile.x,
+      projectile.y,
+      toX,
+      toY,
+      owner.x,
+      owner.y,
+      projectile.radius + 24,
+    );
+
+    const victims: Array<{ id: string; zombie: ZombieState; at: number }> = [];
+    for (const [id, zombie] of this.world.state.zombies.entries()) {
+      if (projectile.hitIds.has(id)) continue;
+      const at = this.world.segmentCircleAt(
+        projectile.x,
+        projectile.y,
+        toX,
+        toY,
+        zombie.x,
+        zombie.y,
+        zombie.radius + projectile.radius,
+      );
+      if (at !== undefined && (catchAt === undefined || at <= catchAt)) {
+        victims.push({ id, zombie, at });
+      }
+    }
+    victims.sort((a, b) => a.at - b.at);
+    for (const { id, zombie } of victims) {
+      projectile.hitIds.add(id);
+      this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: 'throwshield-return' });
+      this.world.damageZombie(
+        id,
+        zombie,
+        projectile.damage,
+        projectile.ownerId,
+        projectile.shieldArmorPierce,
+      );
+    }
+    if (catchAt !== undefined) return true;
+    projectile.x = toX;
+    projectile.y = toY;
+    return false;
+  }
+
+  private startShieldReturn(projectile: ProjectileState) {
+    projectile.shieldReturning = true;
+    projectile.damage = projectile.shieldReturnDamage;
+    projectile.hitIds.clear();
+  }
+
+  /** Share of the current segment at which the shield first leaves the playable arena. */
+  private arenaExitAt(projectile: ProjectileState, toX: number, toY: number) {
+    const minX = projectile.radius;
+    const maxX = ARENA.width - projectile.radius;
+    const minY = projectile.radius;
+    const maxY = ARENA.height - projectile.radius;
+    let at: number | undefined;
+    const consider = (value: number) => {
+      if (value < 0 || value > 1) return;
+      if (at === undefined || value < at) at = value;
+    };
+    if (toX < minX) consider((minX - projectile.x) / (toX - projectile.x));
+    if (toX > maxX) consider((maxX - projectile.x) / (toX - projectile.x));
+    if (toY < minY) consider((minY - projectile.y) / (toY - projectile.y));
+    if (toY > maxY) consider((maxY - projectile.y) / (toY - projectile.y));
+    return at;
   }
 
   /** Todesurteil rewards a clean kill without granting another shot immediately. */

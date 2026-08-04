@@ -82,8 +82,10 @@ export interface WeaponConfig {
   lightningPulse?: { every: number; range: number; damage: number; targets: number };
   /** A moving projectile may tear repeated damaging, pulling rifts along its path. */
   riftPulse?: { every: number; radius: number; damage: number; pull: number };
-  /** An ammunition-free thrown shield chains through this many total victims. */
+  /** Additional enemies an ammunition-free thrown shield may visibly redirect towards. */
   throwBounces?: number;
+  /** Share of the normal hit damage dealt while the thrown shield pierces back to its owner. */
+  throwReturnDamageFactor?: number;
   /** Holding fire charges a throw, a damaging invulnerable dash or a radial shockwave. */
   charge?: {
     kind: 'throw' | 'dash' | 'wave';
@@ -501,12 +503,12 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     label: 'Wurfschild',
     short: 'WS',
     cost: 18000,
-    damage: 920,
-    fireDelay: 760,
+    damage: 540,
+    fireDelay: 900,
     magazine: 1,
     reserve: 0,
     reload: 0,
-    speed: 820,
+    speed: 780,
     pellets: 1,
     spread: 0,
     pierce: 0,
@@ -516,11 +518,11 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
     meleeArc: 0.25,
     meleeTargets: 1,
     armorPierce: 0.65,
-    chainRange: 480,
     throwBounces: 8,
+    throwReturnDamageFactor: 0.45,
     projectileRadius: 14,
     description:
-      'Prallt schneller und mit massivem Schaden automatisch zwischen bis zu acht weit entfernten Gegnern hin und her',
+      'Wirft ein echtes Schild, das acht weitere Ziele sucht und danach schadend zu dir zurückkehrt',
   },
   railgun: {
     label: 'Railgun',

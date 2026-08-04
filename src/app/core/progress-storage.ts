@@ -132,7 +132,11 @@ export function sealProgressStorage(value: unknown) {
 export function openProgressStorage(value: string): unknown | undefined {
   if (!value.startsWith(STORAGE_PREFIX)) return undefined;
   try {
-    const sealed = fromBase64(value.slice(STORAGE_PREFIX.length));
+    const encoded = value.slice(STORAGE_PREFIX.length);
+    const sealed = fromBase64(encoded);
+    // Some decoders accept altered padding bits as the same bytes. Requiring
+    // the canonical spelling makes every hand edit observable to the seal.
+    if (toBase64(sealed) !== encoded) return undefined;
     if (sealed.length <= NONCE_BYTES + TAG_BYTES) return undefined;
     const payload = sealed.slice(0, -TAG_BYTES);
     const storedTag = sealed.slice(-TAG_BYTES);

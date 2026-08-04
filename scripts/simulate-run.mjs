@@ -349,6 +349,77 @@ console.log('\n== Risskanone ==');
   );
 }
 
+console.log('\n== Wurfschild ==');
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'shield-player');
+  const runtime = room.systems.world.runtime.get(player.id);
+  startCombat(room);
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  room.systems.world.map = { ...room.systems.world.map, obstacles: [] };
+  player.weapon = 'throwshield';
+  player.x = 500;
+  player.y = 800;
+  const victims = [];
+  for (let index = 0; index < 9; index += 1) {
+    const victim = room.systems.world.spawnZombie('normal', {
+      x: 680 + index * 155,
+      y: 800 + (index % 2) * 70,
+    });
+    victim.health = victim.maxHealth = 10000;
+    victim.baseSpeed = victim.speed = 0;
+    victims.push(victim);
+  }
+  runtime.input = { ...IDLE, shoot: true, aimX: 1400, aimY: 800 };
+  room.update(50);
+  runtime.input = { ...IDLE, shoot: false, aimX: 1400, aimY: 800 };
+  let peakShields = room.state.projectiles.size;
+  for (let tick = 0; tick < 400 && room.state.projectiles.size > 0; tick += 1) {
+    room.update(50);
+    peakShields = Math.max(peakShields, room.state.projectiles.size);
+  }
+  check('Wurfschild benutzt genau einen sichtbaren Schildkörper', peakShields === 1);
+  check(
+    'Wurfschild fliegt sichtbar über das erste Ziel zu acht weiteren Gegnern',
+    victims.every((victim) => victim.health < victim.maxHealth),
+    `(${victims.filter((victim) => victim.health < victim.maxHealth).length}/9 Treffer)`,
+  );
+  check(
+    'Wurfschild kehrt zurück und gibt den nächsten Wurf frei',
+    room.state.projectiles.size === 0,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'ricochet-player');
+  const runtime = room.systems.world.runtime.get(player.id);
+  startCombat(room);
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  room.systems.world.map = {
+    ...room.systems.world.map,
+    obstacles: [{ x: 800, y: 800, w: 50, h: 120, kind: 'crate', rotation: 0, solid: true }],
+  };
+  player.weapon = 'throwshield';
+  player.x = 600;
+  player.y = 800;
+  const target = room.systems.world.spawnZombie('normal', { x: 650, y: 1050 });
+  target.health = target.maxHealth = 10000;
+  target.baseSpeed = target.speed = 0;
+  runtime.input = { ...IDLE, shoot: true, aimX: 1200, aimY: 800 };
+  room.update(50);
+  runtime.input = { ...IDLE, shoot: false, aimX: 1200, aimY: 800 };
+  step(room, 5);
+  const [shield] = [...room.state.projectiles.values()];
+  check(
+    'Kartenobjekt zählt als Abpraller und richtet das Schild auf das nächste Ziel',
+    shield?.shieldBouncesRemaining === 7 && shield.vx < 0 && shield.vy > 0,
+  );
+}
+
 console.log('\n== Aufladewaffen ==');
 {
   const room = makeRoom('outpost');
@@ -373,6 +444,49 @@ console.log('\n== Aufladewaffen ==');
     'Dashmesser macht während des geladenen Angriffs unverwundbar',
     player.weaponDashing > 0 && !landed && player.health === 1000,
   );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'vehicle-charge-player');
+  const runtime = room.systems.world.runtime.get(player.id);
+  startCombat(room);
+  room.systems.waves.finishWave();
+  room.systems.world.map = { ...room.systems.world.map, obstacles: [] };
+  player.money = 1e6;
+  player.x = 900;
+  player.y = 800;
+  room.systems.build.placeVehicle(player.id, { type: 'car', x: 960, y: 800, rotation: 0 });
+  const [car] = [...room.state.vehicles.values()];
+  room.systems.vehicles.toggle(player.id);
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  player.weapon = 'dashknife';
+  const victim = room.systems.world.spawnZombie('normal', { x: car.x + 150, y: car.y });
+  victim.health = victim.maxHealth = 10000;
+  victim.baseSpeed = victim.speed = 0;
+  for (let tick = 0; tick < 12; tick += 1) {
+    runtime.input = { ...IDLE, shoot: true, aimX: car.x + 900, aimY: car.y };
+    room.update(50);
+  }
+  check('Aufladewaffen laden auch im Fahrzeug auf', player.weaponCharge > 0);
+  const startX = car.x;
+  runtime.input = { ...IDLE, shoot: false, aimX: car.x + 900, aimY: car.y };
+  room.update(50);
+  const hullBefore = car.health;
+  room.systems.world.hullMelee(car, 50);
+  check(
+    'Das Fahrzeug bleibt während des Dashmesser-Dashs verwundbar',
+    player.weaponDashing > 0 && car.health < hullBefore,
+  );
+  step(room, 8);
+  check(
+    'Dashmesser zieht das Fahrzeug mit',
+    car.x > startX + 100,
+    `(${Math.round(car.x - startX)} px)`,
+  );
+  check('Dashmesser verursacht auch aus dem Fahrzeug Wegschaden', victim.health < victim.maxHealth);
 }
 {
   const room = makeRoom('outpost');

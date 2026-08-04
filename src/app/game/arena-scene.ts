@@ -1447,7 +1447,15 @@ export class ArenaScene extends Phaser.Scene {
         strokeThickness: 4,
       })
       .setOrigin(0.5, 1);
-    children.push(healthBackground, healthBar, crewLabel);
+    const chargeBackground = this.add
+      .rectangle(0, config.height / 2 + 15, 60, 9, 0x04100b, 0.94)
+      .setStrokeStyle(1, 0x164a50, 0.95)
+      .setVisible(false);
+    const chargeBar = this.add
+      .rectangle(-29, config.height / 2 + 15, 58, 7, 0x68e9ff, 1)
+      .setOrigin(0, 0.5)
+      .setVisible(false);
+    children.push(healthBackground, healthBar, crewLabel, chargeBackground, chargeBar);
 
     // Above the barricades, below the players standing next to them.
     const root = this.add.container(vehicle.x, vehicle.y, children).setDepth(14);
@@ -1457,6 +1465,8 @@ export class ArenaScene extends Phaser.Scene {
       gun,
       healthBar,
       crewLabel,
+      chargeBackground,
+      chargeBar,
       type: vehicle.type,
       rotation: vehicle.rotation,
       targetRotation: vehicle.rotation,
@@ -1489,6 +1499,15 @@ export class ArenaScene extends Phaser.Scene {
     view.crewLabel.setText(
       names.length > 0 ? `${names.join(' · ')}  ${vehicle.crew.length}/${config.seats}` : '',
     );
+    const charge = Math.max(
+      0,
+      ...vehicle.crew.map((id) => this.snapshot?.players[id]?.weaponCharge ?? 0),
+    );
+    view.chargeBackground.setVisible(charge > 0);
+    view.chargeBar
+      .setVisible(charge > 0)
+      .setDisplaySize(58 * Math.min(1, charge), 7)
+      .setFillStyle(charge >= 1 ? 0xffd166 : 0x68e9ff);
   }
 
   /**
@@ -1517,9 +1536,11 @@ export class ArenaScene extends Phaser.Scene {
           vx: view.vx,
           vy: view.vy,
         };
-        const topSpeed =
+        let topSpeed =
           this.gameService.localVehicleSpeed(view.type) +
           (view.boost > 0 ? (config.boost ?? 0) : 0);
+        const charged = me ? WEAPONS[me.weapon].charge : undefined;
+        if (charged && (me?.weaponCharge ?? 0) > 0) topSpeed *= charged.moveFactor;
         driveVehicle(
           motion,
           Number(input.right) - Number(input.left),
@@ -1755,7 +1776,9 @@ export class ArenaScene extends Phaser.Scene {
       .image(projectile.x, projectile.y, style.texture)
       .setTint(style.tint)
       .setScale(style.scaleX, style.scaleY)
-      .setBlendMode(Phaser.BlendModes.ADD)
+      .setBlendMode(
+        projectile.kind === 'throwshield' ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.ADD,
+      )
       .setDepth(25);
     return {
       root: image,
@@ -1767,7 +1790,9 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private updateProjectile(view: ProjectileView, projectile: ProjectileSnapshot) {
-    view.root.setRotation(Math.atan2(projectile.vy, projectile.vx));
+    if (projectile.kind !== 'throwshield') {
+      view.root.setRotation(Math.atan2(projectile.vy, projectile.vx));
+    }
   }
 
   private moveProjectiles(deltaMs: number) {
@@ -1775,6 +1800,7 @@ export class ArenaScene extends Phaser.Scene {
     for (const view of this.projectiles.values()) {
       view.root.x = Phaser.Math.Linear(view.root.x, view.targetX, amount);
       view.root.y = Phaser.Math.Linear(view.root.y, view.targetY, amount);
+      if (view.kind === 'throwshield') view.root.rotation += deltaMs * 0.018;
       if (view.kind === 'rocket' || view.kind === 'firerocket' || view.kind === 'turret_launcher') {
         view.smoke -= deltaMs;
         if (view.smoke <= 0) {
