@@ -80,7 +80,7 @@ describe('ProgressService upgrade shop', () => {
     expect(upgradeCurrentValue('dashCharges', 2)).toContain('4 Dash-Ladungen');
     expect(upgradeCurrentValue('grenadeSplit', 6)).toContain('6 Mini-Granaten');
     expect(upgradeCurrentValue('mortarSlow', 4)).toContain('1,5 s Verlangsamung');
-    expect(upgradeCurrentValue('precisionExecute', 10)).toContain('+30 %');
+    expect(upgradeCurrentValue('precisionExecute', 10)).toContain('+50 %');
     expect(upgradeCurrentValue('precisionHealthDamage', 5)).toContain('5 % maximales Gegnerleben');
     expect(upgradeCurrentValue('nullCoreRadius', 10)).toContain('Kernreichweite');
     expect(upgradeCurrentValue('nullFieldRadius', 10)).toContain('Feldreichweite');

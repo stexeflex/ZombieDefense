@@ -422,6 +422,113 @@ console.log('\n== Wurfschild ==');
 
 console.log('\n== Aufladewaffen ==');
 {
+  function hammerProjectile(chargeTicks) {
+    const room = makeRoom('outpost');
+    const player = join(room, `hammer-${chargeTicks}`);
+    const runtime = room.systems.world.runtime.get(player.id);
+    startCombat(room);
+    room.systems.waves.spawnQueue = ['normal'];
+    room.systems.waves.spawnDelay = 1e6;
+    room.state.zombies.clear();
+    player.weapon = 'thunderhammer';
+    player.x = 600;
+    player.y = 800;
+    for (let tick = 0; tick < chargeTicks; tick += 1) {
+      runtime.input = { ...IDLE, shoot: true, aimX: 1600, aimY: 800 };
+      room.update(50);
+    }
+    runtime.input = { ...IDLE, shoot: false, aimX: 1600, aimY: 800 };
+    room.update(50);
+    return [...room.state.projectiles.values()].find(
+      (projectile) => projectile.kind === 'thunderhammer',
+    );
+  }
+
+  const tapped = hammerProjectile(1);
+  const full = hammerProjectile(36);
+  check(
+    'Kurze Blitzhammer-Ladung verursacht deutlich weniger Direkt- und Blitzschaden',
+    tapped &&
+      full &&
+      tapped.damage < full.damage * 0.2 &&
+      tapped.lightningDamage < full.lightningDamage * 0.2,
+  );
+  check(
+    'Kurze Blitzhammer-Ladung erzeugt weniger und seltenere Blitze',
+    tapped &&
+      full &&
+      tapped.lightningTargets === 1 &&
+      full.lightningTargets === WEAPONS.thunderhammer.lightningPulse.targets &&
+      tapped.lightningEvery > full.lightningEvery * 2,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'charge-dash-player');
+  const runtime = room.systems.world.runtime.get(player.id);
+  startCombat(room);
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  room.systems.world.map = { ...room.systems.world.map, obstacles: [] };
+  player.weapon = 'thunderhammer';
+  player.x = 600;
+  player.y = 800;
+  for (let tick = 0; tick < 4; tick += 1) {
+    runtime.input = { ...IDLE, right: true, shoot: true, aimX: 1600, aimY: 800 };
+    room.update(50);
+  }
+  const beforeDash = player.x;
+  runtime.input = {
+    ...IDLE,
+    right: true,
+    shoot: true,
+    dash: true,
+    aimX: 1600,
+    aimY: 800,
+  };
+  room.update(50);
+  check(
+    'Normaler Dash behält beim Aufladen sein volles Tempo',
+    player.x - beforeDash > 30,
+    `(${Math.round(player.x - beforeDash)} px)`,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'vehicle-charge-speed-player');
+  const runtime = room.systems.world.runtime.get(player.id);
+  startCombat(room);
+  room.systems.waves.finishWave();
+  room.systems.world.map = { ...room.systems.world.map, obstacles: [] };
+  player.money = 1e6;
+  player.x = 900;
+  player.y = 800;
+  room.systems.build.placeVehicle(player.id, { type: 'car', x: 960, y: 800, rotation: 0 });
+  const [car] = [...room.state.vehicles.values()];
+  room.systems.vehicles.toggle(player.id);
+  room.systems.waves.startNextWave();
+  room.systems.waves.spawnQueue = ['normal'];
+  room.systems.waves.spawnDelay = 1e6;
+  room.state.zombies.clear();
+  player.weapon = 'thunderhammer';
+  for (let tick = 0; tick < 40; tick += 1) {
+    runtime.input = {
+      ...IDLE,
+      right: true,
+      shoot: true,
+      aimX: car.x + 900,
+      aimY: car.y,
+    };
+    room.update(50);
+  }
+  check(
+    'Aufladen verlangsamt ein gefahrenes Auto nicht',
+    Math.hypot(car.vx, car.vy) > 160,
+    `(${Math.round(Math.hypot(car.vx, car.vy))} Tempo)`,
+  );
+}
+{
   const room = makeRoom('outpost');
   const player = join(room, 'p1');
   const runtime = room.systems.world.runtime.get('p1');
@@ -487,6 +594,13 @@ console.log('\n== Aufladewaffen ==');
     `(${Math.round(car.x - startX)} px)`,
   );
   check('Dashmesser verursacht auch aus dem Fahrzeug Wegschaden', victim.health < victim.maxHealth);
+  const stoppedX = car.x;
+  step(room, 4);
+  check(
+    'Dashmesser-Fahrzeug stoppt nach dem Dash ohne weitere Positionssprünge',
+    Math.abs(car.x - stoppedX) < 2 && Math.hypot(car.vx, car.vy) < 1,
+    `(${Math.round(car.x - stoppedX)} px Nachlauf)`,
+  );
 }
 {
   const room = makeRoom('outpost');
@@ -2808,7 +2922,29 @@ console.log('\n== Sonderzombies ==');
     !room.state.zombies.has(victim.id) &&
       player.abilityCharges === 1 &&
       player.abilityCooldown > 0 &&
-      player.abilityCooldown < 11,
+      player.abilityCooldown > 3.3 &&
+      player.abilityCooldown < 3.5,
+  );
+}
+{
+  const room = makeRoom('outpost');
+  const player = join(room, 'precision-execute-player', {
+    ability: 'precisionShot',
+    upgrades: { precisionExecute: 10 },
+  });
+  startCombat(room);
+  room.systems.waves.spawnQueue = [];
+  room.state.zombies.clear();
+  const victim = room.systems.world.spawnZombie('normal', { x: player.x + 120, y: player.y });
+  victim.maxHealth = 10000;
+  victim.health = 5000;
+  room.systems.players.useAbility(player.id, { x: victim.x, y: victim.y });
+  room.systems.projectiles.update(0.1);
+  const dealt = 5000 - victim.health;
+  check(
+    'Vollstrecker erreicht bei halbem Gegnerleben bereits 25 % Bonusschaden',
+    dealt > 2300 && dealt < 2320,
+    `(${Math.round(dealt)} Schaden)`,
   );
 }
 {

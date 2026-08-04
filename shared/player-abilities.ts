@@ -43,7 +43,7 @@ export const PRECISION_HEALTH_DAMAGE_PER_LEVEL = 0.01;
 export const PRECISION_MINI_HEALTH_DAMAGE_FACTOR = 0.4;
 export const PRECISION_BOSS_HEALTH_DAMAGE_FACTOR = 0.15;
 /** Todesurteil removes most of a running reload, but never grants a free shot. */
-export const PRECISION_KILL_COOLDOWN_REDUCTION = 0.7;
+export const PRECISION_KILL_COOLDOWN_REDUCTION = 0.9;
 
 /** A stationary projectile with a lethal core and a wider damaging field. */
 export const NULL_CORE_BASE_DPS = 720;

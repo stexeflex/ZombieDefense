@@ -1475,6 +1475,7 @@ export class ArenaScene extends Phaser.Scene {
       vx: 0,
       vy: 0,
       boost: 0,
+      weaponDashing: false,
       smoke: 0,
       targetX: vehicle.x,
       targetY: vehicle.y,
@@ -1484,7 +1485,25 @@ export class ArenaScene extends Phaser.Scene {
   private updateVehicle(view: VehicleView, vehicle: VehicleSnapshot) {
     const config = VEHICLES[vehicle.type];
     view.targetRotation = vehicle.rotation;
-    if (config.bounce && vehicle.vx !== undefined && vehicle.vy !== undefined) {
+    const weaponDashing = vehicle.crew.some((id) => {
+      const player = this.snapshot?.players[id];
+      return player?.weapon === 'dashknife' && player.dashing > 0;
+    });
+    const wasWeaponDashing = view.weaponDashing;
+    if (weaponDashing && !wasWeaponDashing) {
+      // Start prediction from the first authoritative dash position once. From
+      // here velocity extrapolation keeps the hull fluid between snapshots.
+      view.root.x = vehicle.x;
+      view.root.y = vehicle.y;
+    }
+    view.weaponDashing = weaponDashing;
+    if (
+      (config.bounce || weaponDashing || wasWeaponDashing) &&
+      vehicle.vx !== undefined &&
+      vehicle.vy !== undefined
+    ) {
+      // The first snapshot after the dash carries the server's reset velocity,
+      // preventing the local driving model from inheriting dash-speed momentum.
       view.vx = vehicle.vx;
       view.vy = vehicle.vy;
     }
@@ -1527,7 +1546,19 @@ export class ArenaScene extends Phaser.Scene {
       const config = VEHICLES[view.type];
       const driving = id === drivenId && view.driverId === localId && phaseAllowsMovement;
 
-      if (driving) {
+      if (view.weaponDashing) {
+        // The server owns collision and damage, but its synchronized velocity
+        // is enough to render one continuous dash instead of alternating
+        // normal local driving with several corrective teleports.
+        view.root.x = Phaser.Math.Clamp(view.root.x + view.vx * delta, 40, ARENA.width - 40);
+        view.root.y = Phaser.Math.Clamp(view.root.y + view.vy * delta, 40, ARENA.height - 40);
+        view.rotation = Phaser.Math.Angle.RotateTo(view.rotation, view.targetRotation, 14 * delta);
+        const error = Math.hypot(view.targetX - view.root.x, view.targetY - view.root.y);
+        if (error > 180) {
+          view.root.x = view.targetX;
+          view.root.y = view.targetY;
+        }
+      } else if (driving) {
         view.boost = Math.max(0, view.boost - delta);
         const motion = {
           x: view.root.x,
@@ -1536,11 +1567,9 @@ export class ArenaScene extends Phaser.Scene {
           vx: view.vx,
           vy: view.vy,
         };
-        let topSpeed =
+        const topSpeed =
           this.gameService.localVehicleSpeed(view.type) +
           (view.boost > 0 ? (config.boost ?? 0) : 0);
-        const charged = me ? WEAPONS[me.weapon].charge : undefined;
-        if (charged && (me?.weaponCharge ?? 0) > 0) topSpeed *= charged.moveFactor;
         driveVehicle(
           motion,
           Number(input.right) - Number(input.left),
@@ -1897,12 +1926,13 @@ export class ArenaScene extends Phaser.Scene {
         dx /= length;
         dy /= length;
         let speed = this.gameService.localMoveSpeed();
-        const charge = WEAPONS[player.weapon].charge;
-        if (charge && (player.weaponCharge ?? 0) > 0) speed *= charge.moveFactor;
         if (dashing) {
           dx = this.localDashX;
           dy = this.localDashY;
           speed = this.gameService.localDashSpeed();
+        } else {
+          const charge = WEAPONS[player.weapon].charge;
+          if (charge && (player.weaponCharge ?? 0) > 0) speed *= charge.moveFactor;
         }
         view.root.x = Phaser.Math.Clamp(
           view.root.x + dx * speed * delta,

@@ -52,6 +52,7 @@ import {
   weaponLife,
   abilityMaxCharges,
   abilityRechargeTime,
+  chargedWeaponDamageMultiplier,
   type PermanentPerks,
   type PermanentUpgrades,
   type PlayerAbilityType,
@@ -451,12 +452,13 @@ export class PlayerSystem {
     player.weaponCharge = 0;
     if (!config || !charge || player.fireCooldown > 0) return;
 
-    const ratio = this.world.clamp(
+    const ratio = this.world.clamp(held / Math.max(charge.maxSeconds, 0.01), 0, 1);
+    const effectRatio = this.world.clamp(
       Math.max(charge.minSeconds, held) / Math.max(charge.maxSeconds, 0.01),
       0,
       1,
     );
-    const multiplier = 1 + (charge.maxMultiplier - 1) * ratio;
+    const multiplier = chargedWeaponDamageMultiplier(charge, ratio);
     const damage = config.damage * (1 + runtime.upgrades.weaponDamage * 0.02) * multiplier;
     const aimAngle = Math.atan2(runtime.input.aimY - player.y, runtime.input.aimX - player.x);
     player.rotation = aimAngle;
@@ -464,8 +466,8 @@ export class PlayerSystem {
     player.firing = Math.min(0.35, player.fireCooldown);
 
     if (charge.kind === 'dash') {
-      const distance = 230 + ((charge.dashDistance ?? 520) - 230) * ratio;
-      const duration = 0.3 + ratio * 0.34;
+      const distance = 230 + ((charge.dashDistance ?? 520) - 230) * effectRatio;
+      const duration = 0.3 + effectRatio * 0.34;
       player.dashDirX = Math.cos(aimAngle);
       player.dashDirY = Math.sin(aimAngle);
       player.weaponDashing = duration;
@@ -488,7 +490,7 @@ export class PlayerSystem {
 
     if (charge.kind === 'wave') {
       const radius =
-        config.range * (1 + runtime.upgrades.meleeRange * 0.01) * (0.65 + ratio * 0.35);
+        config.range * (1 + runtime.upgrades.meleeRange * 0.01) * (0.65 + effectRatio * 0.35);
       const victims = [...this.world.state.zombies.entries()].filter(
         ([, zombie]) =>
           Math.hypot(zombie.x - player.x, zombie.y - player.y) <= radius + zombie.radius,
@@ -506,7 +508,7 @@ export class PlayerSystem {
         const direction =
           distance > 0.01 ? Math.atan2(zombie.y - player.y, zombie.x - player.x) : aimAngle;
         if (config.knockback) {
-          const shove = config.knockback * (0.7 + ratio * 0.3);
+          const shove = config.knockback * (0.7 + effectRatio * 0.3);
           zombie.x = this.world.clamp(zombie.x + Math.cos(direction) * shove, 12, ARENA.width - 12);
           zombie.y = this.world.clamp(
             zombie.y + Math.sin(direction) * shove,
@@ -520,7 +522,7 @@ export class PlayerSystem {
       return;
     }
 
-    const speed = config.speed * (0.82 + ratio * 0.18);
+    const speed = config.speed * (0.82 + effectRatio * 0.18);
     const muzzleX = player.x + Math.cos(aimAngle) * 30;
     const muzzleY = player.y + Math.sin(aimAngle) * 30;
     const projectile = this.world.createProjectile(
@@ -535,14 +537,16 @@ export class PlayerSystem {
     projectile.pierce = config.pierce;
     projectile.life = config.range / speed;
     projectile.radius = config.projectileRadius ?? 12;
-    projectile.lightningEvery = config.lightningPulse?.every ?? 0;
+    const lightning = config.lightningPulse;
+    // A barely charged Blitzhammer emits fewer bolts less often. Full charge
+    // retains all four targets and the original pulse rate.
+    const lightningFrequency = 0.35 + ratio * 0.65;
+    projectile.lightningEvery = lightning ? lightning.every / lightningFrequency : 0;
     projectile.lightningTimer = 0;
-    projectile.lightningRange = config.lightningPulse?.range ?? 0;
+    projectile.lightningRange = lightning?.range ?? 0;
     projectile.lightningDamage =
-      (config.lightningPulse?.damage ?? 0) *
-      (1 + runtime.upgrades.weaponDamage * 0.02) *
-      multiplier;
-    projectile.lightningTargets = config.lightningPulse?.targets ?? 0;
+      (lightning?.damage ?? 0) * (1 + runtime.upgrades.weaponDamage * 0.02) * multiplier;
+    projectile.lightningTargets = lightning ? Math.max(1, Math.ceil(lightning.targets * ratio)) : 0;
     this.world.pushFx({
       k: 'melee',
       x: player.x,
@@ -602,8 +606,6 @@ export class PlayerSystem {
     dy /= length;
 
     let speed = PLAYER_BASE_SPEED * (1 + runtime.upgrades.moveSpeed * 0.02);
-    const charged = WEAPONS[player.weapon].charge;
-    if (charged && player.weaponCharge > 0) speed *= charged.moveFactor;
     const weaponDashing = player.weaponDashing > 0;
     const dashing = player.dashing > 0 && !weaponDashing;
     if (weaponDashing) {
@@ -614,6 +616,9 @@ export class PlayerSystem {
       dx = player.dashDirX;
       dy = player.dashDirY;
       speed *= DASH_SPEED;
+    } else {
+      const charged = WEAPONS[player.weapon].charge;
+      if (charged && player.weaponCharge > 0) speed *= charged.moveFactor;
     }
     const fromX = player.x;
     const fromY = player.y;
@@ -1090,7 +1095,7 @@ export class PlayerSystem {
     projectile.radius = PRECISION_PROJECTILE_RADIUS + runtime.upgrades.precisionWidth;
     projectile.life = PRECISION_PROJECTILE_LIFE;
     projectile.pierce = 0;
-    projectile.execute = runtime.upgrades.precisionExecute * 0.03;
+    projectile.execute = runtime.upgrades.precisionExecute * 0.05;
     projectile.precisionHealthDamageLevel = runtime.upgrades.precisionHealthDamage;
     projectile.reduceAbilityCooldownOnKill = runtime.perks.precisionReload;
     this.world.state.projectiles.set(projectile.id, projectile);

@@ -100,6 +100,21 @@ export interface WeaponConfig {
   description: string;
 }
 
+/** Even a tap produces an attack, but only a quarter of its uncharged base damage. */
+export const CHARGED_WEAPON_MIN_DAMAGE_FACTOR = 0.25;
+
+/** Charged attacks grow continuously from a weak tap to their advertised maximum. */
+export function chargedWeaponDamageMultiplier(
+  charge: NonNullable<WeaponConfig['charge']>,
+  progress: number,
+) {
+  const safeProgress = Math.max(0, Math.min(1, progress));
+  return (
+    CHARGED_WEAPON_MIN_DAMAGE_FACTOR +
+    (charge.maxMultiplier - CHARGED_WEAPON_MIN_DAMAGE_FACTOR) * safeProgress
+  );
+}
+
 export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   pistol: {
     label: 'Pistole',
@@ -614,7 +629,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
       maxMultiplier: 3.1,
     },
     description:
-      'Aufladen und werfen: der schwere Hammer durchschlägt ganze Reihen und entfesselt unterwegs starke Kettenblitze',
+      'Aufladen und werfen: Schaden und Anzahl der Kettenblitze wachsen mit der Ladung bis zur vollen Stärke',
   },
   nova: {
     label: 'Nova-Kanone',

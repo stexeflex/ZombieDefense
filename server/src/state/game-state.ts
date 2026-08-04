@@ -214,6 +214,8 @@ export class VehicleState extends Schema {
   @type('number') vx = 0;
   @type('number') vy = 0;
   cooldown = 0;
+  /** Server-only latch used to discard the Dashmesser's extreme velocity after the burst. */
+  weaponDashActive = false;
   /** Seconds of nitro left; the browser predicts the same burst locally. */
   boost = 0;
   /** Cooldown per zombie, so driving through a horde is not a per-tick shredder. */

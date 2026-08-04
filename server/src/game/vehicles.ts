@@ -2,7 +2,6 @@ import {
   ARENA,
   DEFENSES,
   VEHICLES,
-  WEAPONS,
   VEHICLE_RAM_COOLDOWN,
   VEHICLE_RAM_MIN_SPEED,
   VEHICLE_RAM_SELF,
@@ -40,6 +39,14 @@ export class VehicleSystem {
       }
 
       const weaponDasher = this.weaponDasherOf(vehicle);
+      if (!weaponDasher && vehicle.weaponDashActive) {
+        // Dash velocity is several times the car's normal maximum. Letting the
+        // driving simulation inherit it made the hull coast in large server
+        // jumps after the blade dash had already ended.
+        vehicle.weaponDashActive = false;
+        vehicle.vx = 0;
+        vehicle.vy = 0;
+      }
       const speed = this.drive(vehicle, config, delta, weaponDasher);
       this.carryCrew(vehicle);
       if (!combat) return;
@@ -72,8 +79,6 @@ export class VehicleSystem {
 
     const upgrades = driver ? this.world.upgradesOf(driver.id) : undefined;
     let topSpeed = vehicleTopSpeed(vehicle.type, upgrades?.vehicleSpeed ?? 0);
-    const charged = driver ? WEAPONS[driver.weapon].charge : undefined;
-    if (charged && driver!.weaponCharge > 0) topSpeed *= charged.moveFactor;
     // The nitro of a light vehicle spends a dash charge, so the burst of pace
     // stays as rare as the dodge it replaces.
     if (vehicle.boost > 0) {
@@ -114,6 +119,7 @@ export class VehicleSystem {
     const step = distance / steps;
     const directionX = player.dashDirX;
     const directionY = player.dashDirY;
+    vehicle.weaponDashActive = true;
     vehicle.rotation = Math.atan2(directionY, directionX);
     vehicle.boost = 0;
 

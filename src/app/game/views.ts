@@ -91,6 +91,8 @@ export interface VehicleView extends BaseView {
   vx: number;
   vy: number;
   boost: number;
+  /** True while authoritative Dashmesser motion replaces ordinary driving. */
+  weaponDashing: boolean;
   smoke: number;
 }
 

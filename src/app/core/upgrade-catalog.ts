@@ -276,7 +276,7 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
     case 'precisionWidth':
       return `${number(PRECISION_PROJECTILE_RADIUS * 2 + safeLevel * 2)} Projektilbreite (+2 pro Stufe)`;
     case 'precisionExecute':
-      return `Bis zu +${number(safeLevel * 3)} % Schaden gegen verwundete Ziele (+3 % pro Stufe)`;
+      return `Bis zu +${number(safeLevel * 5)} % Schaden gegen verwundete Ziele (+5 % pro Stufe)`;
     case 'precisionHealthDamage':
       return `${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * 100)} % maximales Gegnerleben als Bonusschaden · Mini-Bosse ${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * PRECISION_MINI_HEALTH_DAMAGE_FACTOR * 100)} % · Bosse ${number(safeLevel * PRECISION_HEALTH_DAMAGE_PER_LEVEL * PRECISION_BOSS_HEALTH_DAMAGE_FACTOR * 100)} % (+1 % pro Stufe)`;
     case 'nullCoreDamage':
@@ -393,7 +393,7 @@ export const PERK_DEFINITIONS: PerkDefinition[] = [
     key: 'precisionReload',
     label: 'Todesurteil',
     description:
-      'Tötet der Vernichtungsschuss sein Ziel, verkürzt sich seine verbleibende Abklingzeit um 70 %.',
+      'Tötet der Vernichtungsschuss sein Ziel, verkürzt sich seine verbleibende Abklingzeit um 90 %.',
     icon: '‡',
   },
   {

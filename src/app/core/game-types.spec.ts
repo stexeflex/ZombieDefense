@@ -65,6 +65,7 @@ import {
   canPlaceDefense,
   canPlaceVehicle,
   canTurretTarget,
+  chargedWeaponDamageMultiplier,
   circleOverlapsVehicle,
   dashReduction,
   defenseFootprint,
@@ -549,6 +550,8 @@ describe('weapon balance', () => {
     expect(WEAPONS.throwshield.throwReturnDamageFactor).toBeCloseTo(0.45);
     expect(WEAPONS.throwshield.speed).toBeGreaterThanOrEqual(750);
     expect(WEAPONS.thunderhammer.charge?.kind).toBe('throw');
+    expect(chargedWeaponDamageMultiplier(WEAPONS.thunderhammer.charge!, 0)).toBe(0.25);
+    expect(chargedWeaponDamageMultiplier(WEAPONS.thunderhammer.charge!, 1)).toBe(3.1);
     expect(WEAPONS.dashknife.charge?.kind).toBe('dash');
     expect(WEAPONS.resonanceblade.charge?.kind).toBe('wave');
     expect(WEAPONS.riftcannon.riftPulse?.damage).toBeGreaterThan(0);
@@ -1148,7 +1151,7 @@ describe('permanent upgrades', () => {
     expect(PLAYER_ABILITY_COST.mortarStrike).toBe(PLAYER_ABILITY_COST.precisionShot);
     expect(PLAYER_ABILITY_COST.mortarStrike).toBeGreaterThan(0);
     expect(PLAYER_ABILITY_COST.nullCore).toBe(PLAYER_ABILITY_COST.precisionShot);
-    expect(PRECISION_KILL_COOLDOWN_REDUCTION).toBe(0.7);
+    expect(PRECISION_KILL_COOLDOWN_REDUCTION).toBe(0.9);
     expect(precisionHealthDamageFraction(5, 'elite')).toBe(5 * PRECISION_HEALTH_DAMAGE_PER_LEVEL);
     expect(precisionHealthDamageFraction(5, 'mini')).toBeCloseTo(0.02);
     expect(precisionHealthDamageFraction(5, 'boss')).toBeCloseTo(0.0075);
