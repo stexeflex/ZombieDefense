@@ -2630,6 +2630,20 @@ console.log('\n== Arsenal ==');
     `(${player.reserveAmmo} Schuss, $ ${money - player.money})`,
   );
 
+  runtime.upgrades.ammoCost = 40;
+  player.money = money;
+  player.reserveAmmo = 10;
+  const expectedDiscounted = ammoRefillCost('rifle', player.reserveAmmo, 0, 1, 40);
+  room.systems.build.buyAmmo('p1');
+  check(
+    'Munitionspreis-Upgrade verbilligt das Nachfüllen',
+    money - player.money === expectedDiscounted &&
+      expectedDiscounted < expectedAmmoCost &&
+      player.reserveAmmo === reserveCapacity('rifle'),
+    `($ ${money - player.money} statt $ ${expectedAmmoCost})`,
+  );
+  runtime.upgrades.ammoCost = 0;
+
   player.ammo = 0;
   player.reserveAmmo = 0;
   const beforeWeaponSale = player.money;

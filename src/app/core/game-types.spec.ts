@@ -54,9 +54,12 @@ import {
   VEHICLE_SPEED_STEP,
   VIEWPORT,
   WEAPONS,
+  WEAPON_DAMAGE_PER_LEVEL,
   WEAPON_ORDER,
   ZOMBIES,
+  ZOMBIE_DAMAGE_SCALE,
   ZOMBIE_TYPES,
+  ammoCostReduction,
   ammoRefillCost,
   abilityMaxCharges,
   abilityRechargeTime,
@@ -102,6 +105,7 @@ import {
   vehicleRamDamage,
   vehicleSellValue,
   vehicleTopSpeed,
+  weaponDamageMultiplier,
   weaponSellValue,
   type MapObstacle,
   type PerkKey,
@@ -435,6 +439,10 @@ describe('enemy roster', () => {
     expect(ZOMBIES.big.reward).toBeGreaterThan(ZOMBIES.normal.reward);
     expect(ZOMBIES.butcher.reward).toBeGreaterThan(ZOMBIES.brute.reward);
     expect(ZOMBIES.omega.reward).toBeGreaterThan(ZOMBIES.butcher.reward);
+  });
+
+  it('softens everything the horde deals out by a tenth', () => {
+    expect(ZOMBIE_DAMAGE_SCALE).toBe(0.9);
   });
 
   it('gives every boss something the others do not have', () => {
@@ -1144,6 +1152,20 @@ describe('arsenal and ammunition', () => {
     expect(weaponSellValue('chainsaw', 0, 0)).toBe(WEAPONS.chainsaw.cost);
     expect(weaponSellValue('pistol', 0, 0)).toBe(0);
   });
+
+  it('makes every refill cheaper with the ammunition price upgrade', () => {
+    expect(ammoCostReduction(0)).toBe(0);
+    expect(ammoCostReduction(40)).toBeCloseTo(0.4);
+    expect(ammoCostReduction(200)).toBe(0.9);
+
+    const full = ammoRefillCost('rifle', 0);
+    expect(ammoRefillCost('rifle', 0, 0, 1, 40)).toBe(Math.ceil(full * 0.6));
+    expect(ammoRefillCost('rifle', 0, 0, 1, 100)).toBeLessThan(full);
+    // Selling deducts the rounds at the same price, so topping up first never pays.
+    const emptyRefund = weaponSellValue('rifle', 0, 0, 0, 0, 1, 40);
+    expect(emptyRefund).toBeGreaterThan(weaponSellValue('rifle', 0, 0));
+    expect(emptyRefund).toBeLessThan(WEAPONS.rifle.cost);
+  });
 });
 
 describe('permanent upgrades', () => {
@@ -1209,6 +1231,18 @@ describe('permanent upgrades', () => {
     expect(upgradeMaxLevel('grenadeSplit')).toBe(10);
     expect(upgradeLevelCost('grenadeSplit', 0)).toBeGreaterThan(upgradeCost(0) * 10);
     expect(upgradeMaxLevel('weaponDamage')).toBe(UPGRADE_MAX_LEVEL);
+  });
+
+  it('gives ranged and melee weapons their own damage ladder', () => {
+    const upgrades = { ...EMPTY_UPGRADES, weaponDamage: 10, meleeDamage: 25 };
+    // One step is worth twice the old shared ladder, so buying both costs the
+    // same as the single ladder used to for the same bonus.
+    expect(WEAPON_DAMAGE_PER_LEVEL).toBe(0.04);
+    expect(weaponDamageMultiplier('rifle', upgrades)).toBeCloseTo(1.4);
+    expect(weaponDamageMultiplier('chainsaw', upgrades)).toBeCloseTo(2);
+    // The thrown shield is a melee weapon and follows the melee ladder.
+    expect(weaponDamageMultiplier('throwshield', upgrades)).toBeCloseTo(2);
+    expect(weaponDamageMultiplier('rifle', EMPTY_UPGRADES)).toBe(1);
   });
 
   it('turns the dash from a dodge into full immunity, step by step', () => {

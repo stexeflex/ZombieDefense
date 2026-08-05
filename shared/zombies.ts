@@ -48,6 +48,13 @@ export type ZombieRank = 'trash' | 'elite' | 'mini' | 'boss';
 export const SUMMON_CYCLES = 5;
 
 /**
+ * Global balance pass on everything the horde deals out: contact damage, boss
+ * slams and mortars, ground hazards and exploders all land a tenth softer than
+ * the numbers in this file suggest.
+ */
+export const ZOMBIE_DAMAGE_SCALE = 0.9;
+
+/**
  * Ground effects. `lava` and `poison` belong to the enemy and eat the squad,
  * `acid` and `napalm` belong to the squad and only hurt zombies.
  */

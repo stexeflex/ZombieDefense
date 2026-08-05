@@ -783,8 +783,8 @@
 
               @if (shopTab() === 'weapons') {
                 <p class="shop-hint">
-                  Fernkampf braucht Munition. Waffenschaden gilt für alle Waffen; Nachladen,
-                  Magazingröße und Munitionsreserve gelten nur für Fernkampf.
+                  Fernkampf braucht Munition. Waffenschaden, Nachladen, Magazingröße,
+                  Munitionsreserve und Munitionspreis gelten nur für Fernkampf.
                 </p>
                 <div class="shop-scroll">
                   @if (game.canBuyAmmo()) {
@@ -890,8 +890,8 @@
                 </div>
               } @else if (shopTab() === 'melee') {
                 <p class="shop-hint">
-                  Nahkampf kostet keine Munition und muss nie nachladen. Waffenschaden gilt auch
-                  hier; Angriffstempo und Reichweite haben eigene Nahkampf-Upgrades.
+                  Nahkampf kostet keine Munition und muss nie nachladen. Waffenschaden,
+                  Angriffstempo und Reichweite haben eigene Nahkampf-Upgrades.
                 </p>
                 <div class="shop-scroll">
                   @for (weapon of meleeWeapons; track weapon.type) {

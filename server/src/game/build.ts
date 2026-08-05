@@ -121,6 +121,7 @@ export class BuildSystem {
           runtime.upgrades.magazineSize,
           runtime.upgrades.reserveAmmo,
           this.world.map.moneyScale,
+          runtime.upgrades.ammoCost,
         ),
       );
     }
@@ -161,6 +162,7 @@ export class BuildSystem {
       player.reserveAmmo,
       runtime.upgrades.reserveAmmo,
       this.world.map.moneyScale,
+      runtime.upgrades.ammoCost,
     );
     if (cost <= 0 || player.money < cost || player.reserveAmmo >= capacity) return;
     player.money -= cost;

@@ -398,8 +398,9 @@ Browser-Session zurückkehren und behält Geld, Arsenal, Munition, Ladungen,
 Fahrzeug- und Bau-Besitz. Ein zusätzlicher Tab besitzt dieses Reconnect-Token
 nicht und erhält in einem bereits laufenden Run weiterhin kein Startgeld.
 
-- **Stufen-Upgrades** – maximales Spielerleben, Panzerung, Tempo, Waffenschaden,
-  Nahkampf-Angriffstempo und -Reichweite, Nachladen, Magazin, Munitionsvorrat,
+- **Stufen-Upgrades** – maximales Spielerleben, Panzerung, Tempo, getrennter
+  Fernkampf- und Nahkampfschaden, Nahkampf-Angriffstempo und -Reichweite,
+  Nachladen, Magazin, Munitionsvorrat, Munitionspreis,
   Barrikaden, Turmschaden, Turmreichweite, Fahrzeugleben, Fahrzeugpanzerung,
   Motorleistung, Rammschaden, Bordwaffen, Dash-Ladungen, Dash-Aufladung,
   Dash-Schadensreduktion, Dash-Schaden, Dash-Schild und Zielanalyse für den
@@ -429,9 +430,13 @@ Zusätzliche Dash-Ladungen kommen ausschließlich aus dem Stufen-Upgrade. Die
 Stufenleiste zeigt kurze Leitern mit einem Strich pro Stufe, lange Leitern als
 gefüllten Balken — vierzig Striche wären nicht lesbar.
 
-`Waffenschaden` gilt für Fern- und Nahkampf. `Nachladen`, `Magazingröße` und
-`Munitionsreserve` gelten nur für Fernkampf; Nahkampf hat dafür eigene Upgrades
-für Angriffstempo und Reichweite.
+`Fernkampf` und `Nahkampf` haben je eine eigene Waffenschaden-Leiter. Eine Stufe
+ist dafür +4 % statt der früheren +2 % einer gemeinsamen Leiter — wer beide
+ausbaut, zahlt also nicht doppelt für denselben Bonus. `Nachladen`,
+`Magazingröße`, `Munitionsreserve` und `Munitionspreis` stehen unter Fernkampf und
+gelten nur dort; Nahkampf hat dafür eigene Upgrades für Angriffstempo und
+Reichweite. `Munitionspreis` senkt jede Nachfüllung um 1 % pro Stufe (max. 90 %)
+und wird beim Waffenverkauf mit demselben Preis gegengerechnet.
 
 Dash-Schaden und Dash-Schild bleiben gesperrt, solange der Vorteil fehlt, der sie
 überhaupt wirksam macht: Dash-Schaden braucht Stoßdash oder Klingendash,

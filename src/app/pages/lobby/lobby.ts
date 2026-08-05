@@ -25,6 +25,7 @@ import {
   vehicleMaxHealth,
   vehicleRamDamage,
   vehicleTopSpeed,
+  weaponDamageMultiplier,
   type DefenseType,
   type VehicleType,
   type WeaponType,
@@ -358,7 +359,7 @@ export class Lobby implements OnInit, OnDestroy {
   weaponStats(type: WeaponType) {
     const weapon = WEAPONS[type];
     const upgrades = this.progress.effectiveUpgrades();
-    const damage = weapon.damage * (1 + upgrades.weaponDamage * 0.02);
+    const damage = weapon.damage * weaponDamageMultiplier(type, upgrades);
     const damageLabel =
       (weapon.pellets ?? 1) > 1
         ? `${this.stat(damage)} × ${weapon.pellets} Schaden`
@@ -582,11 +583,13 @@ export class Lobby implements OnInit, OnDestroy {
   ammoCost() {
     const player = this.game.player();
     if (!player) return 0;
+    const upgrades = this.progress.effectiveUpgrades();
     return ammoRefillCost(
       player.weapon,
       player.reserveAmmo,
-      this.progress.effectiveUpgrades().reserveAmmo,
+      upgrades.reserveAmmo,
       this.activeMap().moneyScale,
+      upgrades.ammoCost,
     );
   }
 

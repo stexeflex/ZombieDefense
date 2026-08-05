@@ -10,10 +10,14 @@ export interface PermanentUpgrades {
   maxHealth: number;
   healthRegen: number;
   moveSpeed: number;
+  /** Fernkampf damage. The key predates the split and is kept for saved progress. */
   weaponDamage: number;
   reloadSpeed: number;
   magazineSize: number;
   reserveAmmo: number;
+  /** Discount on every ammunition refill. */
+  ammoCost: number;
+  meleeDamage: number;
   meleeSpeed: number;
   meleeRange: number;
   grenadeDamage: number;
@@ -61,6 +65,8 @@ export const EMPTY_UPGRADES: PermanentUpgrades = {
   reloadSpeed: 0,
   magazineSize: 0,
   reserveAmmo: 0,
+  ammoCost: 0,
+  meleeDamage: 0,
   meleeSpeed: 0,
   meleeRange: 0,
   grenadeDamage: 0,

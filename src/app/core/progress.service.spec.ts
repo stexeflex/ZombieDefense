@@ -55,7 +55,7 @@ describe('ProgressService upgrade shop', () => {
   it('groups regular and active-ability upgrades into readable shop sections', () => {
     expect(UPGRADE_GROUPS.map((group) => group.label)).toEqual([
       'Spieler',
-      'Waffen (alle)',
+      'Fernkampf',
       'Nahkampf',
       'Granaten',
       'Mörserschlag',
@@ -86,6 +86,11 @@ describe('ProgressService upgrade shop', () => {
     expect(upgradeCurrentValue('nullFieldRadius', 10)).toContain('Feldreichweite');
     expect(upgradeCurrentValue('armor', 35)).not.toContain('max.');
     expect(upgradeCurrentValue('vehicleArmor', 10)).toContain('10 % weniger Schaden');
+    expect(upgradeCurrentValue('weaponDamage', 10)).toContain(
+      '140 % Schaden aller Fernkampfwaffen',
+    );
+    expect(upgradeCurrentValue('meleeDamage', 10)).toContain('140 % Schaden aller Nahkampfwaffen');
+    expect(upgradeCurrentValue('ammoCost', 25)).toContain('25 % günstiger nachfüllen');
   });
 
   it('starts with grenades and keeps advanced abilities locked until they are bought', () => {

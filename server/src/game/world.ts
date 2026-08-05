@@ -10,6 +10,7 @@ import {
   VEHICLE_ESCAPE_INVULNERABILITY,
   VEHICLE_WRECK_DAMAGE,
   ZOMBIES,
+  ZOMBIE_DAMAGE_SCALE,
   armorReduction,
   canTurretTarget,
   circleOverlapsVehicle,
@@ -155,10 +156,11 @@ export class GameWorld {
   /**
    * Enemy health scales with the full map difficulty, damage only with part of
    * it and capped — otherwise the last maps one-shot anyone who has not farmed
-   * upgrades for hours.
+   * upgrades for hours. Everything the horde deals out goes through here:
+   * contact damage, boss abilities, ground hazards and exploders.
    */
   damageScale() {
-    return Math.min(5.2, 1 + (this.map.difficulty - 1) * 0.7);
+    return ZOMBIE_DAMAGE_SCALE * Math.min(5.2, 1 + (this.map.difficulty - 1) * 0.7);
   }
 
   waveDamageScale() {

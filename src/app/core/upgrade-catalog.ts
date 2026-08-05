@@ -30,6 +30,8 @@ import {
   PRECISION_PROJECTILE_RADIUS,
   START_MONEY_PER_LEVEL,
   VEHICLE_SPEED_STEP,
+  WEAPON_DAMAGE_PER_LEVEL,
+  ammoCostReduction,
   armorReduction,
   dashReduction,
   healthRegenPerSecond,
@@ -41,7 +43,7 @@ import {
 
 export type UpgradeCategory =
   | 'player'
-  | 'weapons'
+  | 'ranged'
   | 'melee'
   | 'grenades'
   | 'mortar'
@@ -81,15 +83,15 @@ export const UPGRADE_GROUPS: UpgradeGroupDefinition[] = [
     icon: '♥',
   },
   {
-    key: 'weapons',
-    label: 'Waffen (alle)',
-    description: 'Schaden gilt für Fern- und Nahkampf; der Rest nur für Fernkampf',
+    key: 'ranged',
+    label: 'Fernkampf',
+    description: 'Schaden, Nachschub und Munitionspreis aller Schusswaffen',
     icon: '✦',
   },
   {
     key: 'melee',
     label: 'Nahkampf',
-    description: 'Eigene Werte für Angriffstempo und Reichweite von Nahkampfwaffen',
+    description: 'Eigene Werte für Schaden, Angriffstempo und Reichweite von Nahkampfwaffen',
     icon: '⚔',
   },
   {
@@ -150,23 +152,25 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   { key: 'moveSpeed', category: 'player', label: 'Bewegung', icon: '➜' },
   {
     key: 'weaponDamage',
-    category: 'weapons',
-    label: 'Waffenschaden · alle Waffen',
+    category: 'ranged',
+    label: 'Waffenschaden · Fernkampf',
     icon: '✦',
   },
-  { key: 'reloadSpeed', category: 'weapons', label: 'Nachladen · nur Fernkampf', icon: '↻' },
+  { key: 'reloadSpeed', category: 'ranged', label: 'Nachladen', icon: '↻' },
   {
     key: 'magazineSize',
-    category: 'weapons',
-    label: 'Magazingröße · nur Fernkampf',
+    category: 'ranged',
+    label: 'Magazingröße',
     icon: '▥',
   },
   {
     key: 'reserveAmmo',
-    category: 'weapons',
-    label: 'Munitionsreserve · nur Fernkampf',
+    category: 'ranged',
+    label: 'Munitionsreserve',
     icon: '⛁',
   },
+  { key: 'ammoCost', category: 'ranged', label: 'Munitionspreis', icon: '$' },
+  { key: 'meleeDamage', category: 'melee', label: 'Waffenschaden · Nahkampf', icon: '✦' },
   { key: 'meleeSpeed', category: 'melee', label: 'Angriffstempo', icon: '⚔' },
   { key: 'meleeRange', category: 'melee', label: 'Schlagreichweite', icon: '◒' },
   { key: 'grenadeDamage', category: 'grenades', label: 'Granatenschaden', icon: '●' },
@@ -242,13 +246,25 @@ export function upgradeCurrentValue(key: UpgradeKey, level: number) {
     case 'moveSpeed':
       return percentMultiplier(safeLevel, 'Bewegungstempo');
     case 'weaponDamage':
-      return percentMultiplier(safeLevel, 'Schaden aller Fern- und Nahkampfwaffen');
+      return percentMultiplier(
+        safeLevel,
+        'Schaden aller Fernkampfwaffen',
+        WEAPON_DAMAGE_PER_LEVEL * 100,
+      );
     case 'reloadSpeed':
       return percentMultiplier(safeLevel, 'Nachladetempo');
     case 'magazineSize':
       return percentMultiplier(safeLevel, 'Magazinkapazität');
     case 'reserveAmmo':
       return percentMultiplier(safeLevel, 'Munitionsreserve');
+    case 'ammoCost':
+      return `${number(ammoCostReduction(safeLevel) * 100)} % günstiger nachfüllen (+1 % pro Stufe, max. 90 %)`;
+    case 'meleeDamage':
+      return percentMultiplier(
+        safeLevel,
+        'Schaden aller Nahkampfwaffen',
+        WEAPON_DAMAGE_PER_LEVEL * 100,
+      );
     case 'meleeSpeed':
       return percentMultiplier(safeLevel, 'Nahkampf-Angriffstempo');
     case 'meleeRange':

@@ -49,6 +49,7 @@ import {
   magazineCapacity,
   pushOutOfVehicle,
   reserveCapacity,
+  weaponDamageMultiplier,
   weaponLife,
   abilityMaxCharges,
   abilityRechargeTime,
@@ -450,7 +451,7 @@ export class PlayerSystem {
     runtime.weaponChargeSeconds = 0;
     runtime.chargedWeapon = '';
     player.weaponCharge = 0;
-    if (!config || !charge || player.fireCooldown > 0) return;
+    if (!weapon || !config || !charge || player.fireCooldown > 0) return;
 
     const ratio = this.world.clamp(held / Math.max(charge.maxSeconds, 0.01), 0, 1);
     const effectRatio = this.world.clamp(
@@ -459,7 +460,8 @@ export class PlayerSystem {
       1,
     );
     const multiplier = chargedWeaponDamageMultiplier(charge, ratio);
-    const damage = config.damage * (1 + runtime.upgrades.weaponDamage * 0.02) * multiplier;
+    const upgradeBonus = weaponDamageMultiplier(weapon, runtime.upgrades);
+    const damage = config.damage * upgradeBonus * multiplier;
     const aimAngle = Math.atan2(runtime.input.aimY - player.y, runtime.input.aimX - player.x);
     player.rotation = aimAngle;
     player.fireCooldown = config.fireDelay / 1000 / (1 + runtime.upgrades.meleeSpeed * 0.02);
@@ -544,8 +546,7 @@ export class PlayerSystem {
     projectile.lightningEvery = lightning ? lightning.every / lightningFrequency : 0;
     projectile.lightningTimer = 0;
     projectile.lightningRange = lightning?.range ?? 0;
-    projectile.lightningDamage =
-      (lightning?.damage ?? 0) * (1 + runtime.upgrades.weaponDamage * 0.02) * multiplier;
+    projectile.lightningDamage = (lightning?.damage ?? 0) * upgradeBonus * multiplier;
     projectile.lightningTargets = lightning ? Math.max(1, Math.ceil(lightning.targets * ratio)) : 0;
     this.world.pushFx({
       k: 'melee',
@@ -758,7 +759,8 @@ export class PlayerSystem {
       player.ammo -= 1;
       player.fireCooldown += config.fireDelay / 1000;
       player.firing = 0.12;
-      const baseDamage = config.damage * (1 + upgrades.weaponDamage * 0.02);
+      const upgradeBonus = weaponDamageMultiplier(player.weapon, upgrades);
+      const baseDamage = config.damage * upgradeBonus;
       const muzzleX = player.x + Math.cos(player.rotation) * 26;
       const muzzleY = player.y + Math.sin(player.rotation) * 26;
       for (let pellet = 0; pellet < config.pellets; pellet += 1) {
@@ -776,13 +778,13 @@ export class PlayerSystem {
         projectile.life = weaponLife(config);
         projectile.radius = config.projectileRadius ?? PROJECTILE_RADIUS[player.weapon] ?? 4;
         projectile.splashRadius = config.splashRadius ?? 0;
-        projectile.splashDamage = (config.splashDamage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
+        projectile.splashDamage = (config.splashDamage ?? 0) * upgradeBonus;
         projectile.chain = config.chain ?? 0;
         projectile.chainRange = config.chainRange ?? 0;
         projectile.burn = config.burn ?? 0;
         projectile.burnSeconds = config.burnSeconds ?? 0;
         projectile.acidRadius = config.acidRadius ?? 0;
-        projectile.acidDps = (config.acidDps ?? 0) * (1 + upgrades.weaponDamage * 0.02);
+        projectile.acidDps = (config.acidDps ?? 0) * upgradeBonus;
         projectile.acidSeconds = config.acidSeconds ?? 0;
         projectile.slow = config.slow ?? 0;
         projectile.slowSeconds = config.slowSeconds ?? 0;
@@ -790,14 +792,12 @@ export class PlayerSystem {
         projectile.lightningEvery = config.lightningPulse?.every ?? 0;
         projectile.lightningTimer = 0;
         projectile.lightningRange = config.lightningPulse?.range ?? 0;
-        projectile.lightningDamage =
-          (config.lightningPulse?.damage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
+        projectile.lightningDamage = (config.lightningPulse?.damage ?? 0) * upgradeBonus;
         projectile.lightningTargets = config.lightningPulse?.targets ?? 0;
         projectile.riftEvery = config.riftPulse?.every ?? 0;
         projectile.riftTimer = projectile.riftEvery;
         projectile.riftRadius = config.riftPulse?.radius ?? 0;
-        projectile.riftDamage =
-          (config.riftPulse?.damage ?? 0) * (1 + upgrades.weaponDamage * 0.02);
+        projectile.riftDamage = (config.riftPulse?.damage ?? 0) * upgradeBonus;
         projectile.riftPull = config.riftPulse?.pull ?? 0;
       }
       this.world.pushFx({
@@ -827,7 +827,7 @@ export class PlayerSystem {
       muzzleX,
       muzzleY,
       player.rotation,
-      config.damage * (1 + upgrades.weaponDamage * 0.02),
+      config.damage * weaponDamageMultiplier(player.weapon, upgrades),
       config.speed,
       player.weapon,
     );
@@ -891,7 +891,7 @@ export class PlayerSystem {
         .sort((a, b) => a.distance - b.distance)
         .slice(0, maxTargets);
 
-      const damage = config.damage * (1 + upgrades.weaponDamage * 0.02);
+      const damage = config.damage * weaponDamageMultiplier(player.weapon, upgrades);
       for (const { id, zombie } of victims) {
         this.world.pushFx({ k: 'hit', x: zombie.x, y: zombie.y, s: player.weapon });
         if (config.knockback) {

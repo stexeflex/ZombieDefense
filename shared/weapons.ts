@@ -874,6 +874,29 @@ export function isMeleeWeapon(weapon: WeaponType | undefined) {
   return Boolean(weapon && WEAPONS[weapon]?.mode === 'melee');
 }
 
+/**
+ * Fern- and Nahkampf each own a damage ladder, so one step is worth twice as
+ * much as the single ladder that used to cover both.
+ */
+export const WEAPON_DAMAGE_PER_LEVEL = 0.04;
+
+/** Damage multiplier of the ladder this weapon belongs to. */
+export function weaponDamageMultiplier(
+  weapon: WeaponType,
+  upgrades: { weaponDamage: number; meleeDamage: number },
+) {
+  const level = isMeleeWeapon(weapon) ? upgrades.meleeDamage : upgrades.weaponDamage;
+  return 1 + Math.max(0, level) * WEAPON_DAMAGE_PER_LEVEL;
+}
+
+/**
+ * Share the ammunition upgrade takes off every refill. The regular ladder
+ * reaches 40 %; both amplifier tiers can extend it to 90 %.
+ */
+export function ammoCostReduction(level: number) {
+  return Math.min(0.9, Math.max(0, level) * 0.01);
+}
+
 /** Upper limit for carried spare ammunition, one full resupply. */
 export function reserveCapacity(weapon: WeaponType, reserveLevel = 0) {
   if (isMeleeWeapon(weapon)) return 0;
@@ -895,10 +918,17 @@ export function ammoRefillCost(
   currentReserve: number,
   reserveLevel = 0,
   moneyScale = 1,
+  ammoCostLevel = 0,
 ) {
   if (weapon === 'pistol' || isMeleeWeapon(weapon)) return 0;
   const missing = Math.max(0, reserveCapacity(weapon, reserveLevel) - currentReserve);
-  return Math.ceil((missing * WEAPONS[weapon].ammoCost * moneyScale) / WEAPONS[weapon].reserve);
+  return Math.ceil(roundValue(weapon, missing, moneyScale, ammoCostLevel));
+}
+
+/** What the given number of rounds is worth at this player's ammunition price. */
+function roundValue(weapon: WeaponType, rounds: number, moneyScale: number, ammoCostLevel: number) {
+  const price = WEAPONS[weapon].ammoCost * moneyScale * (1 - ammoCostReduction(ammoCostLevel));
+  return (rounds * price) / WEAPONS[weapon].reserve;
 }
 
 /**
@@ -913,6 +943,7 @@ export function weaponSellValue(
   magazineLevel = 0,
   reserveLevel = 0,
   moneyScale = 1,
+  ammoCostLevel = 0,
 ) {
   if (weapon === 'pistol') return 0;
   const originalPrice = WEAPONS[weapon].cost;
@@ -920,9 +951,9 @@ export function weaponSellValue(
   const fullLoad = magazineCapacity(weapon, magazineLevel) + reserveCapacity(weapon, reserveLevel);
   const rounds = Math.max(0, currentAmmo) + Math.max(0, currentReserve);
   const missing = Math.max(0, fullLoad - rounds);
-  const ammoValue = Math.ceil(
-    (missing * WEAPONS[weapon].ammoCost * moneyScale) / WEAPONS[weapon].reserve,
-  );
+  // Missing rounds are deducted at the same price a refill would cost, so a
+  // cheap-ammunition run never has to top up first just to sell for more.
+  const ammoValue = Math.ceil(roundValue(weapon, missing, moneyScale, ammoCostLevel));
   return Math.max(0, Math.floor(originalPrice) - ammoValue);
 }
 
